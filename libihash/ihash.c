@@ -287,17 +287,20 @@ hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
   /* In case of complications, fall back to hurd_ihash_add.  */
   if (ht->size == 0
       || item == NULL
-      || item->value == _HURD_IHASH_DELETED
-      || ! compare (ht, item->key, key)
+      || (hurd_ihash_value_valid (item->value)
+          && ! compare (ht, item->key, key))
       || hurd_ihash_get_effective_load (ht) > ht->max_load)
     return hurd_ihash_add (ht, key, value);
 
-  if (item->value == _HURD_IHASH_EMPTY)
+  if (! hurd_ihash_value_valid (item->value))
     {
       item->key = key;
       ht->nr_items += 1;
-      assert (ht->nr_free > 0);
-      ht->nr_free -= 1;
+      if (item->value == _HURD_IHASH_EMPTY)
+        {
+          assert (ht->nr_free > 0);
+          ht->nr_free -= 1;
+        }
     }
   else
     {
@@ -418,7 +421,10 @@ hurd_ihash_locp_find (hurd_ihash_t ht,
   int idx;
 
   if (ht->size == 0)
-    return NULL;
+    {
+      *slot = NULL;
+      return NULL;
+    }
 
   idx = find_index (ht, key);
   *slot = &ht->items[idx].value;

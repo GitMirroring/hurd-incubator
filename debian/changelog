@@ -1,3 +1,9 @@
+hurd (1:0.8.git20160522-1) UNRELEASED; urgency=medium
+
+  * New upstream release & snapshot.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sat, 21 May 2016 22:45:17 +0000
+
 hurd (1:0.7.git20160502-2) unstable; urgency=medium
 
   * Bump gnumach-dev build-dep to fix stdint use in headers.
