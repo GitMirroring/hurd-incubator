@@ -28,3 +28,5 @@ crash-logging.patch
 using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
+git-0ab3825f250486453892e3e18a702a44538bff6d
+git-60d14f5b3c4ea27af6f4220a15947c328bc888ee
