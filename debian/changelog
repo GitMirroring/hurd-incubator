@@ -1,3 +1,9 @@
+hurd (1:0.8.git20160522-3) UNRELEASED; urgency=medium
+
+  * control: Bump Standards-Version to 3.9.8 (no change)
+
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 22 May 2016 20:41:40 +0200
+
 hurd (1:0.8.git20160522-2) unstable; urgency=medium
 
   * patches/git-0ab3825f250486453892e3e18a702a44538bff6d: Cherry-pick fix
