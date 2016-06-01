@@ -3,6 +3,8 @@ hurd (1:0.8.git20160522-3) unstable; urgency=medium
   * control: Bump Standards-Version to 3.9.8 (no change)
   * patches/git-malloc-hook: Cherry-pick from upstream to fix potential
     mach-defpager hang.
+  * patches/git-293e86998748bae2d7a8179ad198ec3452f0d472: Cherry-pick from
+    upstream to fix zero-byte pipe writes.
 
  -- Samuel Thibault <sthibault@debian.org>  Wed, 01 Jun 2016 21:17:45 +0000
 
