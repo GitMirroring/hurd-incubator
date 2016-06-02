@@ -1,3 +1,10 @@
+hurd (1:0.8.git20160522-4) unstable; urgency=medium
+
+  * patches/git-dd93fc4bfbaceb65ded2aefca35042438c95f4d5: Cherry-pick from
+    upstream to fix nfs assertion failure.
+
+ -- Samuel Thibault <sthibault@debian.org>  Thu, 02 Jun 2016 23:02:40 +0000
+
 hurd (1:0.8.git20160522-3) unstable; urgency=medium
 
   * control: Bump Standards-Version to 3.9.8 (no change)
