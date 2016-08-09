@@ -1,3 +1,9 @@
+hurd (1:0.8.git20160809-1) UNRELEASED; urgency=medium
+
+  * New upstream snapshot.
+
+ -- Samuel Thibault <sthibault@debian.org>  Tue, 09 Aug 2016 21:43:25 +0000
+
 hurd (1:0.8.git20160522-4) unstable; urgency=medium
 
   * patches/git-dd93fc4bfbaceb65ded2aefca35042438c95f4d5: Cherry-pick from
