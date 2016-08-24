@@ -140,7 +140,7 @@ md ethX 0123
 if [ "$MINIMAL" ]; then
 	md loopX 0123
 	md ttyX 1234
-	md ptypX 0123
+	md ptypX 0123456789
 	md comX 0123
 	st random /hurd/random random
 	st urandom /hurd/random urandom
