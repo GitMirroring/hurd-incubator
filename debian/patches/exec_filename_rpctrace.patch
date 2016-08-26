@@ -1,0 +1,61 @@
+From: Kalle Olavi Niemitalo <kon@iki.fi>
+To: 835513@bugs.debian.org
+Date: Fri, 26 Aug 2016 17:23:28 +0300
+Subject: [PATCH] rpctrace: Pass prefixed_name to _hurd_exec_file_name.
+
+This fixes the following test case:
+
+  mkdir testy
+  echo '#! /bin/bash' > testy/prog
+  echo 'printf "%s\n" "$0"' >> testy/prog
+  chmod +x testy/prog
+  PATH=$(pwd)/testy /bin/rpctrace -E PATH=/usr/bin:/bin -o /dev/null prog
+
+Before this patch, the output is:
+
+  /bin/bash: prog: No such file or directory
+
+After this patch, the output is similar to:
+
+  /home/kalle/testy/prog
+
+* utils/rpctrace.c (traced_spawn): Get prefixed_name from
+file_name_path_lookup and pass it to _hurd_exec_file_name.
+
+diff --git a/utils/rpctrace.c b/utils/rpctrace.c
+index 95ff124..10843bc 100644
+--- a/utils/rpctrace.c
++++ b/utils/rpctrace.c
+@@ -1622,8 +1622,9 @@ traced_spawn (char **argv, char **envp)
+   task_t traced_task;
+   struct sender_info *ti;
+   struct receiver_info *receive_ti;
++  char *prefixed_name;
+   file_t file = file_name_path_lookup (argv[0], getenv ("PATH"),
+-				       O_EXEC, 0, 0);
++				       O_EXEC, 0, &prefixed_name);
+ 
+   if (file == MACH_PORT_NULL)
+     error (1, errno, "command not found: %s", argv[0]);
+@@ -1664,7 +1665,8 @@ traced_spawn (char **argv, char **envp)
+      the actual task, so the RPCs to map in the program itself do not get
+      traced.  Could have an option to use TASK_WRAPPER here instead.  */
+ #ifdef HAVE__HURD_EXEC_FILE_NAME
+-  err = _hurd_exec_file_name (traced_task, file, *argv, argv, envp);
++  err = _hurd_exec_file_name (traced_task, file, prefixed_name ?: *argv,
++			      argv, envp);
+ #else
+   err = _hurd_exec (traced_task, file, argv, envp);
+ #endif
+@@ -1675,6 +1677,7 @@ traced_spawn (char **argv, char **envp)
+      cannot die and hence our TRACED_TASK ref cannot have been released.  */
+   mach_port_deallocate (mach_task_self (), task_wrapper);
+ 
++  free (prefixed_name);
+   return pid;
+ }
+ 
+-- 
+2.6.4
+
+
