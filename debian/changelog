@@ -1,8 +1,8 @@
-hurd (1:0.8.git20160826-1) UNRELEASED; urgency=medium
+hurd (1:0.8.git20160826-1) unstable; urgency=medium
 
   * New upstream snapshot, fixes loading small pic programs.
 
- -- Samuel Thibault <sthibault@debian.org>  Fri, 26 Aug 2016 01:04:27 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 26 Aug 2016 01:05:01 +0000
 
 hurd (1:0.8.git20160809-1) unstable; urgency=medium
 
