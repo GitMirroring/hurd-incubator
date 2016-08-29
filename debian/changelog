@@ -1,7 +1,12 @@
 hurd (1:0.8.git20160826-2) UNRELEASED; urgency=medium
 
+  [ Samuel Thibault ]
   * Drop gcc-5 Build-Depends, we already build with gcc-6 anyway.
     Closes: Bug#835948.
+
+  [ Kalle Olavi Niemitalo ]
+  * patches/exec_filename_rpctrace.patch: rpctrace: Pass prefixed_name to
+    _hurd_exec_file_name. Closes: Bug#835513.
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 29 Aug 2016 20:39:27 +0000
 
