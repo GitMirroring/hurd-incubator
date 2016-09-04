@@ -52,6 +52,7 @@ lib/hurd/console-run sbin
 lib/hurd/getty sbin
 lib/hurd/rc etc/hurd
 lib/hurd/runsystem.gnu etc/hurd
+lib/hurd/runsystem.hurd etc/hurd
 lib/hurd/runttys sbin
 sbin/MAKEDEV
 sbin/e2os

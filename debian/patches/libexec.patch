@@ -28,7 +28,7 @@ Index: hurd-debian/doc/hurd.texi
 ===================================================================
 --- hurd-debian.orig/doc/hurd.texi
 +++ hurd-debian/doc/hurd.texi
-@@ -566,7 +566,7 @@ The @option{--multiboot-command-line} op
+@@ -569,7 +569,7 @@ The @option{--multiboot-command-line} op
  it is a root filesystem, which triggers it to run @command{/hurd/startup} as PID
  2.  @command{/hurd/startup} starts the @command{/hurd/proc} and
  @command{/hurd/auth} servers.  After the servers are launched
@@ -41,7 +41,7 @@ Index: hurd-debian/startup/startup.c
 ===================================================================
 --- hurd-debian.orig/startup/startup.c
 +++ hurd-debian/startup/startup.c
-@@ -912,7 +912,7 @@ frob_kernel_process (void)
+@@ -1022,7 +1022,7 @@ frob_kernel_process (void)
  /** Running userland.  **/
  
  /* In the "split-init" setup, we just run a single program (usually
@@ -50,7 +50,7 @@ Index: hurd-debian/startup/startup.c
     If it does exit (or can't be started), we go to an emergency single-user
     shell as a fallback.  */
  
-@@ -980,7 +980,7 @@ process_signal (int signo)
+@@ -1090,7 +1090,7 @@ process_signal (int signo)
      }
  }
  
@@ -59,7 +59,7 @@ Index: hurd-debian/startup/startup.c
     with the given additional arguments.  */
  static int
  start_child (const char *prog, char **progargs)
-@@ -992,7 +992,7 @@ start_child (const char *prog, char **pr
+@@ -1102,7 +1102,7 @@ start_child (const char *prog, char **pr
  
    if (progargs == 0)
      {
@@ -68,7 +68,7 @@ Index: hurd-debian/startup/startup.c
        err = argz_create ((char **) argv, &args, &arglen);
      }
    else
-@@ -1002,7 +1002,7 @@ start_child (const char *prog, char **pr
+@@ -1112,7 +1112,7 @@ start_child (const char *prog, char **pr
  	++argc;
        {
  	const char *argv[2 + argc + 1];
@@ -77,7 +77,7 @@ Index: hurd-debian/startup/startup.c
  	argv[1] = prog;
  	argv[2 + argc] = 0;
  	while (argc-- > 0)
-@@ -1062,8 +1062,8 @@ launch_something (const char *why)
+@@ -1175,8 +1175,8 @@ launch_something (const char *why)
    static unsigned int try;
    static const char *const tries[] =
    {
@@ -88,3 +88,31 @@ Index: hurd-debian/startup/startup.c
      _PATH_BSHELL,
      "/bin/shd",			/* XXX */
    };
+Index: hurd-debian/daemons/runsystem.hurd.sh
+===================================================================
+--- hurd-debian.orig/daemons/runsystem.hurd.sh
++++ hurd-debian/daemons/runsystem.hurd.sh
+@@ -23,8 +23,8 @@ fallback_shells='/bin/sh /bin/bash /bin/
+ SHELL=/bin/sh
+ 
+ # Programs that do multi-user startup.
+-RUNCOM=/libexec/rc
+-RUNTTYS=/libexec/runttys
++RUNCOM=/etc/hurd/rc
++RUNTTYS=/sbin/runttys
+ # Signals that we should pass down to runttys.
+ runttys_sigs='TERM INT HUP TSTP'
+ 
+Index: hurd-debian/init/init.c
+===================================================================
+--- hurd-debian.orig/init/init.c
++++ hurd-debian/init/init.c
+@@ -138,7 +138,7 @@ main (int argc, char **argv)
+   sa.sa_flags |= SA_RESTART;
+   sigaction (SIGCHLD, &sa, NULL);
+ 
+-  char *args[] = { "/libexec/runsystem.hurd", NULL };
++  char *args[] = { "/etc/hurd/runsystem.hurd", NULL };
+ 
+   switch (child_pid = fork ())
+     {

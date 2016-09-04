@@ -1,0 +1,60 @@
+commit 9eeba20f44cc1e883606304091a03e64b8102244
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Sep 4 14:46:02 2016 +0200
+
+    Fix installing runsystem.hurd
+    
+    * daemons/runsystem.hurd: Rename to daemons/runsystem.hurd.sh
+    * daemons/Makefile (targets): Add runsystem.hurd
+    (special-targets): Likewise.
+    (runsystem.hurd): New rule, simply depends on runsystem.hurd.sh
+
+diff --git a/daemons/Makefile b/daemons/Makefile
+index 9d32617..289fbf6 100644
+--- a/daemons/Makefile
++++ b/daemons/Makefile
+@@ -20,10 +20,10 @@
+ dir := daemons
+ makemode := utilities
+ 
+-targets = rc getty mail.local console-run runttys runsystem
+-special-targets = rc runsystem
++targets = rc getty mail.local console-run runttys runsystem runsystem.hurd
++special-targets = rc runsystem runsystem.hurd
+ SRCS = rc.sh runsystem.sh getty.c lmail.c console-run.c runttys.c \
+-	runsystem.hurd \
++	runsystem.hurd.sh \
+ 
+ installationdir = $(libexecdir)
+ 
+@@ -45,3 +45,4 @@ runttys: runttys.o
+ runttys-LDLIBS = -lutil
+ 
+ runsystem: runsystem.sh
++runsystem.hurd: runsystem.hurd.sh
+diff --git a/daemons/runsystem.hurd b/daemons/runsystem.hurd.sh
+similarity index 100%
+rename from daemons/runsystem.hurd
+rename to daemons/runsystem.hurd.sh
+commit 349b9c4fdcb49add63ec71cabd6e4e4dbe6b262d
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Sep 4 14:47:05 2016 +0200
+
+    Fix patch to runsystem.hurd
+    
+    * init/init.c (main): Run /libexec/runsystem.hurd instead of
+    /etc/hurd/runsystem.hurd.
+
+diff --git a/init/init.c b/init/init.c
+index fe230da..c8078dd 100644
+--- a/init/init.c
++++ b/init/init.c
+@@ -138,7 +138,7 @@ main (int argc, char **argv)
+   sa.sa_flags |= SA_RESTART;
+   sigaction (SIGCHLD, &sa, NULL);
+ 
+-  char *args[] = { "/etc/hurd/runsystem.hurd", NULL };
++  char *args[] = { "/libexec/runsystem.hurd", NULL };
+ 
+   switch (child_pid = fork ())
+     {

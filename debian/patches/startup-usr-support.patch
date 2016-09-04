@@ -4,8 +4,10 @@ Debian GNU/Hurd has a real /usr
  daemons/runsystem.sh |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/daemons/rc.sh
-+++ b/daemons/rc.sh
+Index: hurd-debian/daemons/rc.sh
+===================================================================
+--- hurd-debian.orig/daemons/rc.sh
++++ hurd-debian/daemons/rc.sh
 @@ -1,6 +1,6 @@
  #!/bin/bash
  
@@ -14,8 +16,23 @@ Debian GNU/Hurd has a real /usr
  
  # Set up swap space.  This will complain if no default pager is functioning.
  swapon -a
---- a/daemons/runsystem.sh
-+++ b/daemons/runsystem.sh
+Index: hurd-debian/daemons/runsystem.sh
+===================================================================
+--- hurd-debian.orig/daemons/runsystem.sh
++++ hurd-debian/daemons/runsystem.sh
+@@ -11,7 +11,7 @@
+ ### Where to find programs, etc.
+ ###
+ 
+-PATH=/bin:/sbin
++PATH=/bin:/sbin:/usr/bin:/usr/sbin
+ export PATH
+ 
+ umask 022
+Index: hurd-debian/daemons/runsystem.hurd.sh
+===================================================================
+--- hurd-debian.orig/daemons/runsystem.hurd.sh
++++ hurd-debian/daemons/runsystem.hurd.sh
 @@ -11,7 +11,7 @@
  ### Where to find programs, etc.
  ###
