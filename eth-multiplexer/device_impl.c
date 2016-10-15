@@ -51,8 +51,6 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 	 	mach_msg_type_name_t *devicetype)
 {
   struct vether_device *dev;
-  int openstat; 
-  int right_mode = 1;
   struct protid *pi = ports_lookup_port (netfs_port_bucket, master_port, 0);
   if (pi == NULL)
     return D_NO_SUCH_DEVICE;
@@ -85,18 +83,8 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
     }
 
   dev = (struct vether_device *) pi->po->np->nn->ln;
-  /* check the mode */
-  openstat = pi->po->openstat;
-  if (mode & D_READ && !(openstat & O_READ))
-    right_mode = 0;
-  if (mode & D_WRITE && !(openstat & O_WRITE))
-    right_mode = 0;
-  ports_port_deref (pi);
-
   if (dev)
     {
-      if (!right_mode)
-	return EBADF;
       *device = dev->dev_port;
       *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
