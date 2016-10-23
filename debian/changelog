@@ -8,6 +8,7 @@ hurd (1:0.8.git20161023-1) unstable; urgency=medium
   * patches/{libexec.patch,startup-usr-support.patch}: Update for
     runsystem.hurd. Closes: Bug#836529.
   * control: Don't build hurd-prof in noprof build profile.
+  * control: Add missing lsb-base dependency.
 
   [ Kalle Olavi Niemitalo ]
   * patches/exec_filename_rpctrace.patch: rpctrace: Pass prefixed_name to
