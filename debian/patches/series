@@ -1,4 +1,3 @@
-git-runsystem.hurd
 diskfs_no_inherit_dir_group.patch
 init_try_runsystem.gnu.patch
 makedev.diff
