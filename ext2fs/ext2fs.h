@@ -271,7 +271,9 @@ extern pthread_cond_t disk_cache_reassociation;
 
 void *disk_cache_block_ref (block_t block);
 void disk_cache_block_ref_ptr (void *ptr);
-void disk_cache_block_deref (void *ptr);
+void _disk_cache_block_deref (void *ptr);
+#define disk_cache_block_deref(PTR)                             \
+  do { _disk_cache_block_deref (PTR); PTR = NULL; } while (0)
 int disk_cache_block_is_ref (block_t block);
 
 /* Our in-core copy of the super-block (pointer into the disk_cache).  */
@@ -412,12 +414,14 @@ dino_ref (ino_t inum)
 }
 
 EXT2FS_EI void
-dino_deref (struct ext2_inode *inode)
+_dino_deref (struct ext2_inode *inode)
 {
   ext2_debug ("(%p)", inode);
   disk_cache_block_deref (inode);
 }
 #endif /* Use extern inlines.  */
+#define dino_deref(INODE)                               \
+  do { _dino_deref (INODE); INODE = NULL; } while (0)
 
 /* ---------------------------------------------------------------- */
 /* inode.c */
@@ -481,11 +485,11 @@ record_global_poke (void *ptr)
 
 /* This syncs a modification to a non-file block.  */
 EXT2FS_EI void
-sync_global_ptr (void *bptr, int wait)
+sync_global_ptr (void *ptr, int wait)
 {
-  block_t block = boffs_block (bptr_offs (bptr));
+  block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  ext2_debug ("(%p -> %u)", bptr, block);
+  ext2_debug ("(%p -> %u)", ptr, block);
   global_block_modified (block);
   disk_cache_block_deref (block_ptr);
   pager_sync_some (diskfs_disk_pager,

@@ -1202,6 +1202,8 @@ launch_something (const char *why)
 	  if (start_child (tries[try++], NULL) == 0)
 	    return;
 	}
+      else
+	try++;
     }
 
   crash_system ();
