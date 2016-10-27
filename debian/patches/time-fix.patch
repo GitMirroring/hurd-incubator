@@ -1,0 +1,24 @@
+commit 902f0a78b43c75bdb125a8f1c11a3fbf2595ce35
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Thu Oct 27 17:53:41 2016 +0200
+
+    libdiskfs: Fix timestamp update on file close
+    
+    * libdiskfs/node-nrele.c (diskfs_nrele): Call diskfs_set_node_times when
+    there are no hard refs any more, like diskfs_nput does.
+
+diff --git a/libdiskfs/node-nrele.c b/libdiskfs/node-nrele.c
+index a96d134..ed418a1 100644
+--- a/libdiskfs/node-nrele.c
++++ b/libdiskfs/node-nrele.c
+@@ -40,6 +40,10 @@ diskfs_nrele (struct node *np)
+     {
+       locked = TRUE;
+       pthread_mutex_lock (&np->lock);
++      /* This is our cue that something akin to "last process closes file"
++	 in the POSIX.1 sense happened, so make sure any pending node time
++	 updates now happen in a timely fashion.  */
++      diskfs_set_node_times (np);
+       diskfs_lost_hardrefs (np);
+       if (!np->dn_stat.st_nlink)
+ 	{
