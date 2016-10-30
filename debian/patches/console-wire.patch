@@ -1,0 +1,36 @@
+commit 81fb68fee81769d81c373e3af5a508d706b7e3d6
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Oct 30 20:58:55 2016 +0100
+
+    wire console display pages
+    
+    to work around improper handling of getting paged out.
+    
+    * console/display.c (user_create): Call vm_wire() on the created user data.
+
+diff --git a/console/display.c b/console/display.c
+index 98c70f5..ed5571e 100644
+--- a/console/display.c
++++ b/console/display.c
+@@ -814,6 +814,21 @@ user_create (display_t display, uint32_t width, uint32_t height,
+   user->cursor.status = CONS_CURSOR_NORMAL;
+   conchar_memset (user->_matrix, chr, attr,
+ 		  user->screen.width * user->screen.lines);
++
++  /* FIXME: it seems we don't properly handle getting paged out.
++   * For now, just wire the pages to work around the issue.  */
++  {
++    mach_port_t host;
++
++    error_t err = get_privileged_ports (&host, NULL);
++    if (err)
++      host = mach_host_self ();
++
++    vm_wire (host, mach_task_self (), (vm_offset_t) user,
++	     (vm_size_t) npages * vm_page_size, VM_PROT_READ);
++    if (host != mach_host_self ())
++	mach_port_deallocate (mach_task_self (), host);
++  }
+   return 0;
+ }
+ 
