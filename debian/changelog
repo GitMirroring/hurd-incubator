@@ -1,3 +1,9 @@
+hurd (1:0.8.git20161023-4) UNRELEASED; urgency=medium
+
+  * control: Make hurd-prof Priority: extra instead of required.
+
+ -- Samuel Thibault <sthibault@debian.org>  Mon, 31 Oct 2016 12:54:54 +0100
+
 hurd (1:0.8.git20161023-3) unstable; urgency=medium
 
   * patches/console-wire.patch: Fix console hang on console data paging out.
