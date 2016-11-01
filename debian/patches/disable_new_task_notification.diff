@@ -1,4 +1,6 @@
-Disable new task notification for now: it leaks a port
+Disable new task notification for now: it leaks a port:
+
+http://lists.gnu.org/archive/html/bug-hurd/2015-02/msg00043.html
 
 Index: hurd-debian/proc/main.c
 ===================================================================
