@@ -114,7 +114,7 @@ if [ -z "$MINIMAL" ]; then
 	st crash-kill '/hurd/crash --kill' crash-kill
 	st crash-suspend '/hurd/crash --suspend' crash-suspend
 	st crash-dump-core '/hurd/crash --dump-core' crash-dump-core
-	st crash '/hurd/symlink crash-kill' crash
+	st crash '/hurd/symlink crash-dump-core' crash
 fi
 
 echo .
