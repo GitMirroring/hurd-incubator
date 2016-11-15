@@ -22,20 +22,22 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <net/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <error.h>
+#include <hurd/ihash.h>
 
 #include <pthread.h>
 
 #include "vdev.h"
+#include "ethernet.h"
 #include "queue.h"
 #include "bpf_impl.h"
 #include "util.h"
 
-#define ETH_HLEN sizeof (struct ethhdr)
 
 static struct vether_device *dev_head;
 static int dev_num;
@@ -44,7 +46,7 @@ static int dev_num;
  * TODO every device structure should has its own lock to protect itself. */
 static pthread_mutex_t dev_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
-mach_msg_type_t header_type = 
+mach_msg_type_t header_type =
 {
   MACH_MSG_TYPE_BYTE,
   8,
@@ -55,7 +57,7 @@ mach_msg_type_t header_type =
   0
 };
 
-mach_msg_type_t packet_type = 
+mach_msg_type_t packet_type =
 {
   MACH_MSG_TYPE_BYTE,	/* name */
   8,			/* size */
@@ -105,7 +107,7 @@ foreach_dev_do (int (func) (struct vether_device *))
 }
 
 /* Remove all filters with the dead name. */
-int 
+int
 remove_dead_port_from_dev (mach_port_t dead_port)
 {
   struct vether_device *vdev;
@@ -123,10 +125,11 @@ remove_dead_port_from_dev (mach_port_t dead_port)
 
 /* Add a new virtual interface to the multiplexer. */
 struct vether_device *
-add_vdev (char *name, int size, 
+add_vdev (char *name, int size,
 	  struct port_class *class, struct port_bucket *bucket)
 {
   error_t err;
+  uint32_t hash;
   struct vether_device *vdev;
 
   if (size < sizeof (*vdev))
@@ -143,9 +146,13 @@ add_vdev (char *name, int size,
   vdev->if_header_format = HDR_ETHERNET;
   vdev->if_address_size = ETH_ALEN;
   vdev->if_flags = 0;
+
+  /* Compute a pseudo-random but stable ethernet address.  */
   vdev->if_address[0] = 0x52;
   vdev->if_address[1] = 0x54;
-  *(int *)(vdev->if_address + 2) = random ();
+  hash = hurd_ihash_hash32 (ether_address, ETH_ALEN, 0);
+  hash = hurd_ihash_hash32 (name, strlen (name), hash);
+  memcpy (&vdev->if_address[2], &hash, 4);
 
   queue_init (&vdev->port_list.if_rcv_port_list);
   queue_init (&vdev->port_list.if_snd_port_list);
@@ -191,7 +198,7 @@ has_vdev ()
 
 /* Broadcast the packet to all virtual interfaces
  * except the one the packet is from */
-int 
+int
 broadcast_pack (char *data, int datalen, struct vether_device *from_vdev)
 {
   int internal_deliver_pack (struct vether_device *vdev)
@@ -205,7 +212,7 @@ broadcast_pack (char *data, int datalen, struct vether_device *from_vdev)
 }
 
 /* Create a message, and deliver it. */
-int 
+int
 deliver_pack (char *data, int datalen, struct vether_device *vdev)
 {
   struct net_rcv_msg msg;
@@ -232,7 +239,7 @@ deliver_pack (char *data, int datalen, struct vether_device *vdev)
 }
 
 /* Broadcast the message to all virtual interfaces. */
-int 
+int
 broadcast_msg (struct net_rcv_msg *msg)
 {
   int rval = 0;
@@ -268,7 +275,7 @@ deliver_msg(struct net_rcv_msg *msg, struct vether_device *vdev)
   msg->msg_hdr.msgh_id = NET_RCV_MSG_ID;
 
   if_port_list = &vdev->port_list.if_rcv_port_list;
-  FILTER_ITERATE (if_port_list, infp, nextfp, &infp->input) 
+  FILTER_ITERATE (if_port_list, infp, nextfp, &infp->input)
     {
       mach_port_t dest;
       net_hash_entry_t entp, *hash_headp;
@@ -284,7 +291,7 @@ deliver_msg(struct net_rcv_msg *msg, struct vether_device *vdev)
       else
 	dest = entp->rcv_port;
 
-      if (ret_count) 
+      if (ret_count)
 	{
 	  debug ("before delivering the packet\n");
 	  msg->msg_hdr.msgh_remote_port = dest;
@@ -297,7 +304,6 @@ deliver_msg(struct net_rcv_msg *msg, struct vether_device *vdev)
 	      mach_port_deallocate(mach_task_self (),
 				   ((mach_msg_header_t *)msg)->msgh_remote_port);
 	      error (0, err, "mach_msg");
-	      return -1;
 	    }
 	  debug ("after delivering the packet\n");
 	}

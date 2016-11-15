@@ -1,5 +1,6 @@
-hurd (1:0.8.git20161023-4) UNRELEASED; urgency=medium
+hurd (1:0.8.git20161115-1) UNRELEASED; urgency=medium
 
+  * New upstream snapshot.
   * control: Make hurd-prof Priority: extra instead of required.
   * local/setup-translators: Default crash server to dumping core.
 

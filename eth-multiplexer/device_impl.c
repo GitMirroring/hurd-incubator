@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 2008 Free Software Foundation, Inc.
    Written by Zheng Da.
 
@@ -47,7 +47,7 @@ extern struct port_info *notify_pi;
 kern_return_t
 ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 		mach_msg_type_name_t reply_portPoly,
-		dev_mode_t mode, dev_name_t name, mach_port_t *device, 
+		dev_mode_t mode, dev_name_t name, mach_port_t *device,
 	 	mach_msg_type_name_t *devicetype)
 {
   struct vether_device *dev;
@@ -178,16 +178,10 @@ kern_return_t
 ds_device_get_status (struct vether_device *vdev, dev_flavor_t flavor,
 		      dev_status_t status, size_t *statuslen)
 {
-  extern io_return_t dev_getstat (struct vether_device *, dev_flavor_t,
-				  dev_status_t, natural_t *);
-  kern_return_t ret = 0;
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
-  if(ether_port != MACH_PORT_NULL)
-    ret = device_get_status (ether_port, flavor, status, statuslen);
-  else 
-    ret = dev_getstat (vdev, flavor, status, statuslen);
-  return ret;
+
+  return dev_getstat (vdev, flavor, status, statuslen);
 }
 
 kern_return_t
@@ -198,9 +192,9 @@ ds_device_set_filter (struct vether_device *vdev, mach_port_t receive_port,
   kern_return_t err;
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
-  err = mach_port_request_notification (mach_task_self (), receive_port, 
+  err = mach_port_request_notification (mach_task_self (), receive_port,
 					MACH_NOTIFY_DEAD_NAME, 0,
-					ports_get_right (notify_pi), 
+					ports_get_right (notify_pi),
 					MACH_MSG_TYPE_MAKE_SEND_ONCE, &tmp);
   if (err != KERN_SUCCESS)
     goto out;

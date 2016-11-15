@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 2008 Free Software Foundation, Inc.
    Written by Zheng Da.
 
@@ -58,7 +58,7 @@
 
 #define ETH_ALEN 6		/* Octets in one ethernet addr	 */
 
-struct ethhdr 
+struct ethhdr
 {
   unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
   unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
@@ -75,13 +75,13 @@ print_pack (char *packet, int len)
   char src_str[INET_ADDRSTRLEN];
   char dst_str[INET_ADDRSTRLEN];
   if (ntohs (ethh->h_proto) == ETH_P_IP
-      && len >= sizeof (struct ethhdr) + sizeof (struct iphdr)) 
+      && len >= sizeof (struct ethhdr) + sizeof (struct iphdr))
     {
       debug ("multiplexer: get a IP packet from %s to %s\n",
 	     inet_ntop (AF_INET, &iph->saddr, src_str, INET_ADDRSTRLEN),
 	     inet_ntop (AF_INET, &iph->daddr, dst_str, INET_ADDRSTRLEN));
     }
-  else 
+  else
     {
       debug ("multiplexer: get a non-IP packet\n");
     }

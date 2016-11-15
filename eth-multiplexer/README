@@ -1,6 +1,6 @@
 [Introduction]
 
-eth-multiplexer is a network multiplexer. It creates virtual ethernet interface and dispatches the packet to the right user program that opens its virtual interface. It also works as a bridge to connect the real ethernet interface and the virtual ones. 
+eth-multiplexer is a network multiplexer. It creates virtual ethernet interface and dispatches the packet to the right user program that opens its virtual interface. It also works as a bridge to connect the real ethernet interface and the virtual ones.
 
 
 [Usage]
