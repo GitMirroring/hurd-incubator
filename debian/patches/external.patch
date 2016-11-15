@@ -2,12 +2,10 @@ Include DDE in the build
 
 --- a/Makefile
 +++ b/Makefile
-@@ -28,7 +28,15 @@ include ./Makeconf
- lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
- 	      libpager libfshelp libdiskfs libtrivfs libps \
+@@ -28,6 +28,14 @@ include ./Makeconf
  	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
--	      libhurd-slab
-+	      libhurd-slab libbpf eth-multiplexer
+ 	      libhurd-slab \
+ 	      libbpf \
 +
 +ifneq ($(LIBPCIACCESS),no)
 +lib-subdirs += libmachdev libddekit

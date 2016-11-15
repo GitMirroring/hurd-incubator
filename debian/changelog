@@ -1,6 +1,7 @@
 hurd (1:0.8.git20161115-1) UNRELEASED; urgency=medium
 
   * New upstream snapshot.
+    - patches/{console-wire.patch,time-fix.patch}: Drop, merged upstream.
   * control: Make hurd-prof Priority: extra instead of required.
   * local/setup-translators: Default crash server to dumping core.
 

@@ -29,5 +29,3 @@ using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
 exec_filename_rpctrace.patch
-time-fix.patch
-console-wire.patch
