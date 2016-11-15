@@ -52,7 +52,7 @@
 2008-12-12  Zheng Da  <zhengda1936@gmail.com>
 
 	* multiplexer.c (main): Initialize the file status of the root node.
-	
+
 	* netfs_impl.c (netfs_validate_stat): Set the file status of the node
 					      with the one in the light node.
 
@@ -71,7 +71,7 @@
 	(remove_dead_port_from_dev): Use lock.
 	(broadcast_pack, broadcast_msg): Use foreach_dev_do.
 
-	* vdev.h (dev_num): Remove declaration. 
+	* vdev.h (dev_num): Remove declaration.
 	(get_dev_num): Add declaration.
 
 2008-11-13  Zheng Da  <zhengda1936@gmail.com>
@@ -100,7 +100,7 @@
 	(SRCS): Add new C files.
 	(LCLHDRS): Add new H files.
 	(HURDLIBS): Change libraries.
-	
+
 	* demuxer.c: New file.
 
 	* device_impl.c: New file.
@@ -128,7 +128,7 @@
 	* README: Update.
 
 	* bpf_impl.c (destroy_filters): New function.
-	
+
 	* multiplexer.c (nb_dev): Deleted.
 	(options): Remove the option '-v'.
 	(do_mach_notify_no_senders): Remove all port_info in the same way.
@@ -140,13 +140,13 @@
 	(main): Remove the code of creating virtual devices.
 
 	* util.h (ETH_P_IP): New macro.
-	
+
 	* vdev.c (all_dev_close): Deleted.
 	(add_vdev): Link virtual device.
 	(destroy_vdev): New function.
 
 	* vdev.h (vether_device): Changed.
-	
+
 
 2008-10-03  Zheng Da  <zhengda1936@gmail.com>
 
@@ -274,10 +274,10 @@
 
 	* multiplexer.c (options): Change the meaning of '-v' option.
 	(parse_opt): Change the way of handling '-v' option.
-	
+
 	* vdev.c (has_vdev): New function.
 
-	* vdev.h (has_vdev): New declaration. 
+	* vdev.h (has_vdev): New declaration.
 
 2008-8-17 Zheng Da <zhengda1936@gmail.com>
 
@@ -306,7 +306,7 @@
 
 	* vdev.c (all_dev_close): Change the way of testing if all devices are
 	closed.
-	
+
 	* vdev.h (vether_device): Replace count field with used.
 
 2008-8-13 Zheng Da <zhengda1936@gmail.com>

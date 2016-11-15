@@ -29,7 +29,8 @@ include ./Makeconf
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libpager libfshelp libdiskfs libtrivfs libps \
 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
-	      libhurd-slab
+	      libhurd-slab \
+	      libbpf \
 
 # Hurd programs
 prog-subdirs = auth proc exec term \
@@ -44,6 +45,7 @@ prog-subdirs = auth proc exec term \
 	       startup \
 	       init \
 	       devnode \
+	       eth-multiplexer \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

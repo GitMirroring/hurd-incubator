@@ -23,8 +23,10 @@ SRCS= bpf_impl.c queue.c
 LCLHDRS = bpf_impl.h queue.h
 installhdrs = bpf_impl.h queue.h
 
-MIGSTUBS = 
+MIGSTUBS =
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
+
+LDLIBS = -lpthread
 
 MIGCOMSFLAGS =
 

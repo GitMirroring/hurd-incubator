@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 2008 Free Software Foundation, Inc.
    Written by Zheng Da.
 
@@ -146,7 +146,7 @@ main (int argc, char *argv[])
     }
 
   /* Prepare for the notification. */
-  err = ports_create_port (other_portclass, port_bucket, 
+  err = ports_create_port (other_portclass, port_bucket,
 			   sizeof (struct port_info), &notify_pi);
   if (err)
     error (1, err, "ports_create_port for notification");
@@ -172,7 +172,7 @@ main (int argc, char *argv[])
     error (5, err, "Cannot create root node");
 
   err = io_stat (root_file, &underlying_node_stat);
-  if (err) 
+  if (err)
     error (6, err, "Cannot stat underlying node");
 
   struct stat stat = underlying_node_stat;

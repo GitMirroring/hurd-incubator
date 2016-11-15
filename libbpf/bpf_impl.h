@@ -1,25 +1,25 @@
- /* 
+ /*
   * Mach Operating System
   * Copyright (c) 1993-1989 Carnegie Mellon University
   * All Rights Reserved.
-  * 
+  *
   * Permission to use, copy, modify and distribute this software and its
   * documentation is hereby granted, provided that both the copyright
   * notice and this permission notice appear in all copies of the
   * software, derivative works or modified versions, and any portions
   * thereof, and that both notices appear in supporting documentation.
-  * 
+  *
   * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
   * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
   * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
-  * 
+  *
   * Carnegie Mellon requests users of this software to return to
-  * 
+  *
   *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
   *  School of Computer Science
   *  Carnegie Mellon University
   *  Pittsburgh PA 15213-3890
-  * 
+  *
   * any improvements or extensions that they make and grant Carnegie Mellon
   * the rights to redistribute these changes.
   */
@@ -29,8 +29,8 @@
  *
  *	Network IO.
  *
- *	Packet filter code taken from vaxif/enet.c written		 
- *		CMU and Stanford. 
+ *	Packet filter code taken from vaxif/enet.c written
+ *		CMU and Stanford.
  */
 
 /* the code copied from device/net_io.c in Mach */
@@ -125,7 +125,7 @@ typedef struct net_hash_entry *net_hash_entry_t;
  * This structure represents a packet filter with multiple sessions.
  *
  * For example, all application level TCP sessions might be
- * represented by one of these structures.  It looks like a 
+ * represented by one of these structures.  It looks like a
  * net_rcv_port struct so that both types can live on the
  * same packet filter queues.
  */
@@ -138,7 +138,7 @@ struct net_hash_header {
 
 typedef struct net_hash_header *net_hash_header_t;
 
-int bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen, 
+int bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen,
 		char *header, unsigned int hlen, net_hash_entry_t **hash_headpp,
 		net_hash_entry_t *entpp);
 io_return_t net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port,
@@ -154,7 +154,7 @@ int hash_ent_remove (if_filter_list_t *ifp, net_hash_header_t hp, int used,
 		net_hash_entry_t *head, net_hash_entry_t entp, queue_entry_t *dead_p);
 void net_free_dead_infp (queue_entry_t dead_infp);
 void net_free_dead_entp (queue_entry_t dead_entp);
-void remove_dead_filter (if_filter_list_t *ifp, 
+void remove_dead_filter (if_filter_list_t *ifp,
 		queue_head_t *if_port_list, mach_port_t dead_port);
 void destroy_filters (if_filter_list_t *ifp);
 

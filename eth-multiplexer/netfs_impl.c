@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 2008, 2009 Free Software Foundation, Inc.
    Written by Zheng Da.
 
@@ -45,7 +45,7 @@
 
 extern struct stat underlying_node_stat;
 
-int 
+int
 is_num (char *str)
 {
   for (; *str; str++)
@@ -164,12 +164,12 @@ error_t
 netfs_validate_stat (struct node *node, struct iouser *cred)
 {
   struct stat st;
-  
+
   if (node->nn->ln)
     st = node->nn->ln->st;
   else
     st = underlying_node_stat;
-  
+
   debug("node: %p", node);
   node->nn_translated = S_ISLNK (st.st_mode) ? S_IFLNK : 0;
   node->nn_stat = st;

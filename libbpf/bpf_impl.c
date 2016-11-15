@@ -1,25 +1,25 @@
- /* 
+ /*
   * Mach Operating System
   * Copyright (c) 1993-1989 Carnegie Mellon University
   * All Rights Reserved.
-  * 
+  *
   * Permission to use, copy, modify and distribute this software and its
   * documentation is hereby granted, provided that both the copyright
   * notice and this permission notice appear in all copies of the
   * software, derivative works or modified versions, and any portions
   * thereof, and that both notices appear in supporting documentation.
-  * 
+  *
   * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
   * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
   * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
-  * 
+  *
   * Carnegie Mellon requests users of this software to return to
-  * 
+  *
   *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
   *  School of Computer Science
   *  Carnegie Mellon University
   *  Pittsburgh PA 15213-3890
-  * 
+  *
   * any improvements or extensions that they make and grant Carnegie Mellon
   * the rights to redistribute these changes.
   */
@@ -29,8 +29,8 @@
  *
  *	Network IO.
  *
- *	Packet filter code taken from vaxif/enet.c written		 
- *		CMU and Stanford. 
+ *	Packet filter code taken from vaxif/enet.c written
+ *		CMU and Stanford.
  */
 
 /* the code copied from device/net_io.c in Mach */
@@ -58,7 +58,7 @@ static struct net_hash_header filter_hash_header[N_NET_HASH];
  */
 
 int
-bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen, 
+bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen,
 		char *header, unsigned int hlen, net_hash_entry_t **hash_headpp,
 		net_hash_entry_t *entpp)
 {
@@ -340,9 +340,9 @@ load_byte:
  * instruction. Return 2 if it is a valid filter program with a MATCH
  * instruction. Otherwise, return 0.
  * The constraints are that each jump be forward and to a valid
- * code.  The code must terminate with either an accept or reject. 
+ * code.  The code must terminate with either an accept or reject.
  * 'valid' is an array for use by the routine (it must be at least
- * 'len' bytes long).  
+ * 'len' bytes long).
  *
  * The kernel needs to be able to verify an application's filter code.
  * Otherwise, a bogus program could easily crash the system.
@@ -362,7 +362,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 
 	for (i = 1; i < len; ++i) {
 		/*
-		 * Check that that jumps are forward, and within 
+		 * Check that that jumps are forward, and within
 		 * the code block.
 		 */
 		p = &f[i];
@@ -380,7 +380,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 		 * Check that memory operations use valid addresses.
 		 */
 		if ((BPF_CLASS(p->code) == BPF_ST ||
-					(BPF_CLASS(p->code) == BPF_LD && 
+					(BPF_CLASS(p->code) == BPF_LD &&
 					 (p->code & 0xe0) == BPF_MEM)) &&
 				(p->k >= BPF_MEMWORDS || p->k < 0)) {
 			return 0;
@@ -534,7 +534,7 @@ net_free_dead_infp (queue_entry_t dead_infp)
 		mach_port_deallocate(mach_task_self(), infp->rcv_port);
 		free(infp);
 		debug ("a dead infp is freed\n");
-	}	    
+	}
 }
 
 /*
@@ -657,7 +657,7 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 					do {
 						nextentp = (net_hash_entry_t) entp->he_next;
 
-						/* checked without 
+						/* checked without
 						   ip_lock(entp->rcv_port) */
 						if (entp->rcv_port == rcv_port) {
 							ret = hash_ent_remove (ifp,
@@ -825,7 +825,7 @@ remove_dead_filter (if_filter_list_t *ifp, queue_head_t *if_port_list,
 				do {
 					nextentp = (net_hash_entry_t) entp->he_next;
 
-					/* checked without 
+					/* checked without
 					   ip_lock(entp->rcv_port) */
 					if (entp->rcv_port == dead_port) {
 						ret = hash_ent_remove (ifp,
