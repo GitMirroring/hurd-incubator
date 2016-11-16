@@ -17,6 +17,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
 # 02111-1307 USA.
 
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all,-pie
+
 DEB_DESTDIR = $(CURDIR)/debian/tmp
 DEB_DESTDIR_UDEB = $(CURDIR)/debian/tmp-udeb
 DEB_DESTDIR_PROF = $(CURDIR)/debian/tmp-prof

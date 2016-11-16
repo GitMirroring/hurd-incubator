@@ -4,6 +4,7 @@ hurd (1:0.8.git20161115-1) unstable; urgency=medium
     - patches/{console-wire.patch,time-fix.patch}: Drop, merged upstream.
   * control: Make hurd-prof Priority: extra instead of required.
   * local/setup-translators: Default crash server to dumping core.
+  * rules: Disable pie hardening.
 
  -- Samuel Thibault <sthibault@debian.org>  Tue, 15 Nov 2016 20:15:29 +0000
 
