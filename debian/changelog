@@ -4,7 +4,7 @@ hurd (1:0.8.git20161120-1) unstable; urgency=medium
   * Bump gnumach-dev build dependency.
   * disable_new_task_notification.diff: Drop, port leak is fixed.
 
- -- Samuel Thibault <sthibault@debian.org>  Sun, 20 Nov 2016 20:39:59 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 20 Nov 2016 21:48:56 +0000
 
 hurd (1:0.8.git20161115-1) unstable; urgency=medium
 
