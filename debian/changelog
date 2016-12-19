@@ -1,4 +1,4 @@
-hurd (1:0.9.git20161219-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20161219-1) unstable; urgency=medium
 
   [ Samuel Thibault ]
   * New upstream release.
@@ -6,7 +6,7 @@ hurd (1:0.9.git20161219-1) UNRELEASED; urgency=medium
   [ Svante Signell ]
   * Make hurd Depend on sysv-rc | openrc instead of just sysv-rc.
 
- -- Samuel Thibault <sthibault@debian.org>  Mon, 21 Nov 2016 17:17:53 +0100
+ -- Samuel Thibault <sthibault@debian.org>  Mon, 19 Dec 2016 15:51:26 +0000
 
 hurd (1:0.8.git20161120-1) unstable; urgency=medium
 
