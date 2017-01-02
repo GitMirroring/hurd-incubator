@@ -79,7 +79,9 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
     if (*np != dir)
       pthread_mutex_lock (&(*np)->lock);
 
-    debug (("Node %s: %i references", name, refcount_references(&(*np)->refcounts)));
+    debug (("Node %s: %i hard references", name,
+	   refcounts_hard_references(&(*np)->refcounts),
+	   refcounts_weak_references(&(*np)->refcounts)));
     netfs_nref (*np);
   }
 
@@ -642,7 +644,9 @@ netfs_attempt_unlink (struct iouser *user, struct node *dir,
     {
       pthread_mutex_lock (&node->lock);
 
-      debug (("Node %s: %i references", name, refcount_references(&node->refcounts)));
+      debug (("Node %s: %i hard references", name,
+	     refcounts_hard_references(&node->refcounts),
+	     refcounts_weak_references(&node->refcounts)));
       err = fshelp_isowner (&node->nn_stat, user);
 
       if (!err)
@@ -757,7 +761,9 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
     /* Lock the new node and add a reference to it on success.  */
     if (!err && *np)
     {
-      debug (("Node %s: %i references", name, refcount_references(&(*np)->refcounts)));
+      debug (("Node %s: %i hard references", name,
+	     refcounts_hard_references(&(*np)->refcounts),
+	     refcounts_weak_references(&(*np)->refcounts)));
       pthread_mutex_lock (&(*np)->lock);
       netfs_nref (*np);
     }
