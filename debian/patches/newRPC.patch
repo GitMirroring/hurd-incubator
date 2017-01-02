@@ -1,19 +1,25 @@
 Just a build fix.
 
-# missing mach_notify_new_task RPCs
+# missing vm_wire_all RPCs
 
-To be removed with glibc 2.21
+To be removed with glibc 2.24-9
 
-Index: hurd-debian/proc/Makefile
-===================================================================
---- hurd-debian.orig/proc/Makefile
-+++ hurd-debian/proc/Makefile
-@@ -28,7 +28,7 @@ MIGSFLAGS = -imacros $(srcdir)/mig-mutat
+diff --git a/mach-defpager/Makefile b/mach-defpager/Makefile
+index 3b8ce58e0..3cb506a27 100644
+--- a/mach-defpager/Makefile
++++ b/mach-defpager/Makefile
+@@ -23,11 +23,13 @@ dir	:= mach-defpager
+ makemode:= server
+ target	:= mach-defpager
  
- MIGSTUBS = processServer.o notifyServer.o \
- 	ourmsgUser.o proc_excUser.o proc_excServer.o \
--	task_notifyServer.o
-+	task_notifyServer.o task_notifyUser.o
- OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
- HURDLIBS = ihash ports shouldbeinlibc
- LDLIBS = -lpthread
++MIGSTUBS = gnumachUser.o
++
+ SRCS	:= default_pager.c kalloc.c wiring.c main.c setup.c
+ OBJS 	:= $(SRCS:.c=.o) \
+ 	   $(addsuffix Server.o,\
+ 		       memory_object default_pager memory_object_default exc) \
+-	   default_pager_replyUser.o
++	   default_pager_replyUser.o $(MIGSTUBS)
+ 
+ HURDLIBS:= ihash
+ LDLIBS:= -lpthread
