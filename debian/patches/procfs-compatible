@@ -4,8 +4,8 @@ Index: hurd-debian/procfs/main.c
 ===================================================================
 --- hurd-debian.orig/procfs/main.c
 +++ hurd-debian/procfs/main.c
-@@ -318,6 +318,9 @@ int main (int argc, char **argv)
-   opt_fake_self = OPT_FAKE_SELF;
+@@ -294,6 +294,9 @@ int main (int argc, char **argv)
+   opt_stat_mode = OPT_STAT_MODE;
    opt_kernel_pid = OPT_KERNEL_PID;
    opt_anon_owner = OPT_ANON_OWNER;
 +
