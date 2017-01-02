@@ -431,16 +431,14 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	  {
 	    err = 0; /* hey, we got it! */
 
-	    spin_lock(&netfs_node_refcnt_lock);
 	    /* pthread_rwlock_rdlock(&nn->lock);
 	     * we don't have to lock nn->lock since it's ref cannot become
-	     * invalid as we hold netfs_node_refcnt_lock
+	     * invalid
 	     */
 
 	    if((*node = nn->node))
-	      (*node)->references ++;
+	      netfs_nref (*node);
 
-	    spin_unlock(&netfs_node_refcnt_lock);
 	    /* pthread_rwlock_unlock(&nn->lock); */
 
 	    if(! *node)
