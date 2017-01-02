@@ -1071,11 +1071,12 @@ void
 netfs_node_norefs (struct node *np)
 {
   struct node *dir = np->nn->dir;
+  struct references result;
 
   node_uninstall (np);
   node_destroy (np);
   if (np->nn->flags & PROTOCOL_NODE)
-    dir->references--;
+    refcounts_demote (&dir->refcounts, &result);
 }
 
 
