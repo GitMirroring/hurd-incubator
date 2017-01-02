@@ -3,7 +3,8 @@ hurd (1:0.9.git20170102-1) UNRELEASED; urgency=medium
   * New upstream snapshot.
     - patches/procfs: New patch to revert /proc/self being magic for now since
     glibc is not ready yet.
-    - control: Break old gnumachs, which do not have vm_wire_all.
+    - control: Break old gnumachs, which do not have vm_wire_all, build-depend
+    on newers.
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 02 Jan 2017 17:37:25 +0000
 
