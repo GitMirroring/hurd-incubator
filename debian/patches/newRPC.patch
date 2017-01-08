@@ -23,3 +23,29 @@ index 3b8ce58e0..3cb506a27 100644
  
  HURDLIBS:= ihash
  LDLIBS:= -lpthread
+Index: hurd-debian/exec/Makefile
+===================================================================
+--- hurd-debian.orig/exec/Makefile
++++ hurd-debian/exec/Makefile
+@@ -22,7 +22,7 @@ makemode := server
+ 
+ SRCS = exec.c main.c hashexec.c hostarch.c
+ OBJS = main.o hostarch.o exec.o hashexec.o \
+-       execServer.o exec_startupServer.o exec_experimentalServer.o
++       execServer.o exec_startupServer.o exec_experimentalServer.o processUser.o
+ 
+ target = exec exec.static
+ HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
+Index: hurd-debian/libps/Makefile
+===================================================================
+--- hurd-debian.orig/libps/Makefile
++++ hurd-debian/libps/Makefile
+@@ -29,7 +29,7 @@ installhdrs = ps.h
+ installhdrsubdir = .
+ 
+ HURDLIBS=ihash shouldbeinlibc
+-OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
++OBJS = $(SRCS:.c=.o) msgUser.o termUser.o processUser.o
+ 
+ msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
+ term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_

@@ -29,4 +29,4 @@ netdde_log.patch
 libports-iterate-refcount.patch
 exec_filename_rpctrace.patch
 procfs
-#exec_set_exe.patch
+exec_set_exe.patch

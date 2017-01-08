@@ -1,17 +1,28 @@
-Index: hurd-debian/exec/exec.c
-===================================================================
---- hurd-debian.orig/exec/exec.c
-+++ hurd-debian/exec/exec.c
-@@ -1312,6 +1312,9 @@ do_exec (file_t file,
-       if (e.error)
- 	goto out;
- 
-+      if (filename)
-+	proc_set_exe (boot->portarray[INIT_PORT_PROC], filename);
-+
-       set_name (newtask, argv, pid);
-     }
-   else
+Implement /proc/<pid>/exe by adding proc_set/get_exe to the proc server, making
+exec call proc_set_exe, and libps call proc_get_exe. procfs can then just
+retrieve the information to make the "exe" symlink.
+
+* hurd/process.defs (proc_set_exe, proc_get_exe): New RPCs.
+* hurd/process_request.defs: Likewise.
+* hurd/process_reply.defs: Add skips for proc_set_exe and proc_get_exe RPCs.
+* proc/proc.h (struct proc): Add `exe' field.
+* proc/info.c (S_proc_set_exe, S_proc_get_exe): New functions.
+* proc/mgt.c (process_has_exited): Free p->exe.
+* exec/exec.c (do_exec): Call proc_set_exe when a filename is available.
+* libps/ps.h (struct proc_stat): Add `exe_vm_alloced', `exe', and `exe_len'
+field.
+(PSTAT_EXE): New macro.
+(PSTAT_USER_BASE): Change value to make room.
+(proc_stat_exe, proc_stat_exe_len): New macros.
+* libps/procstat.c (proc_stat_set_flags): Handle PSTAT_EXE case by calling
+proc_get_exe.
+* libps/spec.c (ps_get_exe): New function.
+(ps_exe_getter): New structure.
+(ps_fmt_spec): Add "Exe" specification.
+* procfs/process.c (process_file_symlink_make_node, process_file_gc_exe): New
+functions.
+(procfs_dir_entry): Add "exe" entry.
+
 Index: hurd-debian/hurd/process.defs
 ===================================================================
 --- hurd-debian.orig/hurd/process.defs
@@ -30,12 +41,53 @@ Index: hurd-debian/hurd/process.defs
 +routine proc_get_exe (
 +	process: process_t;
 +	which: pid_t;
-+	out path: data_t, dealloc);
++	out path: string_t);
+Index: hurd-debian/hurd/process_request.defs
+===================================================================
+--- hurd-debian.orig/hurd/process_request.defs
++++ hurd-debian/hurd/process_request.defs
+@@ -417,3 +417,6 @@ simpleroutine proc_make_task_namespace_r
+ 	process: process_t;
+ 	ureplyport reply: reply_port_t;
+ 	notify: mach_port_send_t);
++
++skip; /* proc_set_exe  */
++skip; /* proc_get_exe  */
+Index: hurd-debian/hurd/process_reply.defs
+===================================================================
+--- hurd-debian.orig/hurd/process_reply.defs
++++ hurd-debian/hurd/process_reply.defs
+@@ -194,3 +194,5 @@ simpleroutine proc_get_code_reply (
+ 	end_code: vm_address_t);
+ 
+ skip; /* proc_make_task_namespace  */
++skip; /* proc_set_exe  */
++skip; /* proc_get_exe  */
+Index: hurd-debian/proc/proc.h
+===================================================================
+--- hurd-debian.orig/proc/proc.h
++++ hurd-debian/proc/proc.h
+@@ -68,6 +68,7 @@ struct proc
+   pthread_cond_t p_wakeup;
+ 
+   /* Miscellaneous information */
++  char *exe;			/* path to binary executable */
+   vm_address_t p_argv, p_envp;
+   vm_address_t start_code;	/* all executable segments are in this range */
+   vm_address_t end_code;
 Index: hurd-debian/proc/info.c
 ===================================================================
 --- hurd-debian.orig/proc/info.c
 +++ hurd-debian/proc/info.c
-@@ -799,3 +799,46 @@ S_proc_getnports (struct proc *callerp,
+@@ -24,6 +24,7 @@
+ #include <sys/mman.h>
+ #include <hurd/hurd_types.h>
+ #include <stdlib.h>
++#include <stdio.h>
+ #include <errno.h>
+ #include <string.h>
+ #include <sys/resource.h>
+@@ -799,3 +800,43 @@ S_proc_getnports (struct proc *callerp,
  
    return err;
  }
@@ -63,8 +115,7 @@ Index: hurd-debian/proc/info.c
 +kern_return_t
 +S_proc_get_exe (struct proc *callerp,
 +		pid_t pid,
-+		char **path,
-+		size_t *pathlen)
++		char *path)
 +{
 +  struct proc *p = pid_find (pid);
 +
@@ -72,28 +123,145 @@ Index: hurd-debian/proc/info.c
 +
 +  if (!p)
 +    return ESRCH;
-+  if (!*pathlen)
-+    return 0;
 +
 +  if (p->exe)
-+    snprintf (*path, *pathlen, "%s", p->exe);
++    snprintf (path, 1024 /* XXX */, "%s", p->exe);
 +  else
-+    **path = 0;
++    path[0] = 0;
 +  return 0;
 +}
 +
-Index: hurd-debian/proc/proc.h
+Index: hurd-debian/proc/mgt.c
 ===================================================================
---- hurd-debian.orig/proc/proc.h
-+++ hurd-debian/proc/proc.h
-@@ -68,6 +68,7 @@ struct proc
-   pthread_cond_t p_wakeup;
+--- hurd-debian.orig/proc/mgt.c
++++ hurd-debian/proc/mgt.c
+@@ -770,6 +770,8 @@ process_has_exited (struct proc *p)
  
-   /* Miscellaneous information */
-+  char *exe;			/* path to binary executable */
-   vm_address_t p_argv, p_envp;
-   vm_address_t start_code;	/* all executable segments are in this range */
-   vm_address_t end_code;
+   if (!--p->p_login->l_refcnt)
+     free (p->p_login);
++  free (p->exe);
++  p->exe = NULL;
+ 
+   ids_rele (p->p_id);
+ 
+Index: hurd-debian/exec/exec.c
+===================================================================
+--- hurd-debian.orig/exec/exec.c
++++ hurd-debian/exec/exec.c
+@@ -1312,6 +1312,9 @@ do_exec (file_t file,
+       if (e.error)
+ 	goto out;
+ 
++      if (filename)
++	proc_set_exe (boot->portarray[INIT_PORT_PROC], filename);
++
+       set_name (newtask, argv, pid);
+     }
+   else
+Index: hurd-debian/libps/ps.h
+===================================================================
+--- hurd-debian.orig/libps/ps.h
++++ hurd-debian/libps/ps.h
+@@ -272,6 +272,7 @@ struct proc_stat
+   unsigned thread_waits_vm_alloced : 1;
+   unsigned args_vm_alloced : 1;
+   unsigned env_vm_alloced : 1;
++  unsigned exe_vm_alloced : 1;
+ 
+   /* Various libc ports:  */
+ 
+@@ -305,6 +306,11 @@ struct proc_stat
+   size_t env_len;
+ 
+   unsigned num_ports;
++
++  /* The path to process's binary executable.  */
++  char *exe;
++  /* The length of EXE.  */
++  size_t exe_len;
+ };
+ 
+ /* Proc_stat flag bits; each bit is set in the FLAGS field if that
+@@ -344,12 +350,13 @@ struct proc_stat
+ #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
+ #define PSTAT_NUM_PORTS      0x4000000 /* Number of Mach ports in the task */
+ #define PSTAT_TIMES          0x8000000 /* Task/thread user and system times */
++#define PSTAT_EXE           0x10000000 /* Path to binary executable */
+ 
+ /* Flag bits that don't correspond precisely to any field.  */
+ #define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
+ 
+ /* Bits from PSTAT_USER_BASE on up are available for user-use.  */
+-#define PSTAT_USER_BASE      0x10000000
++#define PSTAT_USER_BASE      0x20000000
+ #define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
+ 
+ /* If the PSTAT_STATE flag is set, then the proc_stats state field holds a
+@@ -448,6 +455,8 @@ extern char *proc_stat_state_tags;
+ #define proc_stat_tty(ps) ((ps)->tty)
+ #define proc_stat_task_events_info(ps) ((ps)->task_events_info)
+ #define proc_stat_num_ports(ps) ((ps)->num_ports)
++#define proc_stat_exe(ps) ((ps)->exe)
++#define proc_stat_exe_len(ps) ((ps)->exe_len)
+ #define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
+ 
+ /* True if PS refers to a thread and not a process.  */
+Index: hurd-debian/libps/procstat.c
+===================================================================
+--- hurd-debian.orig/libps/procstat.c
++++ hurd-debian/libps/procstat.c
+@@ -956,6 +956,23 @@ proc_stat_set_flags (struct proc_stat *p
+ 	}
+     }
+ 
++  /* The process's path to binary executable */
++  if (NEED (PSTAT_EXE, PSTAT_PID))
++    {
++      ps->exe = malloc (sizeof(string_t));
++      if (ps->exe)
++	{
++	  if (proc_get_exe (server, ps->pid, ps->exe))
++	    free (ps->exe);
++	  else
++	    {
++	      ps->exe_len = strlen(ps->exe);
++	      have |= PSTAT_EXE;
++	      ps->exe_vm_alloced = 0;
++	    }
++	}
++    }
++
+   /* The ctty id port; note that this is just a magic cookie;
+      we use it to fetch a port to the actual terminal -- it's not useful for
+      much else.  */
+Index: hurd-debian/libps/spec.c
+===================================================================
+--- hurd-debian.orig/libps/spec.c
++++ hurd-debian/libps/spec.c
+@@ -357,6 +357,14 @@ ps_get_num_ports (struct proc_stat *ps)
+ const struct ps_getter ps_num_ports_getter =
+ {"num_ports", PSTAT_NUM_PORTS, (vf) ps_get_num_ports};
+ 
++static void
++ps_get_exe (struct proc_stat *ps, char **exe_p, int *exe_len_p)
++{
++  *exe_p = proc_stat_exe (ps);
++  *exe_len_p = proc_stat_exe_len (ps);
++}
++const struct ps_getter ps_exe_getter =
++{"exe", PSTAT_EXE, ps_get_exe};
+ /* ---------------------------------------------------------------- */
+ /* some printing functions */
+ 
+@@ -1165,6 +1173,8 @@ static const struct ps_fmt_spec specs[]
+    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+   {"Ports",	0,	-5, -1, 0,
+    &ps_num_ports_getter,       ps_emit_int,	    ps_cmp_ints,   0},
++  {"Exe",	0,	 0, -1, 0,
++   &ps_exe_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
+   {0}
+ };
+ 
 Index: hurd-debian/procfs/process.c
 ===================================================================
 --- hurd-debian.orig/procfs/process.c
@@ -145,171 +313,3 @@ Index: hurd-debian/procfs/process.c
      .name = "cmdline",
      .hook = & (struct process_file_desc) {
        .get_contents = process_file_gc_cmdline,
-Index: hurd-debian/libps/procstat.c
-===================================================================
---- hurd-debian.orig/libps/procstat.c
-+++ hurd-debian/libps/procstat.c
-@@ -956,6 +956,27 @@ proc_stat_set_flags (struct proc_stat *p
- 	}
-     }
- 
-+  /* The process's path to binary executable */
-+  if (NEED (PSTAT_EXE, PSTAT_PID))
-+    {
-+      char *buf = malloc (100);
-+      ps->exe_len = 100;
-+      ps->exe = buf;
-+      if (ps->exe)
-+	{
-+	  error_t err;
-+	  if (err = proc_get_exe (server, ps->pid, &ps->exe, &ps->exe_len))
-+	    free (buf);
-+	  else
-+	    {
-+	      have |= PSTAT_EXE;
-+	      ps->exe_vm_alloced = (ps->exe != buf);
-+	      if (ps->exe_vm_alloced)
-+		free (buf);
-+	    }
-+	}
-+    }
-+
-   /* The ctty id port; note that this is just a magic cookie;
-      we use it to fetch a port to the actual terminal -- it's not useful for
-      much else.  */
-Index: hurd-debian/libps/ps.h
-===================================================================
---- hurd-debian.orig/libps/ps.h
-+++ hurd-debian/libps/ps.h
-@@ -272,6 +272,7 @@ struct proc_stat
-   unsigned thread_waits_vm_alloced : 1;
-   unsigned args_vm_alloced : 1;
-   unsigned env_vm_alloced : 1;
-+  unsigned exe_vm_alloced : 1;
- 
-   /* Various libc ports:  */
- 
-@@ -305,6 +306,11 @@ struct proc_stat
-   size_t env_len;
- 
-   unsigned num_ports;
-+
-+  /* The path to process's binary executable.  */
-+  char *exe;
-+  /* The length of EXE.  */
-+  size_t exe_len;
- };
- 
- /* Proc_stat flag bits; each bit is set in the FLAGS field if that
-@@ -344,12 +350,13 @@ struct proc_stat
- #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
- #define PSTAT_NUM_PORTS      0x4000000 /* Number of Mach ports in the task */
- #define PSTAT_TIMES          0x8000000 /* Task/thread user and system times */
-+#define PSTAT_EXE           0x10000000 /* Path to binary executable */
- 
- /* Flag bits that don't correspond precisely to any field.  */
- #define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
- 
- /* Bits from PSTAT_USER_BASE on up are available for user-use.  */
--#define PSTAT_USER_BASE      0x10000000
-+#define PSTAT_USER_BASE      0x20000000
- #define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
- 
- /* If the PSTAT_STATE flag is set, then the proc_stats state field holds a
-@@ -448,6 +455,8 @@ extern char *proc_stat_state_tags;
- #define proc_stat_tty(ps) ((ps)->tty)
- #define proc_stat_task_events_info(ps) ((ps)->task_events_info)
- #define proc_stat_num_ports(ps) ((ps)->num_ports)
-+#define proc_stat_exe(ps) ((ps)->exe)
-+#define proc_stat_exe_len(ps) ((ps)->exe_len)
- #define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
- 
- /* True if PS refers to a thread and not a process.  */
-Index: hurd-debian/libps/spec.c
-===================================================================
---- hurd-debian.orig/libps/spec.c
-+++ hurd-debian/libps/spec.c
-@@ -357,6 +357,14 @@ ps_get_num_ports (struct proc_stat *ps)
- const struct ps_getter ps_num_ports_getter =
- {"num_ports", PSTAT_NUM_PORTS, (vf) ps_get_num_ports};
- 
-+static void
-+ps_get_exe (struct proc_stat *ps, char **exe_p, int *exe_len_p)
-+{
-+  *exe_p = proc_stat_exe (ps);
-+  *exe_len_p = proc_stat_exe_len (ps);
-+}
-+const struct ps_getter ps_exe_getter =
-+{"exe", PSTAT_EXE, ps_get_exe};
- /* ---------------------------------------------------------------- */
- /* some printing functions */
- 
-@@ -1165,6 +1173,8 @@ static const struct ps_fmt_spec specs[]
-    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-   {"Ports",	0,	-5, -1, 0,
-    &ps_num_ports_getter,       ps_emit_int,	    ps_cmp_ints,   0},
-+  {"Exe",	0,	 0, -1, 0,
-+   &ps_exe_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
-   {0}
- };
- 
-Index: hurd-debian/exec/Makefile
-===================================================================
---- hurd-debian.orig/exec/Makefile
-+++ hurd-debian/exec/Makefile
-@@ -22,7 +22,7 @@ makemode := server
- 
- SRCS = exec.c main.c hashexec.c hostarch.c
- OBJS = main.o hostarch.o exec.o hashexec.o \
--       execServer.o exec_startupServer.o exec_experimentalServer.o
-+       execServer.o exec_startupServer.o exec_experimentalServer.o processUser.o
- 
- target = exec exec.static
- HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
-Index: hurd-debian/libps/Makefile
-===================================================================
---- hurd-debian.orig/libps/Makefile
-+++ hurd-debian/libps/Makefile
-@@ -29,7 +29,7 @@ installhdrs = ps.h
- installhdrsubdir = .
- 
- HURDLIBS=ihash shouldbeinlibc
--OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
-+OBJS = $(SRCS:.c=.o) msgUser.o termUser.o processUser.o
- 
- msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
- term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
-Index: hurd-debian/hurd/process_reply.defs
-===================================================================
---- hurd-debian.orig/hurd/process_reply.defs
-+++ hurd-debian/hurd/process_reply.defs
-@@ -194,3 +194,5 @@ simpleroutine proc_get_code_reply (
- 	end_code: vm_address_t);
- 
- skip; /* proc_make_task_namespace  */
-+skip; /* proc_set_exe  */
-+skip; /* proc_get_exe  */
-Index: hurd-debian/hurd/process_request.defs
-===================================================================
---- hurd-debian.orig/hurd/process_request.defs
-+++ hurd-debian/hurd/process_request.defs
-@@ -417,3 +417,6 @@ simpleroutine proc_make_task_namespace_r
- 	process: process_t;
- 	ureplyport reply: reply_port_t;
- 	notify: mach_port_send_t);
-+
-+skip; /* proc_set_exe  */
-+skip; /* proc_get_exe  */
-Index: hurd-debian/proc/mgt.c
-===================================================================
---- hurd-debian.orig/proc/mgt.c
-+++ hurd-debian/proc/mgt.c
-@@ -770,6 +770,8 @@ process_has_exited (struct proc *p)
- 
-   if (!--p->p_login->l_refcnt)
-     free (p->p_login);
-+  free (p->exe);
-+  p->exe = NULL;
- 
-   ids_rele (p->p_id);
- 
