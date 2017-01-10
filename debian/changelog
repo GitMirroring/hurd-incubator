@@ -1,6 +1,7 @@
 hurd (1:0.9.git20170102-2) UNRELEASED; urgency=medium
 
   * patches/exec_set_exe.patch: New patch to implement /proc/<pid>/exe.
+  * control: Break old versions of all gnumach packages for vm_wire_all.
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 08 Jan 2017 15:39:20 +0000
 
