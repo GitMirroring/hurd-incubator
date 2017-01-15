@@ -86,5 +86,4 @@ then
         echo /dev/tty1 >/var/run/console-device
 fi
 
-# Preset the terminal type for /lib/debian-installer/detect-console
-eval exec env - $envvars TERM_TYPE=virtual $init
+eval exec env - $envvars $init
