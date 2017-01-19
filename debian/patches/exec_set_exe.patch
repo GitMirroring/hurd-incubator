@@ -8,6 +8,7 @@ retrieve the information to make the "exe" symlink.
 * proc/proc.h (struct proc): Add `exe' field.
 * proc/info.c (S_proc_set_exe, S_proc_get_exe): New functions.
 * proc/mgt.c (process_has_exited): Free p->exe.
+(S_proc_child): Duplicate parent `exe' into child's `exe'.
 * exec/exec.c (do_exec): Call proc_set_exe when a filename is available.
 * libps/ps.h (struct proc_stat): Add `exe_vm_alloced', `exe', and `exe_len'
 field.
@@ -22,6 +23,10 @@ proc_get_exe.
 * procfs/process.c (process_file_symlink_make_node, process_file_gc_exe): New
 functions.
 (procfs_dir_entry): Add "exe" entry.
+* startup/startup.c (launch_core_servers): Set exe paths for startup, auth,
+proc, and fs servers.
+(frob_kernel_process): Set exe path for kernel task.
+(S_startup_essential_task): Set exe path for exec server.
 
 Index: hurd-debian/hurd/process.defs
 ===================================================================
@@ -135,18 +140,16 @@ Index: hurd-debian/proc/mgt.c
 ===================================================================
 --- hurd-debian.orig/proc/mgt.c
 +++ hurd-debian/proc/mgt.c
-@@ -223,6 +223,10 @@ S_proc_child (struct proc *parentp,
+@@ -223,6 +223,8 @@ S_proc_child (struct proc *parentp,
        childp->start_code = parentp->start_code;
        childp->end_code = parentp->end_code;
      }
 +  if (! childp->exe && parentp->exe)
-+    {
-+      childp->exe = strdup (parentp->exe);
-+    }
++    childp->exe = strdup (parentp->exe);
  
    if (MACH_PORT_VALID (parentp->p_task_namespace))
      {
-@@ -770,6 +774,8 @@ process_has_exited (struct proc *p)
+@@ -770,6 +772,8 @@ process_has_exited (struct proc *p)
  
    if (!--p->p_login->l_refcnt)
      free (p->p_login);
@@ -324,3 +327,60 @@ Index: hurd-debian/procfs/process.c
      .name = "cmdline",
      .hook = & (struct process_file_desc) {
        .get_contents = process_file_gc_cmdline,
+Index: hurd-debian/startup/startup.c
+===================================================================
+--- hurd-debian.orig/startup/startup.c
++++ hurd-debian/startup/startup.c
+@@ -763,6 +763,8 @@ launch_core_servers (void)
+   assert_perror (err);
+   err = proc_mark_exec (procserver);
+   assert_perror (err);
++  err = proc_set_exe (procserver, "/hurd/startup");
++  assert_perror (err);
+ 
+   /* Declare that the filesystem and auth are our children. */
+   err = proc_child (procserver, fstask);
+@@ -776,6 +778,8 @@ launch_core_servers (void)
+   assert_perror (err);
+   err = proc_mark_exec (authproc);
+   assert_perror (err);
++  err = proc_set_exe (authproc, "/hurd/auth");
++  assert_perror (err);
+ 
+   err = install_as_translator ();
+   if (err)
+@@ -816,6 +820,7 @@ launch_core_servers (void)
+     {
+       proc_mark_important (procproc);
+       proc_mark_exec (procproc);
++      proc_set_exe (procproc, "/hurd/proc");
+       mach_port_deallocate (mach_task_self (), procproc);
+     }
+ 
+@@ -831,6 +836,8 @@ launch_core_servers (void)
+   assert_perror (err);
+   err = proc_mark_exec (fsproc);
+   assert_perror (err);
++  err = proc_set_exe (fsproc, "fs");
++  assert_perror (err);
+ 
+   fprintf (stderr, ".\n");
+ 
+@@ -974,6 +981,9 @@ frob_kernel_process (void)
+   err = record_essential_task ("kernel", task);
+   assert_perror (err);
+ 
++  err = proc_set_exe (proc, "kernel");
++  assert_perror (err);
++
+   err = task_get_bootstrap_port (task, &kbs);
+   assert_perror (err);
+   if (kbs == MACH_PORT_NULL)
+@@ -1385,6 +1395,7 @@ S_startup_essential_task (mach_port_t se
+           mach_port_t execproc;
+           proc_task2proc (procserver, task, &execproc);
+           proc_mark_important (execproc);
++	  proc_set_exe (execproc, "/hurd/exec");
+         }
+       else if (!strcmp (name, "proc"))
+ 	procinit = 1;
