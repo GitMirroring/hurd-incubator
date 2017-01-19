@@ -135,7 +135,18 @@ Index: hurd-debian/proc/mgt.c
 ===================================================================
 --- hurd-debian.orig/proc/mgt.c
 +++ hurd-debian/proc/mgt.c
-@@ -770,6 +770,8 @@ process_has_exited (struct proc *p)
+@@ -223,6 +223,10 @@ S_proc_child (struct proc *parentp,
+       childp->start_code = parentp->start_code;
+       childp->end_code = parentp->end_code;
+     }
++  if (! childp->exe && parentp->exe)
++    {
++      childp->exe = strdup (parentp->exe);
++    }
+ 
+   if (MACH_PORT_VALID (parentp->p_task_namespace))
+     {
+@@ -770,6 +774,8 @@ process_has_exited (struct proc *p)
  
    if (!--p->p_login->l_refcnt)
      free (p->p_login);
