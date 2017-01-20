@@ -1,6 +1,7 @@
 hurd (1:0.9.git20170117-2) UNRELEASED; urgency=medium
 
   * patches/exec_set_exe.patch: Copy exe value on fork. Closes: Bug#851729.
+  * Use canonical anonscm vcs URL.
 
  -- Samuel Thibault <sthibault@debian.org>  Thu, 19 Jan 2017 00:07:34 +0000
 
