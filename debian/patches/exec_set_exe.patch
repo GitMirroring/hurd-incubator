@@ -280,12 +280,18 @@ Index: hurd-debian/procfs/process.c
 ===================================================================
 --- hurd-debian.orig/procfs/process.c
 +++ hurd-debian/procfs/process.c
-@@ -95,6 +95,13 @@ static int args_filename_length (const c
+@@ -95,6 +95,19 @@ static int args_filename_length (const c
  /* Actual content generators */
  
  static ssize_t
 +process_file_gc_exe (struct proc_stat *ps, char **contents)
 +{
++  if (proc_stat_exe_len (ps) == 0)
++    {
++      *contents = "-";
++      return 1;
++    }
++
 +  *contents = proc_stat_exe(ps);
 +  return proc_stat_exe_len(ps);
 +}
@@ -294,7 +300,7 @@ Index: hurd-debian/procfs/process.c
  process_file_gc_cmdline (struct proc_stat *ps, char **contents)
  {
    *contents = proc_stat_args(ps);
-@@ -410,6 +417,14 @@ process_file_make_node (void *dir_hook,
+@@ -410,6 +423,14 @@ process_file_make_node (void *dir_hook,
    return np;
  }
  
@@ -309,7 +315,7 @@ Index: hurd-debian/procfs/process.c
  /* Stat needs its own constructor in order to set its mode according to
     the --stat-mode command-line option.  */
  static struct node *
-@@ -425,6 +440,17 @@ process_stat_make_node (void *dir_hook,
+@@ -425,6 +446,17 @@ process_stat_make_node (void *dir_hook,
  
  static struct procfs_dir_entry entries[] = {
    {
