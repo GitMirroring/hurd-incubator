@@ -337,25 +337,23 @@ Index: hurd-debian/startup/startup.c
 ===================================================================
 --- hurd-debian.orig/startup/startup.c
 +++ hurd-debian/startup/startup.c
-@@ -763,6 +763,8 @@ launch_core_servers (void)
+@@ -763,6 +763,7 @@ launch_core_servers (void)
    assert_perror (err);
    err = proc_mark_exec (procserver);
    assert_perror (err);
-+  err = proc_set_exe (procserver, "/hurd/startup");
-+  assert_perror (err);
++  proc_set_exe (procserver, "/hurd/startup");
  
    /* Declare that the filesystem and auth are our children. */
    err = proc_child (procserver, fstask);
-@@ -776,6 +778,8 @@ launch_core_servers (void)
+@@ -776,6 +777,7 @@ launch_core_servers (void)
    assert_perror (err);
    err = proc_mark_exec (authproc);
    assert_perror (err);
-+  err = proc_set_exe (authproc, "/hurd/auth");
-+  assert_perror (err);
++  proc_set_exe (authproc, "/hurd/auth");
  
    err = install_as_translator ();
    if (err)
-@@ -816,6 +820,7 @@ launch_core_servers (void)
+@@ -816,6 +818,7 @@ launch_core_servers (void)
      {
        proc_mark_important (procproc);
        proc_mark_exec (procproc);
@@ -363,26 +361,24 @@ Index: hurd-debian/startup/startup.c
        mach_port_deallocate (mach_task_self (), procproc);
      }
  
-@@ -831,6 +836,8 @@ launch_core_servers (void)
+@@ -831,6 +834,7 @@ launch_core_servers (void)
    assert_perror (err);
    err = proc_mark_exec (fsproc);
    assert_perror (err);
-+  err = proc_set_exe (fsproc, "fs");
-+  assert_perror (err);
++  proc_set_exe (fsproc, "fs");
  
    fprintf (stderr, ".\n");
  
-@@ -974,6 +981,9 @@ frob_kernel_process (void)
+@@ -974,6 +978,8 @@ frob_kernel_process (void)
    err = record_essential_task ("kernel", task);
    assert_perror (err);
  
-+  err = proc_set_exe (proc, "kernel");
-+  assert_perror (err);
++  proc_set_exe (proc, "kernel");
 +
    err = task_get_bootstrap_port (task, &kbs);
    assert_perror (err);
    if (kbs == MACH_PORT_NULL)
-@@ -1385,6 +1395,7 @@ S_startup_essential_task (mach_port_t se
+@@ -1385,6 +1391,7 @@ S_startup_essential_task (mach_port_t se
            mach_port_t execproc;
            proc_task2proc (procserver, task, &execproc);
            proc_mark_important (execproc);
