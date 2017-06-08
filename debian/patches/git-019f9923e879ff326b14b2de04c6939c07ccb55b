@@ -1,0 +1,22 @@
+commit 019f9923e879ff326b14b2de04c6939c07ccb55b
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Fri Jun 9 22:08:23 2017 +0200
+
+    ext2fs: Reduce verbosity of missing xattr support on the FS
+    
+    * ext2fs/xattr.c (ext2_free_xattr_block): Only warn about missing ext2fs
+    support in debugging mode.
+
+diff --git a/ext2fs/xattr.c b/ext2fs/xattr.c
+index c7037176..45969195 100644
+--- a/ext2fs/xattr.c
++++ b/ext2fs/xattr.c
+@@ -429,7 +429,7 @@ ext2_free_xattr_block (struct node *np)
+ 
+   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
+     {
+-      ext2_warning ("Filesystem has no support for extended attributes.");
++      ext2_debug ("Filesystem has no support for extended attributes.");
+       return EOPNOTSUPP;
+     }
+ 

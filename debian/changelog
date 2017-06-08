@@ -1,10 +1,13 @@
-hurd (1:0.9.git20170507-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20170507-1) unstable; urgency=medium
 
   * New upstream snapshot.
+  * backport git-26e774bab06eab72847a7ca052a90d5319ad658a to fix glibc build.
+  * backport git-019f9923e879ff326b14b2de04c6939c07ccb55b to drop spurious
+    ext2fs warnings in d-i.
   * patches/exec_set_exe.patch: Avoid erroring out when proc does not support
     proc_set_exe.
 
- -- Samuel Thibault <sthibault@debian.org>  Sat, 11 Mar 2017 15:57:49 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 09 Jun 2017 19:25:32 +0000
 
 hurd (1:0.9.git20170310-1) unstable; urgency=medium
 
