@@ -238,7 +238,7 @@ Index: hurd-debian/startup/startup.c
  	      getchar ();
  	    }
 -	  err = file_exec (file, *task, 0,
--			   (char *)prog, strlen (prog) + 1, /* Args.  */
+-			   argz, argz_len, /* Args.  */
 -			   startup_envz, startup_envz_len,
 -			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 -			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
@@ -246,8 +246,8 @@ Index: hurd-debian/startup/startup.c
 -			   NULL, 0, NULL, 0);
 +#ifdef HAVE_FILE_EXEC_FILE_NAME
 +	  err = file_exec_file_name (file, *task, 0, (char *)prog,
-+				     (char *)prog,
-+				     strlen (prog) + 1, /* Args.  */
++				     argz,
++				     argz_len, /* Args.  */
 +				     startup_envz, startup_envz_len,
 +				     default_dtable,
 +				     MACH_MSG_TYPE_COPY_SEND, 3,
@@ -260,7 +260,7 @@ Index: hurd-debian/startup/startup.c
 +	  if (err == MIG_BAD_ID)
 +#endif
 +	    err = file_exec (file, *task, 0,
-+			     (char *)prog, strlen (prog) + 1, /* Args.  */
++			     argz, argz_len, /* Args.  */
 +			     startup_envz, startup_envz_len,
 +			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 +			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
