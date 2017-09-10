@@ -81,7 +81,7 @@ index de3a9b1..ee8e578 100644
      case MACH_SEND_INVALID_NOTIFY:
      case MACH_SEND_NO_NOTIFY:
      case MACH_SEND_NOTIFY_IN_PROGRESS:
-       assert_perror (err);
+       assert_perror_backtrace (err);
        break;
  
      default:			/* Other errors are safe to ignore.  */

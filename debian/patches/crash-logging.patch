@@ -77,7 +77,7 @@ Index: hurd-debian/trans/crash.c
 +
 +      free (old);
 +      err = mach_port_deallocate (mach_task_self (), threads[i]);
-+      assert_perror (err);
++      assert_perror_backtrace (err);
 +    }
 +#else
 +  *pcs = strdup ("architecture not supported");
@@ -111,7 +111,7 @@ Index: hurd-debian/trans/crash.c
 +      how_msg = "writing core file";
 +      break;
 +    default:
-+      assert (! "reached");
++      assert_backtrace (! "reached");
 +    }
 +
 +  err = proc_task2pid (procserver, task, &pid);

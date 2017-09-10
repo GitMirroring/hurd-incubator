@@ -4,10 +4,10 @@ Just a build fix.
 
 To be removed with glibc 2.24-9
 
-diff --git a/mach-defpager/Makefile b/mach-defpager/Makefile
-index 3b8ce58e0..3cb506a27 100644
---- a/mach-defpager/Makefile
-+++ b/mach-defpager/Makefile
+Index: hurd-debian/mach-defpager/Makefile
+===================================================================
+--- hurd-debian.orig/mach-defpager/Makefile
++++ hurd-debian/mach-defpager/Makefile
 @@ -23,11 +23,13 @@ dir	:= mach-defpager
  makemode:= server
  target	:= mach-defpager
@@ -21,7 +21,7 @@ index 3b8ce58e0..3cb506a27 100644
 -	   default_pager_replyUser.o
 +	   default_pager_replyUser.o $(MIGSTUBS)
  
- HURDLIBS:= ihash
+ HURDLIBS:= ihash shouldbeinlibc
  LDLIBS:= -lpthread
 Index: hurd-debian/exec/Makefile
 ===================================================================
@@ -49,9 +49,11 @@ Index: hurd-debian/libps/Makefile
  
  msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
  term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
---- hurd-debian/startup/Makefile.original	2017-01-19 00:30:36.000000000 +0000
-+++ hurd-debian/startup/Makefile	2017-01-19 00:30:37.000000000 +0000
-@@ -21,7 +21,7 @@
+Index: hurd-debian/startup/Makefile
+===================================================================
+--- hurd-debian.orig/startup/Makefile
++++ hurd-debian/startup/Makefile
+@@ -21,7 +21,7 @@ makemode := server
  SRCS = startup.c
  OBJS = $(SRCS:.c=.o) \
         startupServer.o notifyServer.o startup_replyUser.o msgServer.o \

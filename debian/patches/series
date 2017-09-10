@@ -9,7 +9,7 @@ stat_round.patch
 external.patch
 console_ignore_bdf_err.patch
 posix-sigcodes.patch
-random-default-fast.patch
+#random-default-fast.patch
 libexec.patch
 run.patch
 exec_filename_exec.patch
@@ -29,5 +29,3 @@ netdde_log.patch
 libports-iterate-refcount.patch
 exec_filename_rpctrace.patch
 exec_set_exe.patch
-git-26e774bab06eab72847a7ca052a90d5319ad658a
-git-019f9923e879ff326b14b2de04c6939c07ccb55b

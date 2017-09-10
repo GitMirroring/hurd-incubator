@@ -1,12 +1,13 @@
 Include DDE in the build
 
---- a/Makefile
-+++ b/Makefile
-@@ -28,6 +28,14 @@ include ./Makeconf
- 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
+Index: hurd-debian/Makefile
+===================================================================
+--- hurd-debian.orig/Makefile
++++ hurd-debian/Makefile
+@@ -32,6 +32,14 @@ lib-subdirs = libshouldbeinlibc libihash
  	      libhurd-slab \
  	      libbpf \
-+
+ 
 +ifneq ($(LIBPCIACCESS),no)
 +lib-subdirs += libmachdev libddekit
 +endif
@@ -14,12 +15,15 @@ Include DDE in the build
 +ifeq ($(HAVE_PCAP),yes)
 +lib-subdirs += eth-filter
 +endif
- 
++
  # Hurd programs
  prog-subdirs = auth proc exec term \
---- a/Makeconf
-+++ b/Makeconf
-@@ -576,7 +576,7 @@ vpath %.defs $(top_srcdir)/hurd
+ 	       ext2fs isofs tmpfs fatfs \
+Index: hurd-debian/Makeconf
+===================================================================
+--- hurd-debian.orig/Makeconf
++++ hurd-debian/Makeconf
+@@ -575,7 +575,7 @@ vpath %.defs $(top_srcdir)/hurd
  # These we want to find in the libc include directory...
  mach_defs_names = bootstrap exc mach mach4 \
  	mach_host mach_port mach_timer_reply memory_object \
@@ -28,8 +32,10 @@ Include DDE in the build
  	gnumach \
  	task_notify \
  
---- a/configure.ac
-+++ b/configure.ac
+Index: hurd-debian/configure.ac
+===================================================================
+--- hurd-debian.orig/configure.ac
++++ hurd-debian/configure.ac
 @@ -245,6 +245,13 @@ AC_SUBST(boot_store_types)dnl
  AC_MSG_CHECKING(boot store types)
  AC_MSG_RESULT($boot_store_types)
@@ -44,11 +50,13 @@ Include DDE in the build
  # Check for ncursesw, which is needed for the console-curses client.
  hurd_LIB_NCURSESW
  
---- a/config.make.in
-+++ b/config.make.in
-@@ -98,6 +98,12 @@ libblkid_LIBS = @libblkid_LIBS@
- # Whether Sun RPC support is available.
- HAVE_SUN_RPC = @HAVE_SUN_RPC@
+Index: hurd-debian/config.make.in
+===================================================================
+--- hurd-debian.orig/config.make.in
++++ hurd-debian/config.make.in
+@@ -99,6 +99,12 @@ HAVE_SUN_RPC = @HAVE_SUN_RPC@
+ # Whether we found libgcrypt.
+ HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
  
 +# Whether pcap support is available.
 +HAVE_PCAP = @HAVE_PCAP@

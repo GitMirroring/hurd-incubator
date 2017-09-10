@@ -10,8 +10,8 @@ Index: hurd-debian/libdiskfs/boot-start.c
 --- hurd-debian.orig/libdiskfs/boot-start.c
 +++ hurd-debian/libdiskfs/boot-start.c
 @@ -130,8 +130,13 @@ diskfs_start_bootstrap ()
-       assert (_hurd_ports);
-       assert (_hurd_ports[INIT_PORT_CRDIR].port != MACH_PORT_NULL);
+       assert_backtrace (_hurd_ports);
+       assert_backtrace (_hurd_ports[INIT_PORT_CRDIR].port != MACH_PORT_NULL);
        diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
 -      if (diskfs_exec == MACH_PORT_NULL)
 -	error (1, errno, "%s", _SERVERS_EXEC);
@@ -51,6 +51,6 @@ Index: hurd-debian/libdiskfs/boot-start.c
 +    /* Try /tmp/exec as well, in case we're installing.  */
 +    err = dir_lookup (rootport, "/tmp/exec", flags|O_NOTRANS|O_CREAT, 0,
 +	  	      &retry, pathbuf, real);
-   assert_perror (err);
-   assert (retry == FS_RETRY_NORMAL);
-   assert (pathbuf[0] == '\0');
+   assert_perror_backtrace (err);
+   assert_backtrace (retry == FS_RETRY_NORMAL);
+   assert_backtrace (pathbuf[0] == '\0');

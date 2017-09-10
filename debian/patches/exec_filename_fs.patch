@@ -28,7 +28,7 @@ Index: hurd-debian/TODO
 ===================================================================
 --- hurd-debian.orig/TODO
 +++ hurd-debian/TODO
-@@ -133,7 +133,7 @@ See `tasks', the exported task list.
+@@ -131,7 +131,7 @@ See `tasks', the exported task list.
  
  ** libtrivfs
  *** Allow for read/write/exec to be passed down.
@@ -41,7 +41,7 @@ Index: hurd-debian/doc/hurd.texi
 ===================================================================
 --- hurd-debian.orig/doc/hurd.texi
 +++ hurd-debian/doc/hurd.texi
-@@ -2737,10 +2737,10 @@ write the file.
+@@ -2736,10 +2736,10 @@ write the file.
  @node Program Execution
  @subsection Program Execution
  
@@ -55,7 +55,7 @@ Index: hurd-debian/doc/hurd.texi
  ports are necessary for setuid execution, and then invoke the standard
  execserver found on @file{/servers/exec}.
  
-@@ -2752,13 +2752,13 @@ The file must be opened for execution; i
+@@ -2751,13 +2751,13 @@ The file must be opened for execution; i
  be returned.  In addition, at least one of the execute bits must be on.  A
  failure of this check should result in @code{EACCES}---not
  @code{ENOEXEC}.  It is not proper for the fileserver ever to respond to
@@ -73,7 +73,7 @@ Index: hurd-debian/doc/hurd.texi
  it is not acceptable to return an error; in such a case the server
  should simply silently fail to implement the setuid/setgid semantics.
  
-@@ -2773,7 +2773,7 @@ will not share any file pointers with th
+@@ -2772,7 +2772,7 @@ will not share any file pointers with th
  opened with @code{O_READ}.  Finally, all the information (mutated
  appropriately for setuid/setgid) should be sent to the execserver with
  @code{exec_exec_file_name}.  Whatever error code @code{exec_exec_file_name}
@@ -86,7 +86,7 @@ Index: hurd-debian/exec/hashexec.c
 ===================================================================
 --- hurd-debian.orig/exec/hashexec.c
 +++ hurd-debian/exec/hashexec.c
-@@ -24,6 +24,9 @@ the Free Software Foundation, 675 Mass A
+@@ -24,6 +24,9 @@
  #include <unistd.h>
  #include <envz.h>
  #include <sys/param.h>
@@ -96,7 +96,7 @@ Index: hurd-debian/exec/hashexec.c
  
  /* This is called to check E for a #! interpreter specification.  E has
     already been prepared (successfully) and checked (unsuccessfully).  If
-@@ -421,16 +424,32 @@ check_hashbang (struct execdata *e,
+@@ -423,16 +426,32 @@ check_hashbang (struct execdata *e,
      /* We cannot open the interpreter file to execute it.  Lose!  */
      return;
  
@@ -192,7 +192,7 @@ Index: hurd-debian/hurd/hurd_types.h
  #define EXEC_NEWTASK	0x00000001 /* Create new task; kill old one.  */
  #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
  #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
-@@ -347,7 +348,7 @@ typedef int *procinfo_t;
+@@ -350,7 +351,7 @@ typedef int *procinfo_t;
  #define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
  #define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
  
@@ -201,7 +201,7 @@ Index: hurd-debian/hurd/hurd_types.h
  enum
    {
      INIT_PORT_CWDIR,
-@@ -361,7 +362,7 @@ enum
+@@ -364,7 +365,7 @@ enum
      INIT_PORT_MAX
    };
  
@@ -233,7 +233,7 @@ Index: hurd-debian/startup/startup.c
  #include <hurd/fsys.h>
  #include <device/device.h>
  #include <stdio.h>
-@@ -376,13 +379,28 @@ run (const char *server, mach_port_t *po
+@@ -402,13 +405,28 @@ run (const char *server, mach_port_t *po
  	      fprintf (stderr, "Pausing for %s\n", prog);
  	      getchar ();
  	    }
@@ -269,7 +269,7 @@ Index: hurd-debian/startup/startup.c
  	  if (!err)
  	    break;
  
-@@ -469,14 +487,27 @@ run_for_real (char *filename, char *args
+@@ -538,14 +556,27 @@ run_for_real (char *filename, char *args
      ++progname;
    else
      progname = filename;
@@ -305,7 +305,7 @@ Index: hurd-debian/startup/startup.c
    mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
    mach_port_deallocate (mach_task_self (), task);
    if (ctty != MACH_PORT_NULL)
-@@ -1035,13 +1066,26 @@ start_child (const char *prog, char **pr
+@@ -1244,13 +1275,26 @@ start_child (const char *prog, char **pr
        getchar ();
      }
  
@@ -343,7 +343,7 @@ Index: hurd-debian/libdiskfs/boot-start.c
 ===================================================================
 --- hurd-debian.orig/libdiskfs/boot-start.c
 +++ hurd-debian/libdiskfs/boot-start.c
-@@ -209,7 +209,7 @@ diskfs_start_bootstrap ()
+@@ -214,7 +214,7 @@ diskfs_start_bootstrap ()
        diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
      }
  
@@ -365,7 +365,7 @@ Index: hurd-debian/libdiskfs/file-exec.c
  
     This file is part of the GNU Hurd.
  
-@@ -21,10 +22,14 @@ the Free Software Foundation, 675 Mass A
+@@ -21,10 +22,14 @@
  
  #include "priv.h"
  #include "fs_S.h"
@@ -485,9 +485,9 @@ Index: hurd-debian/libfshelp/start-translator-long.c
     Written by Miles Bader and Michael I. Bushnell.
  
     This file is part of the GNU Hurd.
-@@ -27,6 +28,9 @@
+@@ -28,6 +29,9 @@
  #include <string.h>
- #include <assert.h>
+ #include <assert-backtrace.h>
  #include "fshelp.h"
 +#ifdef HAVE_FILE_EXEC_FILE_NAME
 +#include <hurd/fs_experimental.h>
@@ -495,7 +495,7 @@ Index: hurd-debian/libfshelp/start-translator-long.c
  
  
  /* The data passed in the various messages we're interested in.  */
-@@ -272,12 +276,22 @@ fshelp_start_translator_long (fshelp_ope
+@@ -273,12 +277,22 @@ fshelp_start_translator_long (fshelp_ope
    saveport = ports[INIT_PORT_BOOTSTRAP];
    ports[INIT_PORT_BOOTSTRAP] = bootstrap;
  
@@ -689,7 +689,7 @@ Index: hurd-debian/trans/fakeroot.c
  #include "libnetfs/io_S.h"
  #include "libnetfs/fsys_S.h"
  #include "libports/notify_S.h"
-@@ -785,23 +789,24 @@ netfs_file_get_storage_info (struct ious
+@@ -882,23 +886,24 @@ netfs_file_get_storage_info (struct ious
  }
  
  kern_return_t
@@ -731,7 +731,7 @@ Index: hurd-debian/trans/fakeroot.c
  {
    error_t err;
    file_t file;
-@@ -820,14 +825,30 @@ netfs_S_file_exec (struct protid *user,
+@@ -917,14 +922,30 @@ netfs_S_file_exec (struct protid *user,
  
    if (!err)
      {
@@ -768,7 +768,7 @@ Index: hurd-debian/trans/fakeroot.c
        mach_port_deallocate (mach_task_self (), file);
      }
  
-@@ -843,6 +864,38 @@ netfs_S_file_exec (struct protid *user,
+@@ -940,6 +961,38 @@ netfs_S_file_exec (struct protid *user,
    return err;
  }
  
@@ -807,7 +807,7 @@ Index: hurd-debian/trans/fakeroot.c
  error_t
  netfs_S_io_map (struct protid *user,
  		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
-@@ -959,6 +1012,7 @@ netfs_demuxer (mach_msg_header_t *inp,
+@@ -1056,6 +1109,7 @@ netfs_demuxer (mach_msg_header_t *inp,
    mig_routine_t routine;
    if ((routine = netfs_io_server_routine (inp)) ||
        (routine = netfs_fs_server_routine (inp)) ||
@@ -1007,7 +1007,7 @@ Index: hurd-debian/libtrivfs/Makefile
 ===================================================================
 --- hurd-debian.orig/libtrivfs/Makefile
 +++ hurd-debian/libtrivfs/Makefile
-@@ -44,7 +44,7 @@ OTHERSRCS=demuxer.c protid-clean.c proti
+@@ -43,7 +43,7 @@ OTHERSRCS=demuxer.c protid-clean.c proti
  
  SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
  
@@ -1020,7 +1020,7 @@ Index: hurd-debian/libtrivfs/demuxer.c
 ===================================================================
 --- hurd-debian.orig/libtrivfs/demuxer.c
 +++ hurd-debian/libtrivfs/demuxer.c
-@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass A
+@@ -23,6 +23,7 @@
  
  #include "trivfs_io_S.h"
  #include "trivfs_fs_S.h"
