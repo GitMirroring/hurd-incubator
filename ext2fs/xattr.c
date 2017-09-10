@@ -429,7 +429,7 @@ ext2_free_xattr_block (struct node *np)
 
   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
     {
-      ext2_warning ("Filesystem has no support for extended attributes.");
+      ext2_debug ("Filesystem has no support for extended attributes.");
       return EOPNOTSUPP;
     }
 
@@ -445,7 +445,7 @@ ext2_free_xattr_block (struct node *np)
       goto cleanup;
     }
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   block = disk_cache_block_ref (blkno);
   header = EXT2_XATTR_HEADER (block);
@@ -663,7 +663,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
   size_t rest;
   error_t err;
   block_t blkno;
-  void *block;
+  void *block = NULL;
   struct ext2_inode *ei;
   struct ext2_xattr_header *header;
   struct ext2_xattr_entry *entry;
@@ -697,7 +697,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
       /* Allocate and initialize new block */
       block_t goal;
 
-      assert (!diskfs_readonly);
+      assert_backtrace (!diskfs_readonly);
 
       goal = sblock->s_first_data_block + np->dn->info.i_block_group *
 	EXT2_BLOCKS_PER_GROUP (sblock);

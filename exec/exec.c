@@ -368,7 +368,7 @@ map (struct execdata *e, off_t posn, size_t len)
       char *buffer = map_buffer (e);
       mach_msg_type_number_t nread = map_vsize (e);
 
-      assert (e->file_data == NULL); /* Must be first or second case.  */
+      assert_backtrace (e->file_data == NULL); /* Must be first or second case.  */
 
       /* Read as much as we can get into the buffer right now.  */
       e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
@@ -773,6 +773,8 @@ servercopy (void *arg, mach_msg_type_number_t argsize, boolean_t argcopy,
 {
   if (! argcopy)
     return arg;
+  if (! argsize)
+    return NULL;
 
   /* ARG came in-line, so we must copy it.  */
   void *copy;
