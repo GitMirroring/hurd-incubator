@@ -1,6 +1,7 @@
 hurd (1:0.9.git20170910-1) UNRELEASED; urgency=medium
 
   * New upstream snapshot.
+    - Add libgcrypt20-dev build dependency.
   * control: Migrate priority to optional.
   * control: Bump Standards-Version to 4.1.0.
 
