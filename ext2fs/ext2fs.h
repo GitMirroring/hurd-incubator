@@ -29,7 +29,7 @@
 #include <hurd/store.h>
 #include <hurd/diskfs.h>
 #include <hurd/ihash.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 #include <sys/mman.h>
 
@@ -119,9 +119,13 @@ void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
 #include <stdint.h>
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int test_bit (unsigned num, unsigned char *bitmap);
-
 extern int set_bit (unsigned num, unsigned char *bitmap);
+extern int clear_bit (unsigned num, unsigned char *bitmap);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Returns TRUE if bit NUM is set in BITMAP.  */
@@ -354,6 +358,15 @@ unsigned long next_generation;
 /* pointer to in-memory block -> index in disk_cache_info */
 #define bptr_index(ptr) (((char *)ptr - (char *)disk_cache) >> log2_block_size)
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern char *boffs_ptr (off_t offset);
+extern off_t bptr_offs (void *ptr);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
+
 /* byte offset on disk --> pointer to in-memory block */
 EXT2FS_EI char *
 boffs_ptr (off_t offset)
@@ -362,7 +375,7 @@ boffs_ptr (off_t offset)
   pthread_mutex_lock (&disk_cache_lock);
   char *ptr = hurd_ihash_find (disk_cache_bptr, block);
   pthread_mutex_unlock (&disk_cache_lock);
-  assert (ptr);
+  assert_backtrace (ptr);
   ptr += offset % block_size;
   ext2_debug ("(%lld) = %p", offset, ptr);
   return ptr;
@@ -374,16 +387,18 @@ bptr_offs (void *ptr)
 {
   vm_offset_t mem_offset = (char *)ptr - (char *)disk_cache;
   off_t offset;
-  assert (mem_offset < disk_cache_size);
+  assert_backtrace (mem_offset < disk_cache_size);
   pthread_mutex_lock (&disk_cache_lock);
   offset = (off_t) disk_cache_info[boffs_block (mem_offset)].block
     << log2_block_size;
-  assert (offset || mem_offset < block_size);
+  assert_backtrace (offset || mem_offset < block_size);
   offset += mem_offset % block_size;
   pthread_mutex_unlock (&disk_cache_lock);
   ext2_debug ("(%p) = %lld", ptr, offset);
   return offset;
 }
+
+#endif /* Use extern inlines.  */
 
 /* block num --> pointer to in-memory block */
 #define bptr(block) boffs_ptr(boffs(block))
@@ -398,7 +413,12 @@ struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
-extern struct ext2_inode *dino (ino_t inum);
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern struct ext2_inode * dino_ref (ino_t inum);
+extern void _dino_deref (struct ext2_inode *inode);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
@@ -447,6 +467,10 @@ struct pokel global_pokel;
 unsigned char *modified_global_blocks;
 extern pthread_spinlock_t modified_global_blocks_lock;
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int global_block_modified (block_t block);
 extern void record_global_poke (void *ptr);
 extern void sync_global_ptr (void *bptr, int wait);
@@ -481,7 +505,7 @@ record_global_poke (void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&global_pokel, block_ptr, block_size);
 }
@@ -507,7 +531,7 @@ record_indir_poke (struct node *node, void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&diskfs_node_disknode (node)->indir_pokel, block_ptr, block_size);
 }

@@ -20,7 +20,7 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <hurd/ports.h>
@@ -216,7 +216,6 @@ struct pager;
 extern struct port_class *diskfs_protid_class;
 extern struct port_class *diskfs_control_class;
 extern struct port_class *diskfs_execboot_class;
-extern struct port_class *diskfs_initboot_class;
 extern struct port_class *diskfs_shutdown_notification_class;
 
 extern struct port_bucket *diskfs_port_bucket;
@@ -587,11 +586,11 @@ error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The user may define this function.  The function must set source to
-   the source of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t diskfs_get_source (struct protid *cred,
-                           char *source, size_t source_len);
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns diskfs_disk_name,
+   or EOPNOTSUPP if it is NULL. */
+error_t diskfs_get_source (char *source, size_t source_len);
 
 /* Libdiskfs contains a node cache.
 
@@ -926,7 +925,7 @@ diskfs_begin_using_protid_payload (unsigned long payload)
 DISKFS_EXTERN_INLINE struct diskfs_control *
 diskfs_begin_using_control_port (fsys_t port)
 {
-  return ports_lookup_port (diskfs_port_bucket, port, NULL);
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_control_class);
 }
 
 DISKFS_EXTERN_INLINE struct diskfs_control *
@@ -934,7 +933,7 @@ diskfs_begin_using_control_port_payload (unsigned long payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,
-			       NULL);
+			       diskfs_control_class);
 }
 
 /* And for the exec_startup interface. */

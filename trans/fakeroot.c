@@ -76,7 +76,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
   error_t err;
   struct netnode *nn;
 
-  assert ((openmodes & ~(O_RDWR|O_EXEC)) == 0);
+  assert_backtrace ((openmodes & ~(O_RDWR|O_EXEC)) == 0);
 
   *np = netfs_make_node_alloc (sizeof *nn);
   if (*np == 0)
@@ -97,7 +97,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     {
       ino_t fileno;
       mach_port_t fsidport;
-      assert (!locked);
+      assert_backtrace (!locked);
       err = io_identity (file, &nn->idport, &fsidport, &fileno);
       if (err)
 	{
@@ -218,7 +218,7 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
 {
   error_t err = 0;
 
-  assert ((newmodes & ~(O_RDWR|O_EXEC)) == 0);
+  assert_backtrace ((newmodes & ~(O_RDWR|O_EXEC)) == 0);
 
   if (newmodes &~ nn->openmodes)
     {
@@ -302,15 +302,73 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   dnp = diruser->po->np;
 
+  /* See glibc's lookup-retry.c about O_NOFOLLOW.  */
+  if (flags & O_NOFOLLOW)
+    flags |= O_NOTRANS;
+
   mach_port_t dir = netfs_node_netnode (dnp)->file;
  redo_lookup:
   err = dir_lookup (dir, filename,
-		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
+		    flags & (O_NOFOLLOW|O_NOTRANS|O_NOLINK
+			     |O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    real_from_fake_mode (mode), do_retry, retry_name, &file);
   if (dir != netfs_node_netnode (dnp)->file)
     mach_port_deallocate (mach_task_self (), dir);
   if (err)
     return err;
+
+  /* See glibc's lookup-retry.c about O_NOFOLLOW.  */
+  if (flags & O_NOFOLLOW
+      && (*do_retry == FS_RETRY_NORMAL && *retry_name == 0))
+    {
+      /* In Linux, O_NOFOLLOW means to reject symlinks.  If we
+	 did an O_NOLINK lookup above and io_stat here to check
+	 for S_IFLNK, a translator like firmlink could easily
+	 spoof this check by not showing S_IFLNK, but in fact
+	 redirecting the lookup to some other name
+	 (i.e. opening the very same holes a symlink would).
+
+	 Instead we do an O_NOTRANS lookup above, and stat the
+	 underlying node: if it has a translator set, and its
+	 owner is not root (st_uid 0) then we reject it.
+	 Since the motivation for this feature is security, and
+	 that security presumes we trust the containing
+	 directory, this check approximates the security of
+	 refusing symlinks while accepting mount points.
+	 Note that we actually permit something Linux doesn't:
+	 we follow root-owned symlinks; if that is deemed
+	 undesireable, we can add a final check for that
+	 one exception to our general translator-based rule.  */
+      struct stat st;
+      err = io_stat (file, &st);
+      if (!err
+	  && (st.st_mode & (S_IPTRANS|S_IATRANS)))
+	{
+	  if (st.st_uid != 0)
+	    err = ENOENT;
+	  else if (st.st_mode & S_IPTRANS)
+	    {
+	      char buf[1024];	/* XXX */
+	      char *trans = buf;
+	      size_t translen = sizeof buf;
+	      err = file_get_translator (file,
+					 &trans, &translen);
+	      if (!err
+		  && translen > sizeof _HURD_SYMLINK
+		  && !memcmp (trans,
+			      _HURD_SYMLINK, sizeof _HURD_SYMLINK))
+		  err = ENOENT;
+
+	      if (trans != buf)
+		vm_deallocate (mach_task_self (), (vm_address_t) trans, translen);
+	    }
+	}
+      if (err)
+	{
+	  mach_port_deallocate (mach_task_self (), file);
+	  return err;
+	}
+    }
 
   switch (*do_retry)
     {
@@ -426,7 +484,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (err)
     goto lose;
 
-  assert (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL);
+  assert_backtrace (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL);
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
 
   err = iohelp_dup_iouser (&user, diruser->user);
@@ -473,7 +531,7 @@ error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		      char *name, struct node **np)
 {
-  assert (! "should not be here");
+  assert_backtrace (! "should not be here");
   return EIEIO;
 }
 
@@ -481,7 +539,7 @@ error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
 			   char *name, mode_t mode, struct node **np)
 {
-  assert (! "should not be here");
+  assert_backtrace (! "should not be here");
   return EIEIO;
 }
 
@@ -754,7 +812,7 @@ netfs_attempt_readlink (struct iouser *user, struct node *np, char *buf)
 	err = EINVAL;
       else
 	{
-	  assert (translen <= sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1);
+	  assert_backtrace (translen <= sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1);
 	  memcpy (buf, &trans[sizeof _HURD_SYMLINK],
 		  translen - sizeof _HURD_SYMLINK);
 	}
@@ -1029,7 +1087,7 @@ netfs_demuxer (mach_msg_header_t *inp,
       else
 	{
 	  error_t err;
-	  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
+	  assert_backtrace (MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
 		  == MACH_MSG_TYPE_MOVE_SEND
 		  || MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
 		  == MACH_MSG_TYPE_PROTECTED_PAYLOAD);

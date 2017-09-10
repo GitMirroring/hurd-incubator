@@ -21,7 +21,8 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
+#define assert	assert_backtrace
 #include <pwd.h>
 #include <hurd/resource.h>
 #include <unistd.h>
@@ -1022,7 +1023,7 @@ specs_add_alias (struct ps_fmt_specs *specs,
   exp->name = malloc (name_len + 1);
   if (! exp->name)
     return 0;
-  bcopy ((char *)alias->name, (char *)exp->name, name_len);
+  memcpy ((char *)exp->name, (char *)alias->name, name_len);
   ((char *)exp->name)[name_len] = '\0';
 
   /* Copy the rest of the fields from ALIAS, but defaulting to SRC.  */

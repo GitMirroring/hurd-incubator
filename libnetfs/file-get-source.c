@@ -28,10 +28,8 @@ error_t
 netfs_S_file_get_source (struct protid *cred,
 			 char *source)
 {
-  if (! cred
-      || cred->pi.bucket != netfs_port_bucket
-      || cred->pi.class != netfs_protid_class)
+  if (! cred)
     return EOPNOTSUPP;
 
-  return netfs_get_source (cred, source, 1024 /* XXX */);
+  return netfs_get_source (source, 1024 /* XXX */);
 }
