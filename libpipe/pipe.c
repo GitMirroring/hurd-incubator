@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For memset() */
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 
 #include <mach/time_value.h>
@@ -319,7 +319,10 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 
   /* Nothing to do.  */
   if (data_len == 0 && control_len == 0 && num_ports == 0)
-    return 0;
+    {
+      *amount = 0;
+      return 0;
+    }
 
   err = pipe_wait_writable (pipe, noblock);
   if (err)
@@ -435,7 +438,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
 	packet_read_ports (packet, ports, num_ports);
 
       packet = pq_next (pq, PACKET_TYPE_DATA, NULL);
-      assert (packet);		/* pipe_write always writes a data packet.  */
+      assert_backtrace (packet);		/* pipe_write always writes a data packet.  */
     }
   else
     /* No control data... */

@@ -1,6 +1,7 @@
 #
 #   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2004,
-#   2005, 2008, 2010 Free Software Foundation, Inc.
+#   2005, 2008, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Free Software
+#   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -91,15 +92,15 @@ $(module-dir)/%: %
 # You can use this rule to make a dynamically-loadable version of any
 # of the modules.
 %.so.$(hurd-version): 
-	$(CC) -shared -Wl,-soname=$@ -o $@ $(rpath) \
+	$(CC) -shared -Wl,-soname=$@ -o $@ $(lpath) \
 		$(CFLAGS) $($*-CFLAGS) $(LDFLAGS) \
 		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
 
 lex.c: lex.l parser.tab.h
-parser.tab.h: parser.y
+%.tab.h %.c: %.y
 	if $(YACC) $(YFLAGS) -d $<; then \
-	    mv y.tab.h $@; \
-	    rm y.tab.c; \
+	    mv y.tab.h $*.tab.h; \
+	    mv y.tab.c $*.c; \
 	fi
 
 XKB_SRCS = xkb/compose.c xkb/kstoucs.c xkb/parser.y xkb/lex.l \

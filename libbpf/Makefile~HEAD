@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,99,2000,2001 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,2005 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -15,16 +15,17 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := random
-makemode := server
+dir := libbpf
+makemode := library
 
-CFLAGS += -D__HURD__
+libname = libbpf
+SRCS= bpf_impl.c queue.c
+LCLHDRS = bpf_impl.h queue.h
+installhdrs = bpf_impl.h queue.h
 
-target = random
-SRCS = random.c gnupg-random.c gnupg-rmd160.c
-OBJS = $(SRCS:.c=.o) startup_notifyServer.o
-LCLHDRS = gnupg-random.h gnupg-rmd.h gnupg-bithelp.h random.h
-HURDLIBS = trivfs ports fshelp ihash iohelp shouldbeinlibc
-LDLIBS = -lpthread
+MIGSTUBS = 
+OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
+
+MIGCOMSFLAGS =
 
 include ../Makeconf

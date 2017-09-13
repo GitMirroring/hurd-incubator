@@ -1,5 +1,8 @@
-/* random.c - A single-file translator providing random data
-   Copyright (C) 1998, 1999, 2001 Free Software Foundation, Inc.
+/* Socket I/O operations
+
+   Copyright (C) 2016 Free Software Foundation, Inc.
+
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,20 +16,26 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#ifndef __RANDOM_H__
-#define __RANDOM_H__
+#include <fcntl.h>
 
-/* How many random bytes to gather at most.
-   XXX: Should be at least POOLSIZE.  */
-#define GATHERBUFSIZE 32768
+#include "sock.h"
+#include "sserver.h"
 
-/* The random bytes we collected.  */
-extern char gatherbuf[GATHERBUFSIZE];
+#include "fs_S.h"
+
+error_t
+S_file_check_access (struct sock_user *cred, int *type)
+{
+  if (!cred)
+    return EOPNOTSUPP;
 
-/* The current positions in gatherbuf[].  */
-extern int gatherrpos;
-extern int gatherwpos;
+  *type = 0;
+  if (cred->sock->read_pipe)
+    *type |= O_READ;
+  if (cred->sock->write_pipe)
+    *type |= O_WRITE;
 
-#endif
+  return 0;
+}

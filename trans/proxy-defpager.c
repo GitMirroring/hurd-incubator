@@ -67,6 +67,19 @@ S_default_pager_info (mach_port_t default_pager, default_pager_info_t *info)
 }
 
 kern_return_t
+S_default_pager_storage_info (mach_port_t default_pager,
+			      vm_size_array_t *size,
+			      mach_msg_type_number_t *sizeCnt,
+			      vm_size_array_t *free,
+			      mach_msg_type_number_t *freeCnt,
+			      data_t *name,
+			      mach_msg_type_number_t *nameCnt)
+{
+  return allowed (default_pager, O_READ)
+    ?: default_pager_storage_info (real_defpager, size, sizeCnt, free, freeCnt, name, nameCnt);
+}
+
+kern_return_t
 S_default_pager_objects (mach_port_t default_pager,
 			 default_pager_object_array_t *objects,
 			 mach_msg_type_number_t *objectsCnt,
@@ -275,8 +288,6 @@ main (int argc, char **argv)
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
-
-  trivfs_fsid = getpid ();
 
   err = trivfs_add_protid_port_class (&trivfs_protid_class);
   if (err)

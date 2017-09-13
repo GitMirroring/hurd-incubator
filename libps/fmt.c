@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -80,8 +80,8 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 
 	  if (fields == NULL)
 	    {
-	      FREE (new_fmt);
 	      FREE (new_fmt->src);
+	      FREE (new_fmt);
 	      return ENOMEM;
 	    }
 
@@ -362,12 +362,9 @@ ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy)
 
   if (!new || !fields || !src)
     {
-      if (new)
-	free (new);
-      if (fields)
-	free (fields);
-      if (src)
-	free (src);
+      free (new);
+      free (fields);
+      free (src);
       return ENOMEM;
     }
 

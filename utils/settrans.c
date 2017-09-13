@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +51,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 #define STRINGIFY(arg) _STRINGIFY (arg)
 
 #define OPT_CHROOT_CHDIR	-1
+#define OPT_STACK		-2
 
 static struct argp_option options[] =
 {
@@ -71,6 +72,10 @@ static struct argp_option options[] =
   {"exclusive",   'x', 0, 0, "Only set the translator if there is not one already"},
   {"orphan",      'o', 0, 0, "Disconnect old translator from the filesystem "
 			     "(do not ask it to go away)"},
+  {"underlying",  'U', "NODE", 0, "Open NODE and hand it to the translator "
+				  "as the underlying node"},
+  {"stack", OPT_STACK, 0, 0, "Replace an existing translator, but keep it "
+			     "running, and put the new one on top"},
 
   {"chroot",      'C', 0, 0,
    "Instead of setting the node's translator, take following arguments up to"
@@ -94,6 +99,44 @@ static struct argp_option options[] =
 static char *args_doc = "NODE [TRANSLATOR ARG...]";
 static char *doc = "Set the passive/active translator on NODE."
 "\vBy default the passive translator is set.";
+
+/* Authentication of the current process.  */
+uid_t *uids;
+gid_t *gids;
+size_t uids_len, gids_len;
+
+/* Initialize and populate the uids and gids vectors.  */
+error_t
+get_credentials (void)
+{
+  /* Fetch uids...  */
+  uids_len = geteuids (0, 0);
+  if (uids_len < 0)
+    return errno;
+
+  uids = malloc (uids_len * sizeof (uid_t));
+  if (! uids)
+    return ENOMEM;
+
+  uids_len = geteuids (uids_len, uids);
+  if (uids_len < 0)
+    return errno;
+
+  /* ... and gids.  */
+  gids_len = getgroups (0, 0);
+  if (gids_len < 0)
+    return errno;
+
+  gids = malloc (gids_len * sizeof (gid_t));
+  if (! uids)
+    return ENOMEM;
+
+  gids_len = getgroups (gids_len, gids);
+  if (gids_len < 0)
+    return errno;
+
+  return 0;
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -281,9 +324,12 @@ main(int argc, char *argv[])
   int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0,
       orphan = 0, interactive = 0;
   int start = 0;
+  int stack = 0;
   char *pid_file = NULL;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
+  char *underlying_node_name = NULL;
+  int underlying_lookup_flags;
   char **chroot_command = 0;
   char *chroot_chdir = "/";
 
@@ -317,6 +363,11 @@ main(int argc, char *argv[])
 	  start = 1;
 	  active = 1;	/* start implies active */
 	  break;
+	case OPT_STACK:
+	  stack = 1;
+	  active = 1;	/* stack implies active */
+	  orphan = 1;	/* stack implies orphan */
+	  break;
 	case 'p': passive = 1; break;
 	case 'i': interactive = 1; break;
 	case 'k': keep_active = 1; break;
@@ -330,6 +381,11 @@ main(int argc, char *argv[])
 	  break;
 
 	case 'o': orphan = 1; break;
+	case 'U':
+	  underlying_node_name = strdup (arg);
+	  if (underlying_node_name == NULL)
+	    error(3, ENOMEM, "Failed to duplicate argument");
+	  break;
 
 	case 'C':
 	  if (chroot_command)
@@ -394,6 +450,14 @@ main(int argc, char *argv[])
   struct argp argp = {options, parse_opt, args_doc, doc};
 
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
+
+  if (stack)
+    {
+      underlying_node_name = node_name;
+      underlying_lookup_flags = lookup_flags && ~O_NOTRANS;
+    }
+  else
+    underlying_lookup_flags = lookup_flags;
 
   if (!active && !passive && !chroot_command && !interactive)
     passive = 1;		/* By default, set the passive translator.  */
@@ -546,7 +610,21 @@ main(int argc, char *argv[])
 	      return open_err;
 	    }
 
-	  *underlying = node;
+	  if (underlying_node_name)
+	    {
+	      *underlying = file_name_lookup (underlying_node_name,
+					      flags | underlying_lookup_flags,
+					      0666);
+	      if (! MACH_PORT_VALID (*underlying))
+		{
+		  /* For the error message.  */
+		  node_name = underlying_node_name;
+		  open_err = errno;
+		  return open_err;
+		}
+	    }
+	  else
+	    *underlying = node;
 	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
 
 	  return 0;
@@ -594,9 +672,14 @@ main(int argc, char *argv[])
 	  mach_port_t root;
 	  file_t executable;
 	  char *prefixed_name;
+
+	  err = get_credentials ();
+	  if (err)
+	    error (6, err, "getting credentials");
+
 	  err = fsys_getroot (active_control,
 			      MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
-			      NULL, 0, NULL, 0, 0,
+			      uids, uids_len, gids, gids_len, 0,
 			      &do_retry, retry_name, &root);
 	  mach_port_deallocate (mach_task_self (), active_control);
 	  if (err)
@@ -621,7 +704,7 @@ main(int argc, char *argv[])
 	  if (MACH_PORT_VALID (executable))
 	    {
 	      err = mach_port_deallocate (mach_task_self (), executable);
-	      assert_perror (err);
+	      assert_perror_backtrace (err);
 	      if (prefixed_name)
 		chroot_command[0] = prefixed_name;
 	    }

@@ -30,7 +30,7 @@
 void
 free_entry (struct ftpfs_dir_entry *e)
 {
-  assert (e->deleted);
+  assert_backtrace (e->deleted);
   free (e->name);
   if (e->symlink_target)
     free (e->symlink_target);
@@ -654,10 +654,8 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 	{
 	  /* If there's already a node, add a ref so that it doesn't go
              away.  */
-	  pthread_spin_lock (&netfs_node_refcnt_lock);
-	  if (e->node)
-	    e->node->references++;
-	  pthread_spin_unlock (&netfs_node_refcnt_lock);
+          if (e->node)
+            netfs_nref (e->node);
 
 	  if (! e->node)
 	    /* No node; make one and install it into E.  */
@@ -682,11 +680,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 		  if (!err && dir->num_live_entries++ == 0)
 		    /* Keep a reference to dir's node corresponding to
 		       children.  */
-		    {
-		      pthread_spin_lock (&netfs_node_refcnt_lock);
-		      dir->node->references++;
-		      pthread_spin_unlock (&netfs_node_refcnt_lock);
-		    }
+                    netfs_nref (dir->node);
 		}
 	    }
 
@@ -711,8 +705,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
       pthread_mutex_unlock (&dir->node->lock);
     }
 
-  if (rmt_path)
-    free (rmt_path);
+  free (rmt_path);
 
   return err;
 }
@@ -737,10 +730,8 @@ ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node)
     /* We've got a dir entry, get a node for it.  */
     {
       /* If there's already a node, add a ref so that it doesn't go away.  */
-      pthread_spin_lock (&netfs_node_refcnt_lock);
       if (e->node)
-	e->node->references++;
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
+        netfs_nref (e->node);
 
       if (! e->node)
 	/* No node; make one and install it into E.  */
@@ -749,11 +740,7 @@ ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node)
 
 	  if (!err && dir->num_live_entries++ == 0)
 	    /* Keep a reference to dir's node corresponding to children.  */
-	    {
-	      pthread_spin_lock (&netfs_node_refcnt_lock);
-	      dir->node->references++;
-	      pthread_spin_unlock (&netfs_node_refcnt_lock);
-	    }
+            netfs_nref (dir->node);
 	}
 
       if (! err)
@@ -783,10 +770,7 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
       return ENOMEM;
     }
 
-  /* Hold a reference to the new dir's node.  */
-  pthread_spin_lock (&netfs_node_refcnt_lock);
-  node->references++;
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
+  netfs_nref (node);
 
   hurd_ihash_init (&new->htable, offsetof (struct ftpfs_dir_entry, dir_locp));
   hurd_ihash_set_gki (&new->htable, ihash_hash, ihash_compare);

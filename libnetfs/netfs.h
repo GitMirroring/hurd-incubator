@@ -22,7 +22,7 @@
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 
 /* This library supports client-side network file system
@@ -70,6 +70,8 @@ struct peropen
 /* A unique one of these exists for each node currently in use. */
 struct node
 {
+  struct node *next, **prevp;
+
   /* Protocol specific stuff; defined by user.  */
   struct netnode *nn;
 
@@ -82,8 +84,8 @@ struct node
 
   pthread_mutex_t lock;
 
-  /* The number of references to this node.  */
-  int references;
+  /* Hard and soft references to this node.  */
+  refcounts_t refcounts;
 
   mach_port_t sockaddr;
 
@@ -318,11 +320,10 @@ error_t netfs_file_get_storage_info (struct iouser *cred,
 				     mach_msg_type_number_t *data_len);
 
 /* The user may define this function.  The function must set source to
-   the source of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t netfs_get_source (struct protid *cred,
-                          char *source, size_t source_len);
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP.  */
+error_t netfs_get_source (char *source, size_t source_len);
 
 /* Option parsing */
 
@@ -397,10 +398,6 @@ netfs_netnode_node (struct netnode *netnode)
   return (struct node *) ((char *) netnode - _netfs_sizeof_struct_node);
 }
 
-/* Whenever node->references is to be touched, this lock must be
-   held.  Cf. netfs_nrele, netfs_nput, netfs_nref and netfs_drop_node.  */
-extern pthread_spinlock_t netfs_node_refcnt_lock;
-
 /* Normally called in main.  This function sets up some of the netfs
    server's internal state.  */
 void netfs_init (void);
@@ -425,21 +422,37 @@ struct protid *netfs_make_protid (struct peropen *po, struct iouser *user);
 struct peropen *netfs_make_peropen (struct node *, int,
 				    struct peropen *context);
 
-/* Add a reference to node NP. Unless you already hold a reference,
+/* Add a hard reference to node NP. Unless you already hold a reference,
    NP must be locked.  */
 void netfs_nref (struct node *np);
 
-/* Releases a node.  Drops a reference to node NP, which must not be
-   locked by the caller.  If this was the last reference, drops the
-   node.  The node cannot be used again without first obtaining a
-   reference to it.  */
+/* Add a light reference to a node.  */
+void netfs_nref_light (struct node *np);
+
+/* Releases a hard reference on NP. If NP is locked by anyone, then
+   this cannot be the last hard reference (because you must hold a
+   hard reference in order to hold the lock). If this is the last
+   hard reference then request soft references to be dropped.  */
 void netfs_nrele (struct node *np);
 
-/* Puts a node back.  Drops a reference to the node NP, which must be
-   locked by the caller (this lock will be released by netfs_nput).
-   If this was the last reference, drops the node.  The node cannot be
-   used again without first obtaining a reference to it.  */
+/* Release a soft reference on NP. If NP is locked by anyone, then
+   this cannot be the last reference (because you must hold a hard
+   reference in order to hold the lock).  */
+void netfs_nrele_light (struct node *np);
+
+/* Puts a node back by releasing a hard reference on NP, which must
+   be locked by the caller (this lock will be released by netfs_nput).
+   If this was the last reference, then request soft references to be
+   dropped.  */
 void netfs_nput (struct node *np);
+
+/* The user must define this function in order to drop the soft references
+   that this node may have. When this function is called, node NP has just
+   lost its hard references and is now trying to also drop its soft references.
+   If the node is stored in another data structure (for caching purposes),
+   this allows the user to remove it so that the node can be safely deleted
+   from memory.  */
+void netfs_try_dropping_softrefs (struct node *np);
 
 /* Called internally when no more references to node NP exist. */
 void netfs_drop_node (struct node *np);

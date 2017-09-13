@@ -1,25 +1,25 @@
- /* 
+ /*
   * Mach Operating System
   * Copyright (c) 1993-1989 Carnegie Mellon University
   * All Rights Reserved.
-  * 
+  *
   * Permission to use, copy, modify and distribute this software and its
   * documentation is hereby granted, provided that both the copyright
   * notice and this permission notice appear in all copies of the
   * software, derivative works or modified versions, and any portions
   * thereof, and that both notices appear in supporting documentation.
-  * 
+  *
   * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
   * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
   * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
-  * 
+  *
   * Carnegie Mellon requests users of this software to return to
-  * 
+  *
   *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
   *  School of Computer Science
   *  Carnegie Mellon University
   *  Pittsburgh PA 15213-3890
-  * 
+  *
   * any improvements or extensions that they make and grant Carnegie Mellon
   * the rights to redistribute these changes.
   */
@@ -29,8 +29,8 @@
  *
  *	Network IO.
  *
- *	Packet filter code taken from vaxif/enet.c written		 
- *		CMU and Stanford. 
+ *	Packet filter code taken from vaxif/enet.c written
+ *		CMU and Stanford.
  */
 
 /* the code copied from device/net_io.c in Mach */
@@ -58,15 +58,15 @@ static struct net_hash_header filter_hash_header[N_NET_HASH];
  */
 
 int
-bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen, 
+bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen,
 		char *header, unsigned int hlen, net_hash_entry_t **hash_headpp,
 		net_hash_entry_t *entpp)
 {
-	register bpf_insn_t pc, pc_end;
-	register unsigned int buflen;
+	bpf_insn_t pc, pc_end;
+	unsigned int buflen;
 
-	register unsigned long A, X;
-	register int k;
+	unsigned long A, X;
+	int k;
 	unsigned int mem[BPF_MEMWORDS];
 
 	/* Generic pointer to either HEADER or P according to the specified offset. */
@@ -340,9 +340,9 @@ load_byte:
  * instruction. Return 2 if it is a valid filter program with a MATCH
  * instruction. Otherwise, return 0.
  * The constraints are that each jump be forward and to a valid
- * code.  The code must terminate with either an accept or reject. 
+ * code.  The code must terminate with either an accept or reject.
  * 'valid' is an array for use by the routine (it must be at least
- * 'len' bytes long).  
+ * 'len' bytes long).
  *
  * The kernel needs to be able to verify an application's filter code.
  * Otherwise, a bogus program could easily crash the system.
@@ -350,8 +350,8 @@ load_byte:
 int
 bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 {
-	register int i, j, len;
-	register bpf_insn_t p;
+	int i, j, len;
+	bpf_insn_t p;
 
 	len = BPF_BYTES2LEN(bytes);
 
@@ -362,12 +362,12 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 
 	for (i = 1; i < len; ++i) {
 		/*
-		 * Check that that jumps are forward, and within 
+		 * Check that that jumps are forward, and within
 		 * the code block.
 		 */
 		p = &f[i];
 		if (BPF_CLASS(p->code) == BPF_JMP) {
-			register int from = i + 1;
+			int from = i + 1;
 
 			if (BPF_OP(p->code) == BPF_JA) {
 				if (from + p->k >= len)
@@ -380,7 +380,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 		 * Check that memory operations use valid addresses.
 		 */
 		if ((BPF_CLASS(p->code) == BPF_ST ||
-					(BPF_CLASS(p->code) == BPF_LD && 
+					(BPF_CLASS(p->code) == BPF_LD &&
 					 (p->code & 0xe0) == BPF_MEM)) &&
 				(p->k >= BPF_MEMWORDS || p->k < 0)) {
 			return 0;
@@ -421,7 +421,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 int
 bpf_eq (bpf_insn_t f1, bpf_insn_t f2, int bytes)
 {
-	register int count;
+	int count;
 
 	count = BPF_BYTES2LEN(bytes);
 	for (; count--; f1++, f2++) {
@@ -438,7 +438,7 @@ bpf_eq (bpf_insn_t f1, bpf_insn_t f2, int bytes)
 unsigned int
 bpf_hash (int n, unsigned int *keys)
 {
-	register unsigned int hval = 0;
+	unsigned int hval = 0;
 
 	while (n--) {
 		hval += *keys++;
@@ -451,8 +451,8 @@ int
 bpf_match (net_hash_header_t hash, int n_keys, unsigned int *keys,
 	net_hash_entry_t **hash_headpp, net_hash_entry_t *entpp)
 {
-	register net_hash_entry_t head, entp;
-	register int i;
+	net_hash_entry_t head, entp;
+	int i;
 
 	if (n_keys != hash->n_keys)
 		return FALSE;
@@ -527,14 +527,14 @@ hash_ent_remove (if_filter_list_t *ifp, net_hash_header_t hp, int used,
 void
 net_free_dead_infp (queue_entry_t dead_infp)
 {
-	register net_rcv_port_t infp, nextfp;
+	net_rcv_port_t infp, nextfp;
 
 	for (infp = (net_rcv_port_t) dead_infp; infp != 0; infp = nextfp) {
 		nextfp = (net_rcv_port_t) queue_next(&infp->input);
 		mach_port_deallocate(mach_task_self(), infp->rcv_port);
 		free(infp);
 		debug ("a dead infp is freed\n");
-	}	    
+	}
 }
 
 /*
@@ -547,7 +547,7 @@ net_free_dead_infp (queue_entry_t dead_infp)
 void
 net_free_dead_entp (queue_entry_t dead_entp)
 {
-	register net_hash_entry_t entp, nextentp;
+	net_hash_entry_t entp, nextentp;
 
 	for (entp = (net_hash_entry_t)dead_entp; entp != 0; entp = nextentp) {
 		nextentp = (net_hash_entry_t) queue_next(&entp->chain);
@@ -570,10 +570,10 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 {
 	int               filter_bytes;
 	bpf_insn_t            match;
-	register net_rcv_port_t   infp, my_infp;
+	net_rcv_port_t   infp, my_infp;
 	net_rcv_port_t        nextfp;
 	net_hash_header_t     hhp;
-	register net_hash_entry_t entp, hash_entp=NULL;
+	net_hash_entry_t entp, hash_entp=NULL;
 	net_hash_entry_t      *head, nextentp;
 	queue_entry_t     dead_infp, dead_entp;
 	int               i;
@@ -657,7 +657,7 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 					do {
 						nextentp = (net_hash_entry_t) entp->he_next;
 
-						/* checked without 
+						/* checked without
 						   ip_lock(entp->rcv_port) */
 						if (entp->rcv_port == rcv_port) {
 							ret = hash_ent_remove (ifp,
@@ -825,7 +825,7 @@ remove_dead_filter (if_filter_list_t *ifp, queue_head_t *if_port_list,
 				do {
 					nextentp = (net_hash_entry_t) entp->he_next;
 
-					/* checked without 
+					/* checked without
 					   ip_lock(entp->rcv_port) */
 					if (entp->rcv_port == dead_port) {
 						ret = hash_ent_remove (ifp,

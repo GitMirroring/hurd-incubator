@@ -27,7 +27,7 @@
 #include <hurd/fsys.h>
 #include <device/device.h>
 #include <stdio.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/paths.h>
 #include <sys/reboot.h>
 #include <sys/file.h>
@@ -51,20 +51,28 @@
 #include <version.h>
 #include <argp.h>
 #include <pids.h>
+#include <idvec.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
 #include "startup_S.h"
 #include "notify_S.h"
 #include "mung_msg_S.h"
+#include "fsys_S.h"
+#include "fs_S.h"
+#include "io_S.h"
 
 /* host_reboot flags for when we crash.  */
 static int crash_flags = RB_AUTOBOOT;
+
+static int verbose = 0;
 
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
 
 
 const char *argp_program_version = STANDARD_HURD_VERSION (startup);
+
+#define OPT_KERNEL_TASK	-1
 
 static struct argp_option
 options[] =
@@ -75,7 +83,9 @@ options[] =
   {"crash-debug",  'H', 0, 0, "On system crash, go to kernel debugger"},
   {"debug",       'd', 0, 0 },
   {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
+  {"verbose",     'v', 0, 0, "be verbose"},
   {0,             'x', 0, OPTION_HIDDEN},
+  {"kernel-task", OPT_KERNEL_TASK, "PORT"},
   {0}
 };
 
@@ -107,8 +117,10 @@ static struct ntfy_task *ntfy_tasks;
 /* Our receive right */
 static mach_port_t startup;
 
-/* Ports to the kernel */
-static mach_port_t host_priv, device_master;
+/* Ports to the kernel.  We use alias to the internal glibc locations
+   so that other code can get them using get_privileged_ports.  */
+#define host_priv	_hurd_host_priv
+#define device_master	_hurd_device_master
 
 /* Args to bootstrap, expressed as flags */
 static int bootstrap_args = 0;
@@ -129,6 +141,7 @@ static int fakeboot;
 
 /* The tasks of auth and proc and the bootstrap filesystem. */
 static task_t authtask, proctask, fstask;
+static task_t kernel_task;
 
 static mach_port_t default_ports[INIT_PORT_MAX];
 static mach_port_t default_dtable[3];
@@ -166,21 +179,20 @@ reboot_mach (int flags)
 {
   if (fakeboot)
     {
-      printf ("%s: Would %s Mach with flags %#x\n",
-	      program_invocation_short_name, BOOT (flags), flags);
-      fflush (stdout);
+      fprintf (stderr, "%s: Would %s Mach with flags %#x\n",
+               program_invocation_short_name, BOOT (flags), flags);
       exit (1);
     }
   else
     {
       error_t err;
-      printf ("%s: %sing Mach (flags %#x)...\n",
-	      program_invocation_short_name, BOOT (flags), flags);
-      fflush (stdout);
+      fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
+               program_invocation_short_name, BOOT (flags), flags);
       sleep (5);
-      while ((err = host_reboot (host_priv, flags)))
-	error (0, err, "reboot");
-      for (;;);
+      err = host_reboot (host_priv, flags);
+      if (err)
+	error (1, err, "reboot");
+      for (;;) sleep (1);
     }
 }
 
@@ -200,17 +212,16 @@ notify_shutdown (const char *msg)
   for (n = ntfy_tasks; n != NULL; n = n->next)
     {
       error_t err;
-      printf ("%s: notifying %s of %s...",
-	      program_invocation_short_name, n->name, msg);
-      fflush (stdout);
+      fprintf (stderr, "%s: notifying %s of %s...",
+               program_invocation_short_name, n->name, msg);
+
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err == MACH_SEND_INVALID_DEST)
-	puts ("(no longer present)");
+	fprintf (stderr, "(no longer present)\n");
       else if (err)
-	puts (strerror (err));
+	fprintf (stderr, "%s\n", strerror (err));
       else
-	puts ("done");
-      fflush (stdout);
+	fprintf (stderr, "done\n");
     }
 }
 
@@ -269,20 +280,18 @@ reboot_system (int flags)
 		}
 	      if (!(pi->state & PI_NOPARENT))
 		{
-		  printf ("%s: Killing pid %d\n",
-			  program_invocation_short_name, pp[ind]);
-		  fflush (stdout);
+		  fprintf (stderr, "%s: Killing pid %d\n",
+                           program_invocation_short_name, pp[ind]);
 		  task_terminate (task);
 		}
 	      if (noise_len > 0)
 		munmap (noise, noise_len);
 	    }
 	}
-      printf ("%s: Killing proc server\n", program_invocation_short_name);
-      fflush (stdout);
+      fprintf (stderr, "%s: Killing proc server\n",
+               program_invocation_short_name);
       task_terminate (proctask);
-      printf ("%s: Exiting", program_invocation_short_name);
-      fflush (stdout);
+      fprintf (stderr, "%s: Exiting", program_invocation_short_name);
     }
   reboot_mach (flags);
 }
@@ -342,17 +351,20 @@ record_essential_task (const char *name, task_t task)
 
 /** Starting programs **/
 
+typedef error_t (*insert_ports_fnc_t) (char **argv, size_t *argv_len, task_t task);
+
 /* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.
    Set TASK to be the task port of the new image. */
 void
-run (const char *server, mach_port_t *ports, task_t *task)
+run (const char *server, mach_port_t *ports, task_t *task,
+     insert_ports_fnc_t insert_ports)
 {
   char buf[BUFSIZ];
   const char *prog = server;
 
   if (bootstrap_args & RB_INITNAME)
     {
-      printf ("Server file name (default %s): ", server);
+      fprintf (stderr, "Server file name (default %s): ", server);
       if (getstring (buf, sizeof (buf)))
 	prog = buf;
     }
@@ -367,18 +379,31 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	error (0, errno, "%s", prog);
       else
 	{
-	  task_create (mach_task_self (),
+          char *argz = NULL;
+          size_t argz_len = 0;
+          err = argz_create_sep (prog, ' ', &argz, &argz_len);
+          assert_perror_backtrace (err);
+
+          err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
-		       NULL, 0,	/* OSF Mach */
+                             NULL, 0,	/* OSF Mach */
 #endif
-		       0, task);
+                             0, task);
+          assert_perror_backtrace (err);
+
+          if (insert_ports)
+            {
+              err = insert_ports (&argz, &argz_len, *task);
+              assert_perror_backtrace (err);
+            }
+
 	  if (bootstrap_args & RB_KDB)
 	    {
-	      printf ("Pausing for %s\n", prog);
+	      fprintf (stderr, "Pausing for %s\n", prog);
 	      getchar ();
 	    }
 	  err = file_exec (file, *task, 0,
-			   (char *)prog, strlen (prog) + 1, /* Args.  */
+			   argz, argz_len, /* Args.  */
 			   startup_envz, startup_envz_len,
 			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
@@ -390,21 +415,64 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	  error (0, err, "%s", prog);
 	}
 
-      printf ("File name for server %s (or nothing to reboot): ", server);
+      fprintf (stderr, "File name for server %s (or nothing to reboot): ",
+               server);
       if (getstring (buf, sizeof (buf)))
 	prog = buf;
       else
 	crash_system ();
     }
 
-#if 0
-  printf ("started %s\n", prog);
-  fflush (stdout);
-#endif
+  if (verbose)
+    fprintf (stderr, "started %s\n", prog);
 
   /* Dead-name notification on the task port will tell us when it dies,
      so we can crash if we don't make it to a fully bootstrapped Hurd.  */
   request_dead_name (*task);
+}
+
+/* Insert PORT of type PORT_TYPE into TASK, adding '--ARGUMENT=<name>'
+   to ARGZ (with <name> being the name valid in TASK).  */
+error_t
+argz_task_insert_right (char **argz, size_t *argz_len, task_t task,
+                        const char *argument,
+                        mach_port_t port, mach_msg_type_name_t port_type)
+{
+  error_t err;
+  mach_port_t name;
+  char *arg;
+
+  name = MACH_PORT_NULL;
+  do
+    {
+      name += 1;
+      err = mach_port_insert_right (task, name, port, port_type);
+    }
+  while (err == KERN_NAME_EXISTS);
+
+  if (asprintf (&arg, "--%s=%d", argument, name) < 0)
+    return errno;
+
+  err = argz_add (argz, argz_len, arg);
+  free (arg);
+  return err;
+}
+
+error_t
+proc_insert_ports (char **argz, size_t *argz_len, task_t task)
+{
+  error_t err;
+
+  if (MACH_PORT_VALID (kernel_task))
+    {
+      err = argz_task_insert_right (argz, argz_len, task,
+                                    "kernel-task",
+                                    kernel_task, MACH_MSG_TYPE_COPY_SEND);
+      if (err)
+        return err;
+    }
+
+  return 0;
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).  Return
@@ -426,7 +494,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
   char buf[512];
   do
     {
-      printf ("File name [%s]: ", filename);
+      fprintf (stderr, "File name [%s]: ", filename);
       if (getstring (buf, sizeof (buf)) && *buf)
 	filename = buf;
       file = file_name_lookup (filename, O_EXEC, 0);
@@ -462,7 +530,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     }
   if (bootstrap_args & RB_KDB)
     {
-      printf ("Pausing for %s\n", filename);
+      fprintf (stderr, "Pausing for %s\n", filename);
       getchar ();
     }
   progname = strrchr (filename, '/');
@@ -498,19 +566,63 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
 
 /** Main program and setup **/
 
+/* XXX: The libc should provide this function.  */
+static void
+mig_reply_setup (
+	const mach_msg_header_t	*in,
+	mach_msg_header_t	*out)
+{
+      static const mach_msg_type_t RetCodeType = {
+		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
+		/* msgt_size = */		32,
+		/* msgt_number = */		1,
+		/* msgt_inline = */		TRUE,
+		/* msgt_longform = */		FALSE,
+		/* msgt_deallocate = */		FALSE,
+		/* msgt_unused = */		0
+	};
+
+#define	InP	(in)
+#define	OutP	((mig_reply_header_t *) out)
+      OutP->Head.msgh_bits =
+	MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(InP->msgh_bits), 0);
+      OutP->Head.msgh_size = sizeof *OutP;
+      OutP->Head.msgh_remote_port = InP->msgh_remote_port;
+      OutP->Head.msgh_local_port = MACH_PORT_NULL;
+      OutP->Head.msgh_seqno = 0;
+      OutP->Head.msgh_id = InP->msgh_id + 100;
+      OutP->RetCodeType = RetCodeType;
+      OutP->RetCode = MIG_BAD_ID;
+#undef InP
+#undef OutP
+}
+
 static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
-  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int startup_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int msg_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  mig_routine_t routine;
 
-  return (notify_server (inp, outp) ||
-	  msg_server (inp, outp) ||
-	  fsys_server (inp, outp) ||
-	  startup_server (inp, outp));
+  if (verbose > 1)
+    error (0, 0, "%d", inp->msgh_id);
+
+  mig_reply_setup (inp, outp);
+
+  if ((routine = notify_server_routine (inp)) ||
+      (routine = msg_server_routine (inp)) ||
+      (routine = fsys_server_routine (inp)) ||
+      (routine = fs_server_routine (inp)) ||
+      (routine = io_server_routine (inp)) ||
+      (routine = startup_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+
+      if (verbose > 1)
+        error (0, ((mig_reply_header_t *) outp)->RetCode, "%d", inp->msgh_id);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 error_t
@@ -550,7 +662,11 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'n': bootstrap_args |= RB_INITNAME; break;
     case 'f': fakeboot = 1; break;
     case 'H': crash_flags = RB_DEBUGGER; break;
+    case 'v': verbose++; break;
     case 'x': /* NOP */ break;
+    case OPT_KERNEL_TASK:
+      kernel_task = atoi (arg);
+      break;
     default: return ARGP_ERR_UNKNOWN;
     }
   return 0;
@@ -559,7 +675,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 int
 main (int argc, char **argv, char **envp)
 {
-  volatile int err;
+  error_t err;
   int i;
   int flags;
   mach_port_t consdev;
@@ -587,8 +703,6 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_READ|D_WRITE, "console", &consdev))
     crash_mach ();
 
-  wire_task_self ();
-
   /* Clear our bootstrap port so our children don't inherit it.  */
   task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
 
@@ -598,16 +712,20 @@ main (int argc, char **argv, char **envp)
     crash_mach ();
   setbuf (stdout, NULL);
 
+  err = wire_task_self ();
+  if (err)
+    error (0, err, "wire_task_self");
+
   err = argz_create (envp, &startup_envz, &startup_envz_len);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = mach_port_insert_right (mach_task_self (), startup, startup,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Crash if the boot filesystem task dies.  */
   request_dead_name (fstask);
@@ -639,12 +757,12 @@ main (int argc, char **argv, char **envp)
 			       | sigmask (SIGTTOU));
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
-  run ("/hurd/proc", default_ports, &proctask);
-  printf (" proc");
-  fflush (stdout);
-  run ("/hurd/auth", default_ports, &authtask);
-  printf (" auth");
-  fflush (stdout);
+  run ("/hurd/proc", default_ports, &proctask, proc_insert_ports);
+  if (! verbose)
+    fprintf (stderr, " proc");
+  run ("/hurd/auth", default_ports, &authtask, NULL);
+  if (! verbose)
+    fprintf (stderr, " auth");
   default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
 
   /* Wait for messages.  When both auth and proc have started, we
@@ -652,7 +770,7 @@ main (int argc, char **argv, char **envp)
   while (1)
     {
       err = mach_msg_server (demuxer, 0, startup);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 }
 
@@ -663,47 +781,57 @@ launch_core_servers (void)
   mach_port_t authproc, fsproc, procproc;
   error_t err;
 
+  if (verbose)
+    fprintf (stderr, "Launching core servers\n");
+
   /* Reply to the proc and auth servers.   */
   err = startup_procinit_reply (procreply, procreplytype, 0,
 				mach_task_self (), authserver,
 				host_priv, MACH_MSG_TYPE_COPY_SEND,
 				device_master, MACH_MSG_TYPE_COPY_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (!fakeboot)
     {
       mach_port_deallocate (mach_task_self (), device_master);
       device_master = 0;
     }
 
+  if (verbose)
+    fprintf (stderr, "proc launched\n");
+
   /* Mark us as important.  */
   err = proc_mark_important (procserver);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (procserver);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Declare that the filesystem and auth are our children. */
   err = proc_child (procserver, fstask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_child (procserver, authtask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = proc_task2proc (procserver, authtask, &authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_important (authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = install_as_translator ();
   if (err)
     /* Good luck.  Who knows, maybe it's an old installation.  */
     error (0, err, "Failed to bind to " _SERVERS_STARTUP);
 
+  if (verbose)
+    fprintf (stderr, "Installed on /servers/startup\n");
+
   err = startup_authinit_reply (authreply, authreplytype, 0, authproc,
-				MACH_MSG_TYPE_COPY_SEND);
-  assert_perror (err);
-  err = mach_port_deallocate (mach_task_self (), authproc);
-  assert_perror (err);
+				MACH_MSG_TYPE_MOVE_SEND);
+  assert_perror_backtrace (err);
+
+  if (verbose)
+    fprintf (stderr, "auth launched\n");
 
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -715,13 +843,13 @@ launch_core_servers (void)
   err = proc_set_arg_locations (procserver,
 				(vm_address_t) global_argv,
 				(vm_address_t) environ);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
   /* Declare that the proc server is our child.  */
   err = proc_child (procserver, proctask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_task2proc (procserver, proctask, &procproc);
   if (!err)
     {
@@ -732,23 +860,18 @@ launch_core_servers (void)
 
   err = proc_register_version (procserver, host_priv,
 			       "init", "", HURD_VERSION);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */
   err = proc_task2proc (procserver, fstask, &fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_important (fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
-#if 0
-  printf ("Init has completed.\n");
-  fflush (stdout);
-#endif
-  printf (".\n");
-  fflush (stdout);
+  fprintf (stderr, ".\n");
 
   /* Tell the proc server our msgport.  Be sure to do this after we are all
      done making requests of proc.  Once we have done this RPC, proc
@@ -757,15 +880,20 @@ launch_core_servers (void)
      calling fsys_init, because fsys_init blocks on exec_init, and
      exec_init will block waiting on our message port.  */
   err = proc_setmsgport (procserver, startup, &old);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
 
+  if (verbose)
+    fprintf (stderr, "Message port registered\n");
+
   /* Give the bootstrap FS its proc and auth ports.  */
-  err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
-  mach_port_deallocate (mach_task_self (), fsproc);
+  err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND, authserver);
   if (err)
     error (0, err, "fsys_init"); /* Not necessarily fatal.  */
+
+  if (verbose)
+    fprintf (stderr, "Fixed up bootstrap filesystem\n");
 }
 
 /* Set up the initial value of the standard exec data. */
@@ -777,7 +905,6 @@ init_stdarrays ()
   mach_port_t ref;
   mach_port_t *std_port_array;
   int *std_int_array;
-  int i;
 
   std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
   std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
@@ -811,14 +938,29 @@ init_stdarrays ()
   std_int_array[INIT_UMASK] = CMASK;
 
   __USEPORT (PROC, proc_setexecdata (port, std_port_array,
-				     MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
 				     std_int_array, INIT_INT_MAX));
-  for (i = 0; i < INIT_PORT_MAX; i++)
-    mach_port_deallocate (mach_task_self (), std_port_array[i]);
 }
 
 /* Frobnicate the kernel task and the proc server's idea of it (PID 2),
    so the kernel command line can be read as for a normal Hurd process.  */
+
+void
+dump_processes (void)
+{
+  pid_t pid;
+  for (pid = 1; pid < 100; pid++)
+    {
+      char args[256], *buffer = args;
+      size_t len = sizeof args;
+      if (proc_getprocargs (procserver, pid, &buffer, &len) == 0)
+        {
+          fprintf (stderr, "pid%d\t%s\n", (int) pid, buffer);
+          if (buffer != args)
+            vm_deallocate (mach_task_self (), (vm_offset_t) buffer, len);
+        }
+    }
+}
 
 void
 frob_kernel_process (void)
@@ -832,12 +974,32 @@ frob_kernel_process (void)
   task_t task;
   process_t proc, kbs;
 
-  err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
+  if (verbose)
+    fprintf (stderr, "Frobbing kernel process\n");
+
+  if (MACH_PORT_VALID (kernel_task))
+    {
+      task = kernel_task;
+      kernel_task = MACH_PORT_NULL;
+    }
+  else
+    {
+      err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
+      if (err)
+        {
+          error (0, err, "cannot get kernel task port");
+          return;
+        }
+    }
+
+  /* Make the kernel our child.  */
+  err = proc_child (procserver, task);
   if (err)
     {
-      error (0, err, "cannot get kernel task port");
-      return;
+      error (0, err, "cannot make the kernel our child");
+      dump_processes ();
     }
+
   err = proc_task2proc (procserver, task, &proc);
   if (err)
     {
@@ -848,13 +1010,15 @@ frob_kernel_process (void)
 
   /* Mark the kernel task as an essential task so that we or the proc server
      never want to task_terminate it.  */
-  proc_mark_important (proc);
+  err = proc_mark_important (proc);
+  if (err)
+    error (0, err, "cannot mark the kernel as important");
 
   err = record_essential_task ("kernel", task);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = task_get_bootstrap_port (task, &kbs);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (kbs == MACH_PORT_NULL)
     {
       /* The kernel task has no bootstrap port set, so we are presumably
@@ -903,14 +1067,16 @@ frob_kernel_process (void)
      canonical argv array and argz of those words.  */
 
   err = argz_create (&global_argv[1], &argz, &argzlen);
-  assert_perror (err);
+  assert_perror_backtrace (err);
+  err = argz_insert (&argz, &argzlen, argz, "gnumach");
+  assert_perror_backtrace (err);
   argc = argz_count (argz, argzlen);
 
   windowsz = round_page (((argc + 1) * sizeof (char *)) + argzlen);
 
   mine = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
 			      MAP_ANON, 0, 0);
-  assert (mine != -1);
+  assert_backtrace (mine != -1);
   err = vm_allocate (task, &his, windowsz, 1);
   if (err)
     {
@@ -1050,7 +1216,10 @@ start_child (const char *prog, char **progargs)
 	err = argz_create ((char **) argv, &args, &arglen);
       }
     }
-  assert_perror (err);
+  assert_perror_backtrace (err);
+
+  if (verbose)
+    fprintf (stderr, "Going to execute '%s'\n", args);
 
   file = file_name_lookup (args, O_EXEC, 0);
   if (file == MACH_PORT_NULL)
@@ -1071,7 +1240,7 @@ start_child (const char *prog, char **progargs)
 
   if (bootstrap_args & RB_KDB)
     {
-      printf ("Pausing for %s\n", args);
+      fprintf (stderr, "Pausing for %s\n", args);
       getchar ();
     }
 
@@ -1129,6 +1298,8 @@ launch_something (const char *why)
 	  if (start_child (tries[try++], NULL) == 0)
 	    return;
 	}
+      else
+	try++;
     }
 
   crash_system ();
@@ -1138,6 +1309,9 @@ void
 launch_system (void)
 {
   launch_something (0);
+
+  if (verbose)
+    fprintf (stderr, "Init has completed\n");
 }
 
 /** RPC servers **/
@@ -1157,6 +1331,9 @@ S_startup_procinit (startup_t server,
   if (procserver)
     /* Only one proc server.  */
     return EPERM;
+
+  if (verbose)
+    fprintf (stderr, "Received startup message from proc\n");
 
   procserver = proc;
 
@@ -1183,6 +1360,9 @@ S_startup_authinit (startup_t server,
   if (authserver)
     /* Only one auth server.  */
     return EPERM;
+
+  if (verbose)
+    fprintf (stderr, "Received startup message from auth\n");
 
   authserver = auth;
 
@@ -1216,6 +1396,10 @@ S_startup_essential_task (mach_port_t server,
   if (credential != host_priv)
     return EPERM;
 
+  if (verbose)
+    fprintf (stderr, "Received startup essential message from '%s'\n",
+             name);
+
   fail = record_essential_task (name, task);
   if (fail)
     return fail;
@@ -1234,8 +1418,13 @@ S_startup_essential_task (mach_port_t server,
       else if (!strcmp (name, "proc"))
 	procinit = 1;
 
+      if (verbose)
+        fprintf (stderr, "  still waiting for:");
+
       if (authinit && execinit && procinit)
 	{
+          if (verbose)
+            fprintf (stderr, " none!\n");
 	  /* Reply to this RPC, after that everything
 	     is ready for real startup to begin. */
 	  startup_essential_task_reply (reply, replytype, 0);
@@ -1249,6 +1438,17 @@ S_startup_essential_task (mach_port_t server,
 
 	  return MIG_NO_REPLY;
 	}
+
+      if (verbose)
+        {
+          if (! authinit)
+            fprintf (stderr, " auth");
+          if (! execinit)
+            fprintf (stderr, " exec");
+          if (! procinit)
+            fprintf (stderr, " proc");
+          fprintf (stderr, "\n");
+        }
     }
 
   return 0;
@@ -1282,7 +1482,7 @@ do_mach_notify_dead_name (mach_port_t notify,
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
 
-  assert (notify == startup);
+  assert_backtrace (notify == startup);
 
   /* Deallocate the extra reference the notification carries. */
   mach_port_deallocate (mach_task_self (), name);
@@ -1347,41 +1547,6 @@ S_startup_reboot (mach_port_t server,
 
   reboot_system (code);
   for (;;);
-}
-
-/* Stubs for unused notification RPCs.  */
-
-kern_return_t
-do_mach_notify_port_destroyed (mach_port_t notify,
-			       mach_port_t rights)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_send_once (mach_port_t notify)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_port_deleted (mach_port_t notify,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_msg_accepted (mach_port_t notify,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
 }
 
 /* msg server */
@@ -1632,74 +1797,55 @@ S_fsys_getroot (mach_port_t fsys_t,
 }
 
 error_t
-S_fsys_goaway (mach_port_t control, int flags)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_startup (mach_port_t bootstrap, int flags, mach_port_t control,
-		mach_port_t *real, mach_msg_type_name_t *realtype)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_syncfs (mach_port_t control,
-	       int wait,
-	       int recurse)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_set_options (mach_port_t control,
-		    char *data, mach_msg_type_number_t len,
-		    int do_children)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
 S_fsys_get_options (mach_port_t control,
 		    char **data, mach_msg_type_number_t *len)
 {
+  /* XXX Implement me.  */
   return EOPNOTSUPP;
 }
 
 error_t
-S_fsys_getfile (mach_port_t control,
-		uid_t *uids, size_t nuids,
-		uid_t *gids, size_t ngids,
-		char *handle, size_t handllen,
-		mach_port_t *pt,
-		mach_msg_type_name_t *pttype)
+S_file_check_access (mach_port_t server,
+                     int *allowed)
 {
-  return EOPNOTSUPP;
+  if (server != startup)
+    return EOPNOTSUPP;
+  *allowed = 0;
+  return 0;
 }
 
 error_t
-S_fsys_getpriv (mach_port_t control,
-		mach_port_t *host_priv, mach_msg_type_name_t *host_priv_type,
-		mach_port_t *dev_master, mach_msg_type_name_t *dev_master_type,
-		task_t *fs_task, mach_msg_type_name_t *fs_task_type)
+S_io_stat (mach_port_t server,
+           struct stat *st)
 {
-  return EOPNOTSUPP;
+  if (server != startup)
+    return EOPNOTSUPP;
+
+  memset (st, 0, sizeof *st);
+
+  st->st_fstype = FSTYPE_MISC;
+  st->st_fsid = getpid ();
+  st->st_mode = S_IFCHR | S_IROOT;
+
+  return 0;
 }
 
 error_t
-S_fsys_init (mach_port_t control,
-	   mach_port_t reply,
-	   mach_msg_type_name_t replytype,
-	   mach_port_t proc,
-	   auth_t auth)
+S_io_restrict_auth (mach_port_t server,
+                    mach_port_t *newport,
+                    mach_msg_type_name_t *newporttype,
+                    uid_t *uids, size_t nuids,
+                    uid_t *gids, size_t ngids)
 {
-  return EOPNOTSUPP;
-}
+  struct idvec user = { uids, (unsigned) nuids, (unsigned) nuids };
 
-error_t
-S_fsys_forward (mach_port_t server, mach_port_t requestor,
-		char *argz, size_t argz_len)
-{
-  return EOPNOTSUPP;
+  if (server != startup)
+    return EOPNOTSUPP;
+
+  if (! idvec_contains (&user, 0))
+    return EPERM;
+
+  *newport = server;
+  *newporttype = MACH_MSG_TYPE_COPY_SEND;
+  return 0;
 }

@@ -2,7 +2,7 @@
    Copyright (C) 1995, 1996, 1998, 1999, 2000, 2002, 2007, 2008
    Free Software Foundation, Inc.
 
-   Written by Zheng Da 
+   Written by Zheng Da
 
    Based on pfinet/ethernet.c, written by Michael I. Bushnell, p/BSG.
 
@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include <error.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 
@@ -42,6 +42,10 @@ static struct port_info *readpt;
 
 /* Port for writing message to the real network interface. */
 mach_port_t ether_port;
+
+/* The ethernet address of the real network interface.  */
+char ether_address[ETH_ALEN];
+
 /* Port for receiving messages from the interface. */
 static mach_port_t readptname;
 
@@ -71,44 +75,60 @@ int ethernet_demuxer (mach_msg_header_t *inp,
   return 1;
 }
 
-int set_promisc (char *dev_name, mach_port_t ether_port, int is_promisc)
+error_t
+eth_set_clear_flags (int set_flags, int clear_flags)
 {
-#ifndef NET_FLAGS
-#define NET_FLAGS (('n'<<16) + 4)
-#endif
+  error_t err;
   int flags;
-  int ret;
   size_t count;
 
-  debug ("set_promisc is called, is_promisc: %d\n", is_promisc);
   count = 1;
-  ret = device_get_status (ether_port, NET_FLAGS, (dev_status_t) &flags, 
+  err = device_get_status (ether_port, NET_FLAGS, (dev_status_t) &flags,
                            &count);
-  if (ret) 
+  if (err)
     {
-      error (0, ret, "device_get_status");  
-      return -1;
-    }  
-  if (is_promisc)
-    flags |= IFF_PROMISC;
-  else
-    flags &= ~IFF_PROMISC;
-  ret = device_set_status(ether_port, NET_FLAGS, (dev_status_t) &flags, 1);
-  if (ret) 
-    {
-      error (0, ret, "device_set_status");
-      return -1;
-    }  
-  return 0;  
-} 
+      error (0, err, "device_get_status");
+      return err;
+    }
 
-int ethernet_open (char *dev_name, device_t master_device, 
+  flags |= set_flags;
+  flags &= ~clear_flags;
+
+  err = device_set_status(ether_port, NET_FLAGS, (dev_status_t) &flags, 1);
+  if (err)
+    {
+      error (0, err, "device_set_status");
+      return err;
+    }
+
+  return 0;
+}
+
+static error_t
+get_ethernet_address (mach_port_t port, char *address)
+{
+  error_t err;
+  int net_address[2];
+  size_t count = 2;
+  assert_backtrace (count * sizeof (int) >= ETH_ALEN);
+
+  err = device_get_status (port, NET_ADDRESS, net_address, &count);
+  if (err)
+    return err;
+
+  net_address[0] = ntohl (net_address[0]);
+  net_address[1] = ntohl (net_address[1]);
+  memcpy (address, net_address, ETH_ALEN);
+  return 0;
+}
+
+int ethernet_open (char *dev_name, device_t master_device,
 		   struct port_bucket *etherport_bucket,
 		   struct port_class *etherreadclass)
 {
   error_t err;
 
-  assert (ether_port == MACH_PORT_NULL);
+  assert_backtrace (ether_port == MACH_PORT_NULL);
 
   err = ports_create_port (etherreadclass, etherport_bucket,
 			   sizeof (struct port_info), &readpt);
@@ -131,13 +151,25 @@ int ethernet_open (char *dev_name, device_t master_device,
   if (err)
     error (2, err, "device_set_filter: %s", dev_name);
 
-  set_promisc (dev_name, ether_port, 1);
+  err = eth_set_clear_flags (IFF_PROMISC, 0);
+  if (err)
+    error (2, err, "eth_set_clear_flags");
+
+  err = get_ethernet_address (ether_port, ether_address);
+  if (err)
+    error (2, err, "%s: Cannot get hardware Ethernet address", dev_name);
+
   return 0;
 }
 
 int ethernet_close (char *dev_name)
 {
-  set_promisc (dev_name, ether_port, 0);
+  error_t err;
+
+  err = eth_set_clear_flags (0, IFF_PROMISC);
+  if (err)
+    error (2, err, "eth_set_clear_flags");
+
   return 0;
 }
 
