@@ -415,47 +415,51 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
 
 /* Node management.  */
 
+/* We need to drop the soft references on NP.  */
+void
+netfs_try_dropping_softrefs (struct node *np)
+{
+  vcons_t vcons = np->nn->vcons;
+  int release = FALSE;
+
+  pthread_mutex_lock (&vcons->lock);
+  if (np == vcons->dir_node)
+    {
+      release = TRUE;
+      vcons->dir_node = 0;
+    }
+  else if (np == vcons->cons_node)
+    {
+      release = TRUE;
+      vcons->cons_node = 0;
+    }
+  else if (np == vcons->disp_node)
+    {
+      release = TRUE;
+      vcons->disp_node = 0;
+    }
+  else if (np == vcons->inpt_node)
+    {
+      release = TRUE;
+      vcons->inpt_node = 0;
+    }
+  if (release)
+    netfs_nrele_light (np);
+  pthread_mutex_unlock (&vcons->lock);
+
+  /* Release our reference.  */
+  if (release)
+    vcons_release (vcons);
+
+}
+
 /* Node NP has no more references; free all its associated
    storage.  */
 void
 netfs_node_norefs (struct node *np)
 {
-  vcons_t vcons = np->nn->vcons;
-
   /* The root node does never go away.  */
-  assert (!np->nn->cons && np->nn->vcons);
-
-  /* Avoid deadlock.  */
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
-
-  /* Find the back reference to ourself in the virtual console
-     structure, and delete it.  */
-  pthread_mutex_lock (&vcons->lock);
-  pthread_spin_lock (&netfs_node_refcnt_lock);
-  if (np->references)
-    {
-      /* Someone else got a reference while we were attempting to go
-	 away.  This can happen in netfs_attempt_lookup.  In this
-	 case, just unlock the node and do nothing else.  */
-      pthread_mutex_unlock (&vcons->lock);
-      pthread_mutex_unlock (&np->lock);
-      return;
-    }
-  if (np == vcons->dir_node)
-    vcons->dir_node = 0;
-  else if (np == vcons->cons_node)
-    vcons->cons_node = 0;
-  else if (np == vcons->disp_node)
-    vcons->disp_node = 0;
-  else
-    {
-      assert (np == vcons->inpt_node);
-      vcons->inpt_node = 0;
-    }
-  pthread_mutex_unlock (&vcons->lock);
-
-  /* Release our reference.  */
-  vcons_release (vcons);
+  assert_backtrace (!np->nn->cons && np->nn->vcons);
 
   free (np->nn);
   free (np);
@@ -634,7 +638,10 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	     the virtual console.  */
 	  err = new_node (node, vcons, VCONS_NODE_DIR);
 	  if (!err)
-	    vcons->dir_node = *node;
+            {
+              vcons->dir_node = *node;
+              netfs_nref_light (*node);
+            }
 	  else
 	    release_vcons = 1;
 	}
@@ -647,7 +654,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       /* This is a virtual console directory node.  */
       vcons_t vcons = dir->nn->vcons;
       int ref_vcons = 0;
-      assert (dir == vcons->dir_node);
+      assert_backtrace (dir == vcons->dir_node);
 
       if (!strcmp (name, "console"))
 	{
@@ -663,6 +670,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->cons_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
@@ -682,6 +690,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->disp_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
@@ -701,6 +710,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->inpt_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
@@ -1047,7 +1057,7 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np, off_t size)
       || np == vcons->disp_node)
     return EOPNOTSUPP;
 
-  assert (np == vcons->cons_node || np == vcons->inpt_node);
+  assert_backtrace (np == vcons->cons_node || np == vcons->inpt_node);
   return 0;
 }
 
@@ -1130,7 +1140,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
     {
       /* Pass display content to caller.  */
       ssize_t amt = *len;
-      assert (np == vcons->disp_node);
+      assert_backtrace (np == vcons->disp_node);
 
       if (offset + amt > np->nn_stat.st_size)
 	amt = np->nn_stat.st_size - offset;
@@ -1177,7 +1187,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
       int amt;
       /* The input driver is writing to the input device.  Feed the
 	 data into the input queue.  */
-      assert (np == vcons->inpt_node);
+      assert_backtrace (np == vcons->inpt_node);
 
       amt = input_enqueue (vcons->input,
 			   /* cred->po->openstat & O_NONBLOCK */ 1,

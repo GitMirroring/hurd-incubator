@@ -87,11 +87,6 @@ output_character (int c)
 	}
       else if ((oflag & ONOEOT) && c == CHAR_EOT)
 	;
-      else if ((oflag & OTILDE) && c == '~')
-	{
-	  poutput ('\\');
-	  poutput ('`');
-	}
       else if ((oflag & OLCASE) && isalpha (c))
 	{
 	  if (isupper (c))
@@ -125,8 +120,6 @@ output_width (int c, int loc)
 
   if (oflag & OPOST)
     {
-      if ((oflag & OTILDE) && c == '~')
-	return 2;
       if ((oflag & OLCASE) && isalpha (c) && isupper (c))
 	return 2;
     }
@@ -313,7 +306,7 @@ erase_1 (char erase_char)
 	    write_erase_sequence ();
 	}
       if (echo_qsize == 0)
-	assert (echo_pstart == output_psize);
+	assert_backtrace (echo_pstart == output_psize);
     }
   else
     reprint_line ();
@@ -719,7 +712,7 @@ create_queue (int size, int lowat, int hiwat)
   struct queue *q;
 
   q = malloc (sizeof (struct queue) + size * sizeof (quoted_char));
-  assert (q);
+  assert_backtrace (q);
 
   q->susp = 0;
   q->lowat = lowat;
@@ -727,7 +720,7 @@ create_queue (int size, int lowat, int hiwat)
   q->cs = q->ce = q->array;
   q->arraylen = size;
   q->wait = malloc (sizeof (pthread_cond_t));
-  assert (q->wait);
+  assert_backtrace (q->wait);
 
   pthread_cond_init (q->wait, NULL);
   return q;

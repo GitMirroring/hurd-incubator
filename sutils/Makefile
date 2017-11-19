@@ -20,14 +20,14 @@
 dir := sutils
 makemode := utilities
 
-progs = reboot halt fsck swapon swapoff
+progs = reboot halt fsck swapon swapoff bless
 scripts = e2os MAKEDEV losetup
 targets = $(special-targets) $(progs)
 special-targets = $(scripts)
 installationdir = $(sbindir)
 SRCS = $(progs:=.c) clookup.c fstab.c update.c $(scripts:=.sh)
 
-OBJS = $(progs:=.c)
+OBJS = $(progs:=.o)
 HURDLIBS = store shouldbeinlibc
 
 include ../Makeconf
@@ -36,8 +36,8 @@ fsck: fstab.o clookup.o
 swapon swapoff: ../libstore/libstore.a default_pagerUser.o
 $(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
-install: $(prefix)/dev $(prefix)/dev/MAKEDEV
-$(prefix)/dev/MAKEDEV:
-	ln -s ../sbin/MAKEDEV $@
+install: $(prefix)/dev/MAKEDEV
+$(prefix)/dev/MAKEDEV: $(prefix)/dev
+	ln -sf ../sbin/MAKEDEV $@
 $(prefix)/dev:
 	@$(MKINSTALLDIRS) $@

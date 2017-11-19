@@ -110,7 +110,7 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
   if (err)
     return err;
 
-  assert (contents_len == np->nn_stat.st_size);
+  assert_backtrace (contents_len == np->nn_stat.st_size);
   memcpy (buf, contents, contents_len);
   return 0;
 }
@@ -172,7 +172,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
     return err;
 
   /* We depend on the fact that CONTENTS is terminated. */
-  assert (contents_len == 0 || contents[contents_len - 1] == '\0');
+  assert_backtrace (contents_len == 0 || contents[contents_len - 1] == '\0');
 
   /* Skip to the first requested entry. */
   while (contents_len && entry--)
@@ -222,12 +222,8 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
    free all its associated storage. */
 void netfs_node_norefs (struct node *np)
 {
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
-
   procfs_cleanup (np);
   free (np);
-
-  pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
 /* The user may define this function (but should define it together

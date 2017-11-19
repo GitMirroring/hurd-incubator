@@ -286,3 +286,10 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 {
   return trivfs_S_io_select (cred, reply, reply_type, type);
 }
+
+error_t trivfs_get_source (char *source, size_t source_len)
+{
+  strncpy (source, target, source_len - 1);
+  source[source_len -1 ] = '\0';
+  return 0;
+}

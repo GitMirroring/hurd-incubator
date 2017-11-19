@@ -22,7 +22,7 @@
 #include "priv.h"
 #include "fsys_reply_U.h"
 #include "trivfs_fsys_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <string.h>
 
@@ -69,8 +69,20 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   flags &= O_HURD;
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
 
-  err = io_restrict_auth (cntl->underlying,
-			  &new_realnode, uids, nuids, gids, ngids);
+  struct idvec idvec = {
+    .ids = uids,
+    .num = nuids,
+    .alloced = nuids,
+  };
+
+  if (_is_privileged (&idvec))
+    /* Privileged users should be given all our rights.  */
+    err = io_duplicate (cntl->underlying, &new_realnode);
+  else
+    /* Non-privileged, restrict rights.  */
+    err = io_restrict_auth (cntl->underlying,
+			    &new_realnode, uids, nuids, gids, ngids);
+
   if (err)
     return err;
 

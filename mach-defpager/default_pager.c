@@ -50,7 +50,7 @@
 #include "kalloc.h"
 #include "default_pager.h"
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -164,6 +164,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	mach_msg_type_number_t rsize;
 	int rc;
 	unsigned int id = part_id(name);
+	unsigned int n = strlen(name);
 
 	pthread_mutex_lock(&all_partitions.lock);
 	{
@@ -185,6 +186,8 @@ new_partition (const char *name, struct file_direct *fdp,
 
 	part = (partition_t) kalloc(sizeof(struct part));
 	pthread_mutex_init(&part->p_lock, NULL);
+	part->name	= (char*) kalloc(n + 1);
+	strcpy(part->name, name);
 	part->total_size = size;
 	part->free	= size;
 	part->id	= id;
@@ -333,6 +336,7 @@ new_partition (const char *name, struct file_direct *fdp,
 			    name);
 		    vm_deallocate(mach_task_self(), raddr, rsize);
 		    kfree(part->bitmap, bmsize);
+		    kfree(part->name, strlen(part->name) + 1);
 		    kfree(part, sizeof *part);
 		    return 0;
 		  }
@@ -384,6 +388,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		    "SKIPPING %s (%uk partition)!",
 		    name, part->total_size * (vm_page_size / 1024));
 	    kfree(part->bitmap, bmsize);
+	    kfree(part->name, strlen(part->name) + 1);
 	    kfree(part, sizeof *part);
 	    part = 0;
 	  }
@@ -576,7 +581,7 @@ pager_dealloc_page(pindex, page, lock_it)
 	/* be paranoid */
 	if (no_partition(pindex))
 	    panic("%sdealloc_page",my_name);
-ddprintf ("pager_dealloc_page(%d,%x,%d)\n",pindex,page,lock_it);
+ddprintf ("pager_dealloc_page(%d,%lx,%d)\n",pindex,page,lock_it);
 	part = partition_of(pindex);
 
 	if (page >= part->total_size)
@@ -1087,7 +1092,7 @@ pager_read_offset(pager, offset)
 #endif
 	if (f_page >= pager->size)
 	  {
-	    ddprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
+	    ddprintf ("%spager_read_offset pager %p: bad page %ld >= size %d",
 		    my_name, pager, f_page, pager->size);
 	    pthread_mutex_unlock(&pager->lock);
 	    return (union dp_map) (union dp_map *) NO_BLOCK;
@@ -1132,7 +1137,7 @@ void pager_release_offset(pager, offset)
 
 	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 
-	assert (pager->map);
+	assert_backtrace (pager->map);
 	if (INDIRECT_PAGEMAP(pager->size)) {
 		dp_map_t	mapptr;
 
@@ -1355,7 +1360,7 @@ pager_write_offset(pager, offset)
 	}
 
 	while (f_page >= pager->size) {
-	  ddprintf ("pager_write_offset: extending: %x %x\n", f_page, pager->size);
+	  ddprintf ("pager_write_offset: extending: %lx %x\n", f_page, pager->size);
 
 	    /*
 	     * Paging object must be extended.
@@ -1375,7 +1380,7 @@ pager_write_offset(pager, offset)
 #if	DEBUG_READER_CONFLICTS
 	    pager->readers++;
 #endif
-	    ddprintf ("pager_write_offset: done extending: %x %x\n", f_page, pager->size);
+	    ddprintf ("pager_write_offset: done extending: %lx %x\n", f_page, pager->size);
 	}
 
 	if (INDIRECT_PAGEMAP(pager->size)) {
@@ -1424,7 +1429,7 @@ pager_write_offset(pager, offset)
 	}
 
 	block = mapptr[f_page];
-	ddprintf ("pager_write_offset: block starts as %x[%x] %x\n", mapptr, f_page, block);
+	ddprintf ("pager_write_offset: block starts as %p[%lx] %p\n", mapptr, f_page, block.indirect);
 	if (no_block(block)) {
 	    vm_offset_t	off;
 
@@ -1651,7 +1656,7 @@ default_read(ds, addr, size, offset, out_addr, deallocate, external)
 	 * Read it, trying for the entire page.
 	 */
 	offset = ptoa(block.block.p_offset);
-ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
+ddprintf ("default_read(%lx,%x,%lx,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 	first_time = TRUE;
 	*out_addr = addr;
@@ -1718,7 +1723,7 @@ default_write(ds, addr, size, offset)
 	vm_size_t		wsize;
 	int		rc;
 
-	ddprintf ("default_write: pager offset %x\n", offset);
+	ddprintf ("default_write: pager offset %lx\n", offset);
 
 	/*
 	 * Find block in paging partition
@@ -1739,7 +1744,7 @@ default_write(ds, addr, size, offset)
 	}
 #endif	 /* CHECKSUM */
 	offset = ptoa(block.block.p_offset);
-ddprintf ("default_write(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
+ddprintf ("default_write(%lx,%x,%lx,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 
 	/*
@@ -1755,7 +1760,7 @@ ddprintf ("default_write(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 					&wsize);
 	    if (rc != 0) {
 		dprintf("*** PAGER ERROR: default_write: ");
-		dprintf("ds=0x%x addr=0x%x size=0x%x offset=0x%x resid=0x%x\n",
+		dprintf("ds=0x%p addr=0x%lx size=0x%x offset=0x%lx resid=0x%x\n",
 			ds, addr, size, offset, wsize);
 		return (PAGER_ERROR);
 	    }
@@ -1860,7 +1865,7 @@ destroy_paging_partition(name, pp_private)
 	 */
 all_over_again:
 #if debug
-dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
+dprintf("Partition x%p (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 #endif
 	all_ok = TRUE;
 	pthread_mutex_lock(&part->p_lock);
@@ -1905,6 +1910,7 @@ dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 		set_partition_of(pindex, 0);
 		*pp_private = part->file;
 		kfree(part->bitmap, howmany(part->total_size, NB_BM) * sizeof(bm_entry_t));
+		kfree(part->name, strlen(part->name) + 1);
 		kfree(part, sizeof(struct part));
 		dprintf("%s Removed paging partition %s\n", my_name, name);
 		return KERN_SUCCESS;
@@ -1914,6 +1920,7 @@ dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 	 * Put partition back in.
 	 */
 	part->going_away = FALSE;
+	pthread_mutex_unlock(&part->p_lock);
 
 	return KERN_FAILURE;
 }
@@ -2157,7 +2164,7 @@ void pager_port_check_request(ds, pager_request)
 	mach_port_delta_t delta;
 	kern_return_t kr;
 
-	assert(ds->pager_request == pager_request);
+	assert_backtrace (ds->pager_request == pager_request);
 
 	if (++ds->request_refs > default_pager_max_urefs) {
 		delta = 1 - ds->request_refs;
@@ -2242,10 +2249,10 @@ seqnos_memory_object_create(old_pager, seqno, new_pager, new_size,
 {
 	default_pager_t	ds;
 
-	assert(old_pager == default_pager_default_port);
-	assert(MACH_PORT_VALID(new_pager_request));
-	assert(MACH_PORT_VALID(new_pager_name));
-	assert(new_page_size == vm_page_size);
+	assert_backtrace (old_pager == default_pager_default_port);
+	assert_backtrace (MACH_PORT_VALID(new_pager_request));
+	assert_backtrace (MACH_PORT_VALID(new_pager_name));
+	assert_backtrace (new_page_size == vm_page_size);
 
 	ds = pager_port_alloc(new_size);
 
@@ -2286,9 +2293,9 @@ seqnos_memory_object_init(ds, seqno, pager_request, pager_name,
 	kern_return_t		 kr;
 	static char		 here[] = "%sinit";
 
-	assert(MACH_PORT_VALID(pager_request));
-	assert(MACH_PORT_VALID(pager_name));
-	assert(pager_page_size == vm_page_size);
+	assert_backtrace (MACH_PORT_VALID(pager_request));
+	assert_backtrace (MACH_PORT_VALID(pager_name));
+	assert_backtrace (pager_page_size == vm_page_size);
 
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here, my_name);
@@ -2337,7 +2344,7 @@ seqnos_memory_object_terminate(ds, seqno, pager_request, pager_name)
 	if (ds == DEFAULT_PAGER_NULL)
 		panic(here, my_name);
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2364,11 +2371,11 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 		pager_request = ds->pager_request;
 	ds->pager_request = MACH_PORT_NULL;
 	ds->request_refs = 0;
-	assert(ds->pager_name == pager_name);
+	assert_backtrace (ds->pager_name == pager_name);
 	ds->pager_name = MACH_PORT_NULL;
 	ds->name_refs = 0;
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	/*
@@ -2381,12 +2388,11 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%
 	return (KERN_SUCCESS);
 }
 
-void default_pager_no_senders(pager, seqno, mscount)
-	memory_object_t pager;
+void default_pager_no_senders(ds, seqno, mscount)
+	default_pager_t ds;
 	mach_port_seqno_t seqno;
 	mach_port_mscount_t mscount;
 {
-	default_pager_t ds;
 	kern_return_t		 kr;
 	static char		 here[] = "%sno_senders";
 
@@ -2399,9 +2405,6 @@ void default_pager_no_senders(pager, seqno, mscount)
 	 */
 
 
-	ds = begin_using_default_pager(pager);
-	if (ds == DEFAULT_PAGER_NULL)
-		panic(here,my_name);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2428,7 +2431,7 @@ void default_pager_no_senders(pager, seqno, mscount)
 	pager_port_list_delete(ds);
 	pager_dealloc(&ds->dpager);
 
-	kr = mach_port_mod_refs(default_pager_self, pager,
+	kr = mach_port_mod_refs(default_pager_self, ds->pager,
 				MACH_PORT_RIGHT_RECEIVE, -1);
 	if (kr != KERN_SUCCESS)
 		panic(here,my_name);
@@ -2480,7 +2483,7 @@ seqnos_memory_object_data_request(ds, seqno, reply_to, offset,
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
 ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, reply_to);
 	pager_port_wait_for_writers(ds);
@@ -2492,7 +2495,7 @@ ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_lock: <%p>[s:%d,r:
 	errors = ds->errors;
 
 ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	if (errors) {
@@ -2582,12 +2585,12 @@ seqnos_memory_object_data_initialize(ds, seqno, pager_request,
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
 ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, pager_request);
 	pager_port_start_write(ds);
 ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	for (amount_sent = 0;
@@ -2616,26 +2619,30 @@ ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_unlock: <%p>[s:
 }
 
 /*
- * memory_object_data_write: split up the stuff coming in from
+ * memory_object_data_return: split up the stuff coming in from
  * a memory_object_data_write call
  * into individual pages and pass them off to default_write.
  */
 kern_return_t
-seqnos_memory_object_data_write(ds, seqno, pager_request,
-				offset, addr, data_cnt)
+seqnos_memory_object_data_return(ds, seqno, pager_request,
+				 offset, addr, data_cnt,
+				 dirty, kernel_copy)
 	default_pager_t	ds;
 	mach_port_seqno_t seqno;
 	mach_port_t	pager_request;
-	register
 	vm_offset_t	offset;
-	register
 	pointer_t	addr;
 	vm_size_t	data_cnt;
+	boolean_t	dirty;
+	boolean_t	kernel_copy;
 {
 	register
 	vm_size_t	amount_sent;
-	static char	here[] = "%sdata_write";
+	static char	here[] = "%sdata_return";
 	int err;
+
+	(void) dirty;
+	(void) kernel_copy;
 
 #ifdef	lint
 	pager_request++;
@@ -2653,8 +2660,8 @@ seqnos_memory_object_data_write(ds, seqno, pager_request,
 	vm_size_t limit = ds->dpager.byte_limit;
 	pager_port_unlock(ds);
 	if ((limit != round_page(limit)) && (trunc_page(limit) == offset)) {
-	    assert(trunc_page(limit) == offset);
-	    assert(data_cnt == vm_page_size);
+	    assert_backtrace (trunc_page(limit) == offset);
+	    assert_backtrace (data_cnt == vm_page_size);
 
 	    vm_offset_t tail = addr + limit - trunc_page(limit);
 	    vm_size_t tail_size = round_page(limit) - limit;
@@ -2758,29 +2765,6 @@ seqnos_memory_object_supply_completed(ds, seqno, pager_request,
 	return(KERN_FAILURE);
 }
 
-/*
- * memory_object_data_return: split up the stuff coming in from
- * a memory_object_data_write call
- * into individual pages and pass them off to default_write.
- */
-kern_return_t
-seqnos_memory_object_data_return(ds, seqno, pager_request,
-				 offset, addr, data_cnt,
-				 dirty, kernel_copy)
-	default_pager_t	ds;
-	mach_port_seqno_t seqno;
-	mach_port_t	pager_request;
-	vm_offset_t	offset;
-	pointer_t	addr;
-	vm_size_t	data_cnt;
-	boolean_t	dirty;
-	boolean_t	kernel_copy;
-{
-
-	return seqnos_memory_object_data_write (ds, seqno, pager_request,
-						offset, addr, data_cnt);
-}
-
 kern_return_t
 seqnos_memory_object_change_completed(ds, seqno, may_cache, copy_strategy)
 	default_pager_t ds;
@@ -2796,6 +2780,8 @@ seqnos_memory_object_change_completed(ds, seqno, may_cache, copy_strategy)
 boolean_t default_pager_notify_server(in, out)
 	mach_msg_header_t *in, *out;
 {
+	default_pager_t ds;
+
 	mach_no_senders_notification_t *n =
 			(mach_no_senders_notification_t *) in;
 
@@ -2807,22 +2793,32 @@ boolean_t default_pager_notify_server(in, out)
 	 *	a genuine no-senders notification from the kernel.
 	 */
 
-	if ((n->not_header.msgh_bits !=
-			MACH_MSGH_BITS(0, MACH_MSG_TYPE_PORT_SEND_ONCE)) ||
-	    (n->not_header.msgh_id != MACH_NOTIFY_NO_SENDERS))
+	if (n->not_header.msgh_id != MACH_NOTIFY_NO_SENDERS) {
 		return FALSE;
+	}
 
-	assert(n->not_header.msgh_size == sizeof *n);
-	assert(n->not_header.msgh_remote_port == MACH_PORT_NULL);
+	if (n->not_header.msgh_bits
+	    == MACH_MSGH_BITS(0, MACH_MSG_TYPE_PROTECTED_PAYLOAD)) {
+		ds = begin_using_default_pager_payload(n->not_header.msgh_protected_payload);
+	} else if (n->not_header.msgh_bits
+		   == MACH_MSGH_BITS(0, MACH_MSG_TYPE_PORT_SEND_ONCE)) {
+		ds = begin_using_default_pager(n->not_header.msgh_local_port);
+	} else {
+		return FALSE;
+	}
 
-	assert(n->not_type.msgt_name == MACH_MSG_TYPE_INTEGER_32);
-	assert(n->not_type.msgt_size == 32);
-	assert(n->not_type.msgt_number == 1);
-	assert(n->not_type.msgt_inline);
-	assert(! n->not_type.msgt_longform);
+	assert_backtrace (ds != DEFAULT_PAGER_NULL);
 
-	default_pager_no_senders(n->not_header.msgh_local_port,
-				 n->not_header.msgh_seqno, n->not_count);
+	assert_backtrace (n->not_header.msgh_size == sizeof *n);
+	assert_backtrace (n->not_header.msgh_remote_port == MACH_PORT_NULL);
+
+	assert_backtrace (n->not_type.msgt_name == MACH_MSG_TYPE_INTEGER_32);
+	assert_backtrace (n->not_type.msgt_size == 32);
+	assert_backtrace (n->not_type.msgt_number == 1);
+	assert_backtrace (n->not_type.msgt_inline);
+	assert_backtrace (! n->not_type.msgt_longform);
+
+	default_pager_no_senders(ds, n->not_header.msgh_seqno, n->not_count);
 
 	out->msgh_remote_port = MACH_PORT_NULL;
 	return TRUE;
@@ -3001,7 +2997,7 @@ default_pager_thread(void *arg)
 		kr = mach_msg_server(default_pager_demux_object,
 				     default_pager_msg_size_object,
 				     pset);
-		panic(my_name, kr);
+		panic("%s%s", my_name, strerror (kr));
 	}
 }
 
@@ -3023,8 +3019,6 @@ start_default_pager_thread(internal)
 			 vm_page_size, TRUE);
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
-	wire_memory(ndpt->dpt_buffer, vm_page_size,
-		    VM_PROT_READ|VM_PROT_WRITE);
 
 	err = pthread_create(&ndpt->dpt_thread, NULL, default_pager_thread,
 			     ndpt);
@@ -3221,6 +3215,100 @@ S_default_pager_info (mach_port_t pager,
 	infop->dpi_free_space = ptoa(free);
 	infop->dpi_page_size = vm_page_size;
 	return KERN_SUCCESS;
+}
+
+kern_return_t
+S_default_pager_storage_info (mach_port_t pager,
+			      vm_size_array_t *size,
+			      mach_msg_type_number_t *sizeCnt,
+			      vm_size_array_t *free,
+			      mach_msg_type_number_t *freeCnt,
+			      data_t *name,
+			      mach_msg_type_number_t *nameCnt)
+{
+	int		i, n, m;
+	int		len = 0;
+	char		*names;
+	kern_return_t	kr;
+	vm_offset_t	addr;
+	vm_size_array_t	osize = *size;
+	vm_size_array_t	ofree = *free;
+	data_t		oname = *name;
+
+	if (pager != default_pager_default_port)
+		return KERN_INVALID_ARGUMENT;
+
+	pthread_mutex_lock(&all_partitions.lock);
+
+	n = all_partitions.n_partitions;
+
+	len = 0;
+	m = 0;
+	for (i = 0; i < n; i++) {
+		partition_t part = partition_of(i);
+		if (part == 0)
+			continue;
+		m++;
+		len += strlen(part->name) + 1;
+	}
+
+	if (*sizeCnt < m)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(m * sizeof(*size)), TRUE);
+		if (kr != KERN_SUCCESS)
+			goto nomemory;
+		*size = (vm_size_array_t) addr;
+	}
+	*sizeCnt = m;
+
+	if (*freeCnt < m)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(m * sizeof(*free)), TRUE);
+		if (kr != KERN_SUCCESS)
+			goto nomemory;
+		*free = (vm_size_array_t) addr;
+	}
+	*freeCnt = m;
+
+	if (*nameCnt < len)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(len), TRUE);
+		if (kr != KERN_SUCCESS)
+			goto nomemory;
+		*name = (data_t) addr;
+	}
+	*nameCnt = len;
+
+	names = *name;
+	for (i = 0; i < n; i++) {
+		partition_t part = partition_of(i);
+		if (part == 0)
+			continue;
+
+		(*size)[i] = ptoa(part->total_size);
+		(*free)[i] = ptoa(part->free);
+		names = stpcpy(names, part->name) + 1;
+	}
+
+	pthread_mutex_unlock(&all_partitions.lock);
+
+	return KERN_SUCCESS;
+
+nomemory:
+	pthread_mutex_unlock(&all_partitions.lock);
+	if (*size != osize)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *size,
+				     round_page(m * sizeof(*size)));
+	if (*free != ofree)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *free,
+				     round_page(m * sizeof(*free)));
+	if (*name != oname)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *name,
+				     len);
+	return KERN_RESOURCE_SHORTAGE;
 }
 
 kern_return_t

@@ -27,7 +27,7 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <hurd/port.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 
 #include "diskfs.h"
@@ -95,6 +95,10 @@ void _diskfs_boot_privports (void);
 
 /* Clean routine for control port. */
 void _diskfs_control_clean (void *);
+
+/* Called when the last hard reference is released.  If there are no
+   links, then request soft references to be dropped.  */
+void _diskfs_lastref (struct node *np);
 
 /* Number of outstanding PT_CTL ports. */
 extern int _diskfs_ncontrol_ports;

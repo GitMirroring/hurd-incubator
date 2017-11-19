@@ -56,9 +56,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       /* Create a protid we can use in diskfs_lookup.  */
       err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC,
 				 0, &rootpo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = diskfs_create_protid (rootpo, 0, &rootpi);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Look up the directory name.  */
       err = diskfs_lookup (diskfs_root_node, _diskfs_chroot_directory,
@@ -126,47 +126,15 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 error_t
 diskfs_S_startup_dosync (mach_port_t handle)
 {
-  error_t err = 0;
   struct port_info *pi
     = ports_lookup_port (diskfs_port_bucket, handle,
 			 diskfs_shutdown_notification_class);
 
   if (!pi)
     return EOPNOTSUPP;
-
-  if (! diskfs_readonly)
-    {
-      /* First start a sync so that if something goes wrong
-	 we at least get this much done. */
-      diskfs_sync_everything (0);
-      diskfs_set_hypermetadata (0, 0);
-
-      pthread_rwlock_wrlock (&diskfs_fsys_lock);
-
-      /* Permit all the current RPC's to finish, and then suspend new ones */
-      err = ports_inhibit_class_rpcs (diskfs_protid_class);
-      if (! err)
-	{
-	  diskfs_sync_everything (1);
-	  diskfs_set_hypermetadata (1, 1);
-	  _diskfs_diskdirty = 0;
-
-	  /* XXX: if some application writes something after that, we will
-	   * crash. That is still better than creating pending writes before
-	   * poweroff, and thus fsck on next reboot.
-	   */
-	  diskfs_readonly = 1;
-	  diskfs_readonly_changed (1);
-
-	  ports_resume_class_rpcs (diskfs_protid_class);
-	}
-
-      pthread_rwlock_unlock (&diskfs_fsys_lock);
-    }
-
   ports_port_deref (pi);
 
-  return err;
+  return diskfs_shutdown (FSYS_GOAWAY_FORCE || FSYS_GOAWAY_RECURSE);
 }
 
 /* This is called when we have an ordinary environment, complete
@@ -185,7 +153,7 @@ _diskfs_init_completed ()
      If we get an error, print an informational message. */
 
   proc = getproc ();
-  assert (proc);
+  assert_backtrace (proc);
 
   err = ports_create_port (diskfs_shutdown_notification_class,
 			   diskfs_port_bucket, sizeof (struct port_info),
@@ -223,5 +191,5 @@ _diskfs_init_completed ()
   return;
 
  errout:
-  error (0, err, "Cannot request shutdown notification");
+  error (0, err, "Warning: cannot request shutdown notification");
 }

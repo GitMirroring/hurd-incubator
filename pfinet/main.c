@@ -197,7 +197,7 @@ find_device (char *name, struct device **device)
   char *base_name;
 
   /* Skip loopback interface. */
-  assert (dev);
+  assert_backtrace (dev);
   dev = dev->next;
 
   if (!name)
@@ -252,7 +252,7 @@ enumerate_devices (error_t (*fun) (struct device *dev))
   struct device *dev = dev_base;
 
   /* Skip loopback device.  */
-  assert (dev);
+  assert_backtrace (dev);
   dev = dev->next;
 
   for (; dev; dev = dev->next)
@@ -283,7 +283,6 @@ main (int argc,
   pfinet_bucket = ports_create_bucket ();
   addrport_class = ports_create_class (clean_addrport, 0);
   socketport_class = ports_create_class (clean_socketport, 0);
-  trivfs_fsid = getpid ();
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &fsys_identity);
 

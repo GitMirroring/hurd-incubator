@@ -21,6 +21,7 @@
 
 #include "priv.h"
 #include "fsys_S.h"
+#include <hurd/fshelp.h>
 #include <hurd/fsys.h>
 #include <fcntl.h>
 
@@ -53,8 +54,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
     path: NULL,
   };
 
-  if (!pt
-      || pt->pi.class != diskfs_control_class)
+  if (!pt)
     return EOPNOTSUPP;
 
   flags &= O_HURD;
@@ -78,11 +78,15 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
        || fshelp_translated (&diskfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
+      struct fshelp_stat_cookie2 cookie = {
+	.next = &peropen_context,
+      };
+
       err = fshelp_fetch_root (&diskfs_root_node->transbox,
-				 &peropen_context, dotdot, &user, flags,
-				 _diskfs_translator_callback1,
-				 _diskfs_translator_callback2,
-				 retry, retryname, returned_port);
+			       &cookie, dotdot, &user, flags,
+			       _diskfs_translator_callback1,
+			       _diskfs_translator_callback2,
+			       retry, retryname, returned_port);
       if (err != ENOENT)
 	{
 	  pthread_mutex_unlock (&diskfs_root_node->lock);

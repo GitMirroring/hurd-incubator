@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
-AC_INIT([GNU Hurd], [0.7], [bug-hurd@gnu.org])
+AC_INIT([GNU Hurd], [0.9], [bug-hurd@gnu.org])
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
 
 AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.
@@ -105,9 +105,9 @@ AC_CHECK_TOOL(MIG, mig)
 if test x${MIG} = x; then
   AC_MSG_ERROR([
 *** You need GNU MiG to compile the GNU Hurd, please see
-*** http://www.gnu.org/software/hurd/mig.html for further details, or
-*** download it directly from the main GNU server (ftp.gnu.org) or any
-*** GNU mirror.])
+*** http://www.gnu.org/software/hurd/microkernel/mach/mig/gnu_mig.html
+*** for further details, or download it directly from the main GNU server
+*** (ftp.gnu.org) or any GNU mirror.])
 fi
 
 dnl Let these propagate from the environment.
@@ -361,6 +361,9 @@ PKG_CHECK_MODULES([libblkid], [blkid],
   [true])
 AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
+
+AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
+AC_SUBST([HAVE_LIBGCRYPT])
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT

@@ -47,11 +47,12 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #include <hurd/sigpreempt.h>
 
-/* Load or allocate a section.  */
-static void
+/* Load or allocate a section.
+   Returns the address of the end of the section.  */
+static vm_address_t
 load_section (void *section, struct execdata *u)
 {
-  vm_address_t addr = 0;
+  vm_address_t addr = 0, end = 0;
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
@@ -60,7 +61,7 @@ load_section (void *section, struct execdata *u)
   const ElfW(Phdr) *const ph = section;
 
   if (u->error)
-    return;
+    return 0;
 
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
@@ -97,28 +98,31 @@ load_section (void *section, struct execdata *u)
   if (anywhere && addr < vm_page_size)
     addr = vm_page_size;
 
+  end = addr + memsz;
+
   if (memsz == 0)
     /* This section is empty; ignore it.  */
-    return;
+    return 0;
 
   if (filesz != 0)
     {
       vm_address_t mapstart = round_page (addr);
 
       /* Allocate space in the task and write CONTENTS into it.  */
-      void write_to_task (vm_address_t mapstart, vm_size_t size,
+      void write_to_task (vm_address_t * mapstart, vm_size_t size,
 			  vm_prot_t vm_prot, vm_address_t contents)
 	{
 	  vm_size_t off = size % vm_page_size;
 	  /* Allocate with vm_map to set max protections.  */
 	  u->error = vm_map (u->task,
-			     &mapstart, size, mask, anywhere,
+			     mapstart, size, mask, anywhere,
 			     MACH_PORT_NULL, 0, 1,
 			     vm_prot|VM_PROT_WRITE,
 			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
 			     VM_INHERIT_COPY);
+	  /* vm_write only works on integral multiples of vm_page_size */
 	  if (! u->error && size >= vm_page_size)
-	    u->error = vm_write (u->task, mapstart, contents, size - off);
+	    u->error = vm_write (u->task, *mapstart, contents, size - off);
 	  if (! u->error && off != 0)
 	    {
 	      vm_address_t page = 0;
@@ -132,14 +136,14 @@ load_section (void *section, struct execdata *u)
 			  (void *) (contents + (size - off)),
 			  off);
 		  if (! u->error)
-		    u->error = vm_write (u->task, mapstart + (size - off),
+		    u->error = vm_write (u->task, *mapstart + (size - off),
 				         page, vm_page_size);
 		  munmap ((caddr_t) page, vm_page_size);
 		}
 	    }
 	  /* Reset the current protections to the desired state.  */
 	  if (! u->error && (vm_prot & VM_PROT_WRITE) == 0)
-	    u->error = vm_protect (u->task, mapstart, size, 0, vm_prot);
+	    u->error = vm_protect (u->task, *mapstart, size, 0, vm_prot);
 	}
 
       if (mapstart - addr < filesz)
@@ -151,7 +155,7 @@ load_section (void *section, struct execdata *u)
 #define SECTION_CONTENTS	(u->file_data + filepos)
 	  if (SECTION_IN_MEMORY_P)
 	    /* Data is already in memory; write it into the task.  */
-	    write_to_task (mapstart, filesz - (mapstart - addr), vm_prot,
+	    write_to_task (&mapstart, filesz - (mapstart - addr), vm_prot,
 			   (vm_address_t) SECTION_CONTENTS
 			   + (mapstart - addr));
 	  else if (u->filemap != MACH_PORT_NULL)
@@ -170,10 +174,10 @@ load_section (void *section, struct execdata *u)
 	      const vm_size_t size = filesz - (mapstart - addr);
 	      void *buf = map (u, filepos + (mapstart - addr), size);
 	      if (buf)
-		write_to_task (mapstart, size, vm_prot, (vm_address_t) buf);
+		write_to_task (&mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
-	    return;
+	    return 0;
 
 	  if (anywhere)
 	    {
@@ -230,7 +234,7 @@ load_section (void *section, struct execdata *u)
 		{
 		maplose:
 		  vm_deallocate (u->task, mapstart, filesz);
-		  return;
+		  return 0;
 		}
 	    }
 
@@ -294,7 +298,7 @@ load_section (void *section, struct execdata *u)
 			     mask, anywhere, MACH_PORT_NULL, 0, 1,
 			     vm_prot, VM_PROT_ALL, VM_INHERIT_COPY);
 	  if (u->error)
-	    return;
+	    return 0;
 	}
 
       if (anywhere)
@@ -319,7 +323,7 @@ load_section (void *section, struct execdata *u)
 	  if (u->error)
 	    {
 	      vm_deallocate (u->task, mapstart, memsz);
-	      return;
+	      return 0;
 	    }
 	  u->error = hurd_safe_memset (
 				 (void *) (ourpage + (addr - overlap_page)),
@@ -335,6 +339,7 @@ load_section (void *section, struct execdata *u)
 	  munmap ((caddr_t) ourpage, size);
 	}
     }
+  return end;
 }
 
 /* XXX all accesses of the mapped data need to use fault handling
@@ -363,7 +368,7 @@ map (struct execdata *e, off_t posn, size_t len)
       char *buffer = map_buffer (e);
       mach_msg_type_number_t nread = map_vsize (e);
 
-      assert (e->file_data == NULL); /* Must be first or second case.  */
+      assert_backtrace (e->file_data == NULL); /* Must be first or second case.  */
 
       /* Read as much as we can get into the buffer right now.  */
       e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
@@ -717,18 +722,37 @@ set_name (task_t task, const char *exec_name, pid_t pid)
   free (name);
 }
 
-/* Load the file.  */
-static void
-load (task_t usertask, struct execdata *e)
+/* Load the file.  Returns the address of the end of the load.  */
+static vm_offset_t
+load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start)
 {
+  int anywhere = e->info.elf.anywhere;
+  vm_offset_t end;
   e->task = usertask;
 
   if (! e->error)
     {
       ElfW(Word) i;
+
+      if (anywhere && anywhere_start)
+	{
+	  /* Make sure this anywhere-load will go at the end of the previous
+	     anywhere-load.  */
+	  /* TODO: Rather compute how much contiguous room is needed, allocate
+	     the area from the kernel, and then map memory sections.  */
+	  /* TODO: Possibly implement Adresse Space Layout Randomization.  */
+	  e->info.elf.loadbase = anywhere_start;
+	  e->info.elf.anywhere = 0;
+	}
+
       for (i = 0; i < e->info.elf.phnum; ++i)
 	if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	  load_section (&e->info.elf.phdr[i], e);
+	  {
+	    end = load_section (&e->info.elf.phdr[i], e);
+	    if (anywhere && end > anywhere_start)
+	      /* This section pushes the next anywhere-load further */
+	      anywhere_start = end;
+	  }
 
       /* The entry point address is relative to wherever we loaded the
 	 program text.  */
@@ -737,6 +761,9 @@ load (task_t usertask, struct execdata *e)
 
   /* Release the conch for the file.  */
   finish_mapping (e);
+
+  /* Return potentially-new start for anywhere-loads.  */
+  return round_page (anywhere_start);
 }
 
 
@@ -746,6 +773,8 @@ servercopy (void *arg, mach_msg_type_number_t argsize, boolean_t argcopy,
 {
   if (! argcopy)
     return arg;
+  if (! argsize)
+    return NULL;
 
   /* ARG came in-line, so we must copy it.  */
   void *copy;
@@ -783,6 +812,7 @@ do_exec (file_t file,
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
   int oldtask_trashed = 0;	/* Have we trashed the old task?  */
+  vm_address_t anywhere_start = 0;
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1156,7 +1186,7 @@ do_exec (file_t file,
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
-      load (newtask, &interp);
+      anywhere_start = load (newtask, &interp, anywhere_start);
       if (interp.error)
 	{
 	  e.error = interp.error;
@@ -1167,7 +1197,7 @@ do_exec (file_t file,
 
 
   /* Load the file into the task.  */
-  load (newtask, &e);
+  anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
     goto out;
 

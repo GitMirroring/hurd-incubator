@@ -442,7 +442,7 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   auth_server = getauth ();
   err = mach_port_insert_right (mach_task_self (), new_user_port,
 				new_user_port, MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   do
     err =
       auth_server_authenticate (auth_server,
@@ -545,113 +545,4 @@ S_io_identity (struct sock_user *user,
     }
 
   return err;
-}
-
-
-/* Stubs for currently unsupported rpcs.  */
-
-error_t
-S_io_revoke (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_async(struct sock_user *user,
-	   mach_port_t notify_port,
-	   mach_port_t *async_id_port,
-	   mach_msg_type_name_t *async_id_port_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_mod_owner(struct sock_user *user, pid_t owner)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_get_owner(struct sock_user *user, pid_t *owner)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_get_icky_async_id (struct sock_user *user,
-			mach_port_t *icky_async_id_port,
-			mach_msg_type_name_t *icky_async_id_port_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_map (struct sock_user *user,
-	  mach_port_t *memobj_rd, mach_msg_type_name_t *memobj_rd_type,
-	  mach_port_t *memobj_wt, mach_msg_type_name_t *memobj_wt_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_map_cntl (struct sock_user *user,
-	       mach_port_t *mem, mach_msg_type_name_t *mem_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_get_conch (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_release_conch (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_eofnotify (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_prenotify (struct sock_user *user, vm_offset_t start, vm_offset_t end)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_postnotify (struct sock_user *user, vm_offset_t start, vm_offset_t end)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_readsleep (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_readnotify (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-
-error_t
-S_io_sigio (struct sock_user *user)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_io_server_version (struct sock_user *user,
-		     char *name, int *maj, int *min, int *edit)
-{
-  return EOPNOTSUPP;
 }
