@@ -38,28 +38,22 @@
    require multi threading but depend on the ports library.  */
 
 struct port_info;
+struct transbox;
 
 /* Record an active translator being bound to the given file name
-   NAME.  ACTIVE is the control port of the translator.  PI references
-   a receive port that is used to request dead name notifications,
-   typically the port for the underlying node passed to the
-   translator.  */
+   NAME.  TRANSBOX is the nodes transbox.  PI references a receive
+   port that is used to request dead name notifications, typically the
+   port for the underlying node passed to the translator.  */
 error_t
 fshelp_set_active_translator (struct port_info *pi,
 			      const char *name,
-			      mach_port_t active);
+			      const struct transbox *transbox);
 
 /* Remove the active translator specified by its control port ACTIVE.
    If there is no active translator with the given control port, this
    does nothing.  */
 error_t
 fshelp_remove_active_translator (mach_port_t active);
-
-/* This kind of function is used by fshelp_get_active_translators to
-   filter the list of translators to return.  If a filter returns an
-   error for a given PATH, the translator bound to the PATH is not
-   included in the list.  */
-typedef error_t (*fshelp_filter) (const char *path);
 
 /* Records the list of active translators below PREFIX into the argz
    vector specified by TRANSLATORS filtered by FILTER.  If PREFIX is
@@ -68,8 +62,18 @@ typedef error_t (*fshelp_filter) (const char *path);
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter,
-			       const char *prefix);
+			       mach_port_t **controls,
+                               size_t *controls_count);
+
+/* Call FUN for each active translator.  If FUN returns non-zero, the
+   iteration immediately stops, and returns that value.  FUN is called
+   with COOKIE, the name of the translator, and the translators
+   control port.  */
+error_t
+fshelp_map_active_translators (error_t (*fun)(void *cookie,
+					      const char *name,
+					      mach_port_t control),
+			       void *cookie);
 
 
 /* Passive translator linkage */
