@@ -249,13 +249,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (np != dnp)
 	    pthread_mutex_unlock (&dnp->lock);
 
-	  /* Check if an active translator is currently running.  If
-	     not, fshelp_fetch_root will start one.  In that case, we
-	     need to register it in the list of active
-	     translators.  */
-	  boolean_t register_translator =
-	    np->transbox.active == MACH_PORT_NULL;
-
 	  struct fshelp_stat_cookie2 cookie = {
 	    .statp = &np->dn_stat,
 	    .modep = &np->dn_stat.st_mode,
@@ -291,36 +284,43 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  }
 		}
 
-	      if (register_translator)
-		{
-		  char *translator_path = strdupa (relpath);
-		  char *complete_path;
-		  if (nextname != NULL)
-		    {
-		      /* This was not the last path component.
-			 NEXTNAME points to the next component, locate
-			 the end of the current component and use it
-			 to trim TRANSLATOR_PATH.  */
-		      char *end = nextname;
-		      while (*end != 0)
-			end--;
-		      translator_path[end - filename_start] = '\0';
-		    }
+	      {
+		char *translator_path = strdupa (relpath);
+		char *end;
+		char *complete_path;
+		if (nextname != NULL)
+		  {
+		    /* This was not the last path component.
+		       NEXTNAME points to the next component, locate
+		       the end of the current component and use it
+		       to trim TRANSLATOR_PATH.  */
+		    end = nextname;
+		    while (*end != 0)
+		      end--;
+		    translator_path[end - filename_start] = '\0';
+		  }
 
-		  if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
-		      /* dircred is the root directory.  */
-		      complete_path = translator_path;
-		  else
-		      asprintf (&complete_path, "%s/%s", dircred->po->path, translator_path);
+		/* Trim trailing slashes.  */
+		end = &translator_path[strlen (translator_path) - 1];
+		while (*end == '/' && end >= translator_path)
+		  *end = '\0', end--;
 
-		  err = fshelp_set_active_translator (&newpi->pi,
-							complete_path,
-							np->transbox.active);
-		  if (complete_path != translator_path)
-		    free(complete_path);
-		  if (err)
-		    goto out;
-		}
+		if (dircred->po->path == NULL
+		    || !strcmp (dircred->po->path,"."))
+		  /* dircred is the root directory.  */
+		  complete_path = translator_path;
+		else
+		  asprintf (&complete_path, "%s/%s", dircred->po->path,
+			    translator_path);
+
+		err = fshelp_set_active_translator (&newpi->pi,
+						    complete_path,
+						    &np->transbox);
+		if (complete_path != translator_path)
+		  free(complete_path);
+		if (err)
+		  goto out;
+	      }
 
 	      goto out;
 	    }
