@@ -1,0 +1,156 @@
+commit 0ca198f1f90071a054287c204a3fd1b4ea315e18
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Dec 11 02:32:26 2017 +0100
+
+    Record executable entry for PIE core dumps
+    
+    * hurd/process.defs (proc_set_entry, proc_get_entry): New RPCs.
+    * hurd/process_reply.defs: Add skips for proc_set_entry, proc_get_entry.
+    * hurd/process_request.defs: Likewise.
+    * exec/exec.c (do_exec): Call proc_set_entry.
+    * proc/proc.h (proc): Add p_entry field.
+    * proc/mgt.c (S_proc_set_entry, S_proc_get_entry): New RPC
+    implementations.
+    * exec/elfcore.c (dump_core): Add at_entry note, call proc_get_entry to
+    get it, and write it with WRITE_NOTE.
+
+Index: hurd-debian/exec/elfcore.c
+===================================================================
+--- hurd-debian.orig/exec/elfcore.c
++++ hurd-debian/exec/elfcore.c
+@@ -331,6 +331,7 @@ dump_core (task_t task, file_t file, off
+   {
+     DEFINE_NOTE (psinfo_t) psinfo;
+     DEFINE_NOTE (pstatus_t) pstatus;
++    DEFINE_NOTE (ElfW(auxv_t)) at_entry;
+     int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
+     char *waits = 0;
+     mach_msg_type_number_t num_waits = 0;
+@@ -410,6 +411,18 @@ dump_core (task_t task, file_t file, off
+ 	    err = proc_get_arg_locations (proc,
+ 					  &psinfo.data.pr_argv,
+ 					  &psinfo.data.pr_envp);
++	    if (err == 0)
++	      {
++		/* Write position of executable.  */
++		vm_address_t addr;
++		err = proc_get_entry (proc, &addr);
++		if (err == 0)
++		  {
++		    at_entry.data.a_type = AT_ENTRY;
++		    at_entry.data.a_un.a_val = addr;
++		    err = WRITE_NOTE (NT_AUXV, at_entry);
++		  }
++	      }
+ 	    mach_port_deallocate (mach_task_self (), proc);
+ 	  }
+ 	{
+Index: hurd-debian/exec/exec.c
+===================================================================
+--- hurd-debian.orig/exec/exec.c
++++ hurd-debian/exec/exec.c
+@@ -1318,6 +1318,11 @@ do_exec (file_t file,
+ 	proc_set_exe (boot->portarray[INIT_PORT_PROC], filename);
+ 
+       set_name (newtask, argv, pid);
++
++      e.error = proc_set_entry (boot->portarray[INIT_PORT_PROC],
++			        e.entry);
++      if (e.error)
++	goto out;
+     }
+   else
+     set_name (newtask, argv, 0);
+Index: hurd-debian/hurd/process.defs
+===================================================================
+--- hurd-debian.orig/hurd/process.defs
++++ hurd-debian/hurd/process.defs
+@@ -424,3 +424,13 @@ routine proc_get_exe (
+ 	process: process_t;
+ 	which: pid_t;
+ 	out path: string_t);
++
++/* Set the locations of the executable entry.  */
++routine proc_set_entry (
++	process: process_t;
++	entry: vm_address_t);
++
++/* Fetch the locations of the executable entry.  */
++routine proc_get_entry (
++	process: process_t;
++	out entry: vm_address_t);
+Index: hurd-debian/hurd/process_reply.defs
+===================================================================
+--- hurd-debian.orig/hurd/process_reply.defs
++++ hurd-debian/hurd/process_reply.defs
+@@ -196,3 +196,6 @@ simpleroutine proc_get_code_reply (
+ skip; /* proc_make_task_namespace  */
+ skip; /* proc_set_exe  */
+ skip; /* proc_get_exe  */
++
++skip; /* proc_set_entry */
++skip; /* proc_get_entry */
+Index: hurd-debian/hurd/process_request.defs
+===================================================================
+--- hurd-debian.orig/hurd/process_request.defs
++++ hurd-debian/hurd/process_request.defs
+@@ -420,3 +420,6 @@ simpleroutine proc_make_task_namespace_r
+ 
+ skip; /* proc_set_exe  */
+ skip; /* proc_get_exe  */
++
++skip; /* proc_set_entry */
++skip; /* proc_get_entry */
+Index: hurd-debian/proc/mgt.c
+===================================================================
+--- hurd-debian.orig/proc/mgt.c
++++ hurd-debian/proc/mgt.c
+@@ -350,6 +350,24 @@ S_proc_get_arg_locations (struct proc *p
+   return 0;
+ }
+ 
++/* Implement proc_set_entry as described in <hurd/process.defs>. */
++kern_return_t
++S_proc_set_entry (struct proc *p, vm_address_t entry)
++{
++  if (!p)
++    return EOPNOTSUPP;
++  p->p_entry = entry;
++  return 0;
++}
++
++/* Implement proc_get_entry as described in <hurd/process.defs>. */
++kern_return_t
++S_proc_get_entry (struct proc *p, vm_address_t *entry)
++{
++  *entry = p->p_entry;
++  return 0;
++}
++
+ /* Implement proc_dostop as described in <hurd/process.defs>. */
+ kern_return_t
+ S_proc_dostop (struct proc *p,
+Index: hurd-debian/proc/proc.h
+===================================================================
+--- hurd-debian.orig/proc/proc.h
++++ hurd-debian/proc/proc.h
+@@ -72,6 +72,7 @@ struct proc
+   vm_address_t p_argv, p_envp;
+   vm_address_t start_code;	/* all executable segments are in this range */
+   vm_address_t end_code;
++  vm_address_t p_entry;		/* executable entry */
+   int p_status;			/* to return via wait */
+   int p_sigcode;
+   struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */
+Index: hurd-debian/trans/Makefile
+===================================================================
+--- hurd-debian.orig/trans/Makefile
++++ hurd-debian/trans/Makefile
+@@ -78,6 +78,7 @@ password: passwordServer.o
+ proxy-defpager: default_pagerServer.o default_pagerUser.o
+ streamio: device_replyServer.o
+ symlink: fsysServer.o
++crash: processUser.o
+ 
+ fakeroot: ../libnetfs/libnetfs.a
+ fifo new-fifo: ../libpipe/libpipe.a

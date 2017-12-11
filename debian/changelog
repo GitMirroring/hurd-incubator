@@ -1,3 +1,9 @@
+hurd (1:0.9.git20171119-2) unstable; urgency=medium
+
+  * patches/pie-core: New patch to add at_entry note for PIE core dumps.
+
+ -- Samuel Thibault <sthibault@debian.org>  Mon, 11 Dec 2017 01:40:05 +0000
+
 hurd (1:0.9.git20171119-1) unstable; urgency=medium
 
   * New upstream snapshot.
