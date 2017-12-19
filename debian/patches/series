@@ -30,3 +30,4 @@ libports-iterate-refcount.patch
 exec_filename_rpctrace.patch
 exec_set_exe.patch
 pie-core
+hash-weakref
