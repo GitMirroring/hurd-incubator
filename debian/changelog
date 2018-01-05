@@ -1,3 +1,10 @@
+hurd (1:0.9.git20171119-4) UNRELEASED; urgency=medium
+
+  * patches/get-identity_hash.diff: Fix inode hashing for FS with inode
+    numbers bigger than 4 billion.
+
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 05 Jan 2018 23:55:59 +0000
+
 hurd (1:0.9.git20171119-3) unstable; urgency=medium
 
   * patches/hash-weakref: New patch to fix use-after-free. Closes: Bug#882507.

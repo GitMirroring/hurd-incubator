@@ -1,0 +1,101 @@
+commit 0c2f60d3cbc3a23736f65dd96308dabdde43d9b2
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Fri Jan 5 23:55:48 2018 +0100
+
+    libfshelp/get-identity.c: add FIXME
+    
+    * libfshelp/get-identity.c (fshelp_get_identity): Add FIXME for FS with
+    inode numbers bigger than 4 billion.
+
+diff --git a/libfshelp/get-identity.c b/libfshelp/get-identity.c
+index 9f92272e..3ca2379c 100644
+--- a/libfshelp/get-identity.c
++++ b/libfshelp/get-identity.c
+@@ -70,6 +70,7 @@ fshelp_get_identity (struct port_bucket *bucket,
+   if (!idclass)
+     id_initialize ();
+ 
++  /* FIXME: ino_t is 64bit, hurd_ihash_key_t is 32bit.  */
+   i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) fileno);
+   if (i == NULL)
+     {
+commit 051c0a77360a629e047d5267b05cde4cdba0e064
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Jan 6 00:22:38 2018 +0100
+
+    libfshelp/get-identity: Use 64bit hashing for inodes
+    
+    Reported by Brent W. Baccala.
+    
+    hurd_ihash_key_t is 32bit only on 32bit platforms, so we need the same
+    hashing functions as in libdiskfs/node-cache.c.
+    
+    * libfshelp/get-identity.c (mix_fasthash): New macro.
+    (hash, compare): New functions.
+    (idhash): Use HURD_IHASH_INITIALIZER_GKI instead of HURD_IHASH_INITIALIZER
+    to pass hash and compare.
+    (fshelp_get_identity): Pass address of fileno to hurd_ihash_find and
+    hurd_ihash_add instead of fileno itself.
+
+diff --git a/libfshelp/get-identity.c b/libfshelp/get-identity.c
+index 3ca2379c..f88e0f82 100644
+--- a/libfshelp/get-identity.c
++++ b/libfshelp/get-identity.c
+@@ -32,10 +32,38 @@ struct idspec
+ {
+   struct port_info pi;
+   hurd_ihash_locp_t id_hashloc;
++  ino_t cache_id;
+ };
+ 
++/* The size of ino_t is larger than hurd_ihash_key_t on 32 bit
++   platforms.  We therefore have to use libihashs generalized key
++   interface.  */
++
++/* This is the mix function of fasthash, see
++   https://code.google.com/p/fast-hash/ for reference.  */
++#define mix_fasthash(h) ({              \
++        (h) ^= (h) >> 23;               \
++        (h) *= 0x2127599bf4325c37ULL;   \
++        (h) ^= (h) >> 47; })
++
++static hurd_ihash_key_t
++hash (const void *key)
++{
++  ino_t i;
++  i = *(ino_t *) key;
++  mix_fasthash (i);
++  return (hurd_ihash_key_t) i;
++}
++
++static int
++compare (const void *a, const void *b)
++{
++  return *(ino_t *) a == *(ino_t *) b;
++}
++
+ static struct hurd_ihash idhash
+-  = HURD_IHASH_INITIALIZER (offsetof (struct idspec, id_hashloc));
++  = HURD_IHASH_INITIALIZER_GKI (offsetof (struct idspec, id_hashloc),
++                                NULL, NULL, hash, compare);
+ 
+ static void
+ id_clean (void *cookie)
+@@ -70,14 +98,14 @@ fshelp_get_identity (struct port_bucket *bucket,
+   if (!idclass)
+     id_initialize ();
+ 
+-  /* FIXME: ino_t is 64bit, hurd_ihash_key_t is 32bit.  */
+-  i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) fileno);
++  i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) &fileno);
+   if (i == NULL)
+     {
+       err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
+       if (err)
+         goto lose;
+-      err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) fileno, i);
++      i->cache_id = fileno;
++      err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) &i->cache_id, i);
+       if (err)
+         goto lose_port;
+ 
