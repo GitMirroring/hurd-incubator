@@ -32,3 +32,4 @@ exec_set_exe.patch
 pie-core
 hash-weakref
 get-identity_hash.diff
+get-identity_weakref.diff

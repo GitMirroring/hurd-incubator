@@ -1,0 +1,36 @@
+commit a7c7e4c642aa284cb57a855ea94bab90cc2dae3e
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Jan 6 01:13:02 2018 +0100
+
+    libfshelp/get-identity.c: Avoid spurious ihash removal
+    
+    Reported by Brent W. Baccala.
+    
+    While some thread has converted a hardref to a weakref and tries to release
+    the hash weakref, another thread might reacquire a hardref, and then convert
+    it to a weakref and try to release it. We thus have to make sure that we
+    really have the last weakref before removing from the hash.
+    
+    * libfshelp/get-identity.c (id_clean): Also check that there are only
+    two weak refs left.
+
+diff --git a/libfshelp/get-identity.c b/libfshelp/get-identity.c
+index f88e0f82..96de55a8 100644
+--- a/libfshelp/get-identity.c
++++ b/libfshelp/get-identity.c
+@@ -69,10 +69,13 @@ static void
+ id_clean (void *cookie)
+ {
+   struct idspec *i = cookie;
++  struct references result;
+   pthread_mutex_lock (&idlock);
+-  if (refcounts_hard_references(&i->pi.refcounts) == 0)
++  refcounts_references (&i->pi.refcounts, &result);
++  if (result.hard == 0 && result.weak == 2)
+     {
+-      /* Nobody got a send right in between, we can remove from the hash.  */
++      /* Nobody got a send right in between and we have the last weak reference
++         in addition to our caller's, so we can remove from the hash. */
+       hurd_ihash_locp_remove (&idhash, i->id_hashloc);
+       ports_port_deref_weak (&i->pi);
+     }
