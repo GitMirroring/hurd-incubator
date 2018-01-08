@@ -3,6 +3,8 @@ hurd (1:0.9.git20171119-4) unstable; urgency=medium
   * patches/get-identity_hash.diff: Fix inode hashing for FS with inode
     numbers bigger than 4 billion.
   * patches/get-identity_weakref.diff: Fix a spurious hashtable removal.
+  * debian/patches/hash-weakref: Rename to git-hash-weakref.
+  * debian/patches/pie-core: Rename to git-pie-core.
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 07 Jan 2018 16:12:03 +0000
 
