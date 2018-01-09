@@ -5,7 +5,7 @@ hurd (1:0.9.git20180108-1) unstable; urgency=medium
     exec_filename_use.patch: Keep compatibility.
   * debian/patches/exec_filename_fix.patch: Remove, merged upstream.
 
- -- Samuel Thibault <sthibault@debian.org>  Sun, 07 Jan 2018 16:12:03 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Tue, 09 Jan 2018 00:24:18 +0000
 
 hurd (1:0.9.git20171119-3) unstable; urgency=medium
 
