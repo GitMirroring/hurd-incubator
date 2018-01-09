@@ -1,19 +1,9 @@
-hurd (1:0.9.git20171119-4) unstable; urgency=medium
+hurd (1:0.9.git20180108-1) unstable; urgency=medium
 
-  * patches/get-identity_hash.diff: Fix inode hashing for FS with inode
-    numbers bigger than 4 billion.
-  * patches/get-identity_weakref.diff: Fix a spurious hashtable removal.
-  * debian/patches/hash-weakref: Rename to git-hash-weakref.
-  * debian/patches/git-exec_paths_exec.patch,git-exec_paths_fs.patch,
-    git-exec_paths_use.patch: Pick upstream commits.
+  * New upstream snapshot.
   * debian/patches/exec_filename_exec.patch,exec_filename_fs.patch,
     exec_filename_use.patch: Keep compatibility.
-  * debian/patches/exec_filename_fix.patch: Rename to git-exec_paths_fix.patch
-    and update.
-  * debian/patches/exec_filename_rpctrace.patch: Rename to
-    git-exec_paths_rpctrace.patch and update.
-  * debian/patches/dl_origin.patch: Rename to git-dl_origin.patch and update.
-  * debian/patches/pie-core: Rename to git-pie-core and update.
+  * debian/patches/exec_filename_fix.patch: Remove, merged upstream.
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 07 Jan 2018 16:12:03 +0000
 

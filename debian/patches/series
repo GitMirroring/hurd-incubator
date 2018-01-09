@@ -12,11 +12,6 @@ posix-sigcodes.patch
 #random-default-fast.patch
 libexec.patch
 run.patch
-git-exec_paths_exec.patch
-git-exec_paths_fs.patch
-git-exec_paths_use.patch
-git-exec_paths_fix.patch
-git-exec_paths_rpctrace.patch
 exec_filename_exec.patch
 exec_filename_fs.patch
 exec_filename_use.patch
@@ -24,15 +19,9 @@ mount.patch
 MAKEDEV-apm.patch
 term-for-tcl.patch
 newRPC.patch
-git-dl_origin.patch
 cross-link.patch
 procfs-compatible
 crash-logging.patch
 using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
-git-pie-core
-git-exec_set_exe.patch
-git-hash-weakref
-get-identity_hash.diff
-get-identity_weakref.diff
