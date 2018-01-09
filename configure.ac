@@ -162,6 +162,8 @@ else
   VERSIONING=no
 fi
 AC_SUBST(VERSIONING)
+# Check if libc contains these functions.
+AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 
 
 # From glibc HEAD, 2007-11-07.
@@ -343,6 +345,11 @@ AC_SUBST([libblkid_CFLAGS])
 
 AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
 AC_SUBST([HAVE_LIBGCRYPT])
+
+PKG_CHECK_MODULES([liblwip], [lwip], [HAVE_LIBLWIP=yes], [HAVE_LIBLWIP=no])
+AC_SUBST([HAVE_LIBLWIP])
+AC_SUBST([liblwip_CFLAGS])
+AC_SUBST([liblwip_LIBS])
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT

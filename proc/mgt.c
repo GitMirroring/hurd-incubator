@@ -223,6 +223,8 @@ S_proc_child (struct proc *parentp,
       childp->start_code = parentp->start_code;
       childp->end_code = parentp->end_code;
     }
+  if (! childp->exe && parentp->exe)
+    childp->exe = strdup (parentp->exe);
 
   if (MACH_PORT_VALID (parentp->p_task_namespace))
     {
@@ -345,6 +347,24 @@ S_proc_get_arg_locations (struct proc *p,
 {
   *argv = p->p_argv;
   *envp = p->p_envp;
+  return 0;
+}
+
+/* Implement proc_set_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_set_entry (struct proc *p, vm_address_t entry)
+{
+  if (!p)
+    return EOPNOTSUPP;
+  p->p_entry = entry;
+  return 0;
+}
+
+/* Implement proc_get_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_get_entry (struct proc *p, vm_address_t *entry)
+{
+  *entry = p->p_entry;
   return 0;
 }
 
@@ -842,6 +862,8 @@ process_has_exited (struct proc *p)
 
   if (!--p->p_login->l_refcnt)
     free (p->p_login);
+  free (p->exe);
+  p->exe = NULL;
 
   ids_rele (p->p_id);
 
