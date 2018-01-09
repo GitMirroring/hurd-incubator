@@ -1,3 +1,46 @@
+commit a8fecd7be76342fea85b5129d450ab01738dcbdf
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Dec 11 02:00:34 2017 +0100
+
+    Reserve IDs for proc_set_exe and proc_get_exe
+    
+    * hurd/process.defs: Reserve IDs for proc_set_exe and proc_get_exe
+    * hurd/process_reply.defs: Likewise.
+    * hurd/process_request.defs: Likewise.
+
+diff --git a/hurd/process.defs b/hurd/process.defs
+index d724e20d..c395705d 100644
+--- a/hurd/process.defs
++++ b/hurd/process.defs
+@@ -413,3 +413,6 @@ routine proc_get_code (
+ routine proc_make_task_namespace (
+ 	process: process_t;
+ 	notify: mach_port_send_t);
++
++skip; /* proc_set_exe */
++skip; /* proc_get_exe */
+diff --git a/hurd/process_reply.defs b/hurd/process_reply.defs
+index 2fc21c92..84621e8a 100644
+--- a/hurd/process_reply.defs
++++ b/hurd/process_reply.defs
+@@ -194,3 +194,6 @@ simpleroutine proc_get_code_reply (
+ 	end_code: vm_address_t);
+ 
+ skip; /* proc_make_task_namespace  */
++
++skip; /* proc_set_exe */
++skip; /* proc_get_exe */
+diff --git a/hurd/process_request.defs b/hurd/process_request.defs
+index 20e0ee14..e5518f06 100644
+--- a/hurd/process_request.defs
++++ b/hurd/process_request.defs
+@@ -417,3 +417,6 @@ simpleroutine proc_make_task_namespace_request (
+ 	process: process_t;
+ 	ureplyport reply: reply_port_t;
+ 	notify: mach_port_send_t);
++
++skip; /* proc_set_exe */
++skip; /* proc_get_exe */
 commit 0ca198f1f90071a054287c204a3fd1b4ea315e18
 Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
 Date:   Mon Dec 11 02:32:26 2017 +0100
@@ -14,11 +57,11 @@ Date:   Mon Dec 11 02:32:26 2017 +0100
     * exec/elfcore.c (dump_core): Add at_entry note, call proc_get_entry to
     get it, and write it with WRITE_NOTE.
 
-Index: hurd-debian/exec/elfcore.c
-===================================================================
---- hurd-debian.orig/exec/elfcore.c
-+++ hurd-debian/exec/elfcore.c
-@@ -331,6 +331,7 @@ dump_core (task_t task, file_t file, off
+diff --git a/exec/elfcore.c b/exec/elfcore.c
+index 12ecf34f..2dd499bf 100644
+--- a/exec/elfcore.c
++++ b/exec/elfcore.c
+@@ -331,6 +331,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
    {
      DEFINE_NOTE (psinfo_t) psinfo;
      DEFINE_NOTE (pstatus_t) pstatus;
@@ -26,7 +69,7 @@ Index: hurd-debian/exec/elfcore.c
      int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
      char *waits = 0;
      mach_msg_type_number_t num_waits = 0;
-@@ -410,6 +411,18 @@ dump_core (task_t task, file_t file, off
+@@ -410,6 +411,18 @@ dump_core (task_t task, file_t file, off_t corelimit,
  	    err = proc_get_arg_locations (proc,
  					  &psinfo.data.pr_argv,
  					  &psinfo.data.pr_envp);
@@ -45,12 +88,12 @@ Index: hurd-debian/exec/elfcore.c
  	    mach_port_deallocate (mach_task_self (), proc);
  	  }
  	{
-Index: hurd-debian/exec/exec.c
-===================================================================
---- hurd-debian.orig/exec/exec.c
-+++ hurd-debian/exec/exec.c
-@@ -1318,6 +1318,11 @@ do_exec (file_t file,
- 	proc_set_exe (boot->portarray[INIT_PORT_PROC], filename);
+diff --git a/exec/exec.c b/exec/exec.c
+index d78c54c5..2d74ee1c 100644
+--- a/exec/exec.c
++++ b/exec/exec.c
+@@ -1234,6 +1234,11 @@ do_exec (file_t file,
+ 	goto out;
  
        set_name (newtask, argv, pid);
 +
@@ -61,14 +104,14 @@ Index: hurd-debian/exec/exec.c
      }
    else
      set_name (newtask, argv, 0);
-Index: hurd-debian/hurd/process.defs
-===================================================================
---- hurd-debian.orig/hurd/process.defs
-+++ hurd-debian/hurd/process.defs
-@@ -424,3 +424,13 @@ routine proc_get_exe (
- 	process: process_t;
- 	which: pid_t;
- 	out path: string_t);
+diff --git a/hurd/process.defs b/hurd/process.defs
+index c395705d..725326a4 100644
+--- a/hurd/process.defs
++++ b/hurd/process.defs
+@@ -416,3 +416,13 @@ routine proc_make_task_namespace (
+ 
+ skip; /* proc_set_exe */
+ skip; /* proc_get_exe */
 +
 +/* Set the locations of the executable entry.  */
 +routine proc_set_entry (
@@ -79,33 +122,33 @@ Index: hurd-debian/hurd/process.defs
 +routine proc_get_entry (
 +	process: process_t;
 +	out entry: vm_address_t);
-Index: hurd-debian/hurd/process_reply.defs
-===================================================================
---- hurd-debian.orig/hurd/process_reply.defs
-+++ hurd-debian/hurd/process_reply.defs
-@@ -196,3 +196,6 @@ simpleroutine proc_get_code_reply (
- skip; /* proc_make_task_namespace  */
- skip; /* proc_set_exe  */
- skip; /* proc_get_exe  */
-+
-+skip; /* proc_set_entry */
-+skip; /* proc_get_entry */
-Index: hurd-debian/hurd/process_request.defs
-===================================================================
---- hurd-debian.orig/hurd/process_request.defs
-+++ hurd-debian/hurd/process_request.defs
-@@ -420,3 +420,6 @@ simpleroutine proc_make_task_namespace_r
+diff --git a/hurd/process_reply.defs b/hurd/process_reply.defs
+index 84621e8a..2eefcc37 100644
+--- a/hurd/process_reply.defs
++++ b/hurd/process_reply.defs
+@@ -197,3 +197,6 @@ skip; /* proc_make_task_namespace  */
  
- skip; /* proc_set_exe  */
- skip; /* proc_get_exe  */
+ skip; /* proc_set_exe */
+ skip; /* proc_get_exe */
 +
 +skip; /* proc_set_entry */
 +skip; /* proc_get_entry */
-Index: hurd-debian/proc/mgt.c
-===================================================================
---- hurd-debian.orig/proc/mgt.c
-+++ hurd-debian/proc/mgt.c
-@@ -350,6 +350,24 @@ S_proc_get_arg_locations (struct proc *p
+diff --git a/hurd/process_request.defs b/hurd/process_request.defs
+index e5518f06..fc9127ab 100644
+--- a/hurd/process_request.defs
++++ b/hurd/process_request.defs
+@@ -420,3 +420,6 @@ simpleroutine proc_make_task_namespace_request (
+ 
+ skip; /* proc_set_exe */
+ skip; /* proc_get_exe */
++
++skip; /* proc_set_entry */
++skip; /* proc_get_entry */
+diff --git a/proc/mgt.c b/proc/mgt.c
+index 750073a0..354f3784 100644
+--- a/proc/mgt.c
++++ b/proc/mgt.c
+@@ -348,6 +348,24 @@ S_proc_get_arg_locations (struct proc *p,
    return 0;
  }
  
@@ -130,11 +173,11 @@ Index: hurd-debian/proc/mgt.c
  /* Implement proc_dostop as described in <hurd/process.defs>. */
  kern_return_t
  S_proc_dostop (struct proc *p,
-Index: hurd-debian/proc/proc.h
-===================================================================
---- hurd-debian.orig/proc/proc.h
-+++ hurd-debian/proc/proc.h
-@@ -72,6 +72,7 @@ struct proc
+diff --git a/proc/proc.h b/proc/proc.h
+index 333e8840..b33845d9 100644
+--- a/proc/proc.h
++++ b/proc/proc.h
+@@ -71,6 +71,7 @@ struct proc
    vm_address_t p_argv, p_envp;
    vm_address_t start_code;	/* all executable segments are in this range */
    vm_address_t end_code;
@@ -142,15 +185,3 @@ Index: hurd-debian/proc/proc.h
    int p_status;			/* to return via wait */
    int p_sigcode;
    struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */
-Index: hurd-debian/trans/Makefile
-===================================================================
---- hurd-debian.orig/trans/Makefile
-+++ hurd-debian/trans/Makefile
-@@ -78,6 +78,7 @@ password: passwordServer.o
- proxy-defpager: default_pagerServer.o default_pagerUser.o
- streamio: device_replyServer.o
- symlink: fsysServer.o
-+crash: processUser.o
- 
- fakeroot: ../libnetfs/libnetfs.a
- fifo new-fifo: ../libpipe/libpipe.a

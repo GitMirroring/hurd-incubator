@@ -1,0 +1,249 @@
+commit 67fa50fb8f0a6894e5ed6534936afb8044e66613
+Author: Emilio Pozuelo Monfort <pochu27@gmail.com>
+Date:   Wed May 26 00:15:37 2010 +0200
+
+    Add a new exec_exec_paths RPC
+    
+    * hurd/exec.defs (exec_exec): Label as deprecated.
+    (exec_exec_paths): New RPC.
+    * doc/hurd.texi: Update accordingly.
+    * exec/hashexec.c (check_hashbang): Add file_name_exec argument.
+    Don't guess the file name if file_name_exec is set.
+    * exec/priv.h (check_hashbang): Add path argument.
+    * exec/exec.c (S_exec_exec): Label as deprecated.
+    (S_exec_exec_paths): New function.
+    (do_exec): Add path and abspath arguments, pass path to check_hashbang.
+
+diff --git a/doc/hurd.texi b/doc/hurd.texi
+index 8428a77b..a9216d1d 100644
+--- a/doc/hurd.texi
++++ b/doc/hurd.texi
+@@ -102,7 +102,7 @@ This file documents the GNU Hurd kernel component.  This edition of the
+ documentation was last updated for version @value{VERSION} of the Hurd.
+ 
+ Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
+-2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
++2004, 2005, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
+ 
+ @quotation
+ Permission is granted to make and distribute verbatim copies of
+@@ -2765,14 +2765,14 @@ If the setuid/setgid transformation adds a new uid or gid to the user's
+ authentication handle that was not previously present (as opposed to
+ merely reordering them), then the @code{EXEC_SECURE} and
+ @code{EXEC_NEWTASK} flags should both be added in the call to
+-@code{exec_exec}.
++@code{exec_exec_paths}.
+ 
+ The server then needs to open a new port onto the executed file which
+ will not share any file pointers with the port the user passed in,
+ opened with @code{O_READ}.  Finally, all the information (mutated
+ appropriately for setuid/setgid) should be sent to the execserver with
+-@code{exec_exec}.  Whatever error code @code{exec_exec} returns should
+-returned to the caller of @code{file_exec}.
++@code{exec_exec_paths}.  Whatever error code @code{exec_exec_paths}
++returns should be returned to the caller of @code{file_exec}.
+ 
+ @node File Locking
+ @subsection File Locking
+diff --git a/exec/exec.c b/exec/exec.c
+index 2d74ee1c..cc613527 100644
+--- a/exec/exec.c
++++ b/exec/exec.c
+@@ -1,6 +1,6 @@
+ /* GNU Hurd standard exec server.
+-   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02,04
+-   	Free Software Foundation, Inc.
++   Copyright (C) 1992 ,1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
++   2002, 2004, 2010 Free Software Foundation, Inc.
+    Written by Roland McGrath.
+ 
+    Can exec ELF format directly.
+@@ -793,6 +793,8 @@ static error_t
+ do_exec (file_t file,
+ 	 task_t oldtask,
+ 	 int flags,
++	 char *path,
++	 char *abspath,
+ 	 char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+ 	 char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+ 	 mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+@@ -852,7 +854,7 @@ do_exec (file_t file,
+     {
+       /* Check for a #! executable file.  */
+       check_hashbang (&e,
+-		      file, oldtask, flags,
++		      file, oldtask, flags, path,
+ 		      argv, argvlen, argv_copy,
+ 		      envp, envplen, envp_copy,
+ 		      dtable, dtablesize, dtable_copy,
+@@ -1440,6 +1442,7 @@ do_exec (file_t file,
+   return e.error;
+ }
+ 
++/* Deprecated.  */
+ kern_return_t
+ S_exec_exec (struct trivfs_protid *protid,
+ 	     file_t file,
+@@ -1455,6 +1458,46 @@ S_exec_exec (struct trivfs_protid *protid,
+ 	     boolean_t intarray_copy,
+ 	     mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+ 	     mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
++{
++  return S_exec_exec_paths (protid,
++				file,
++				oldtask,
++				flags,
++				"",
++				"",
++				argv, argvlen, argv_copy,
++				envp, envplen, envp_copy,
++				dtable, dtablesize,
++				dtable_copy,
++				portarray, nports,
++				portarray_copy,
++				intarray, nints,
++				intarray_copy,
++				deallocnames, ndeallocnames,
++				destroynames, ndestroynames);
++}
++
++kern_return_t
++S_exec_exec_paths (struct trivfs_protid *protid,
++		       file_t file,
++		       task_t oldtask,
++		       int flags,
++		       char *path,
++		       char *abspath,
++		       char *argv, mach_msg_type_number_t argvlen,
++		       boolean_t argv_copy,
++		       char *envp, mach_msg_type_number_t envplen,
++		       boolean_t envp_copy,
++		       mach_port_t *dtable, mach_msg_type_number_t dtablesize,
++		       boolean_t dtable_copy,
++		       mach_port_t *portarray, mach_msg_type_number_t nports,
++		       boolean_t portarray_copy,
++		       int *intarray, mach_msg_type_number_t nints,
++		       boolean_t intarray_copy,
++		       mach_port_t *deallocnames,
++		       mach_msg_type_number_t ndeallocnames,
++		       mach_port_t *destroynames,
++		       mach_msg_type_number_t ndestroynames)
+ {
+   if (! protid)
+     return EOPNOTSUPP;
+@@ -1462,7 +1505,7 @@ S_exec_exec (struct trivfs_protid *protid,
+   /* There were no user-specified exec servers,
+      or none of them could be found.  */
+ 
+-  return do_exec (file, oldtask, flags,
++  return do_exec (file, oldtask, flags, path, abspath,
+ 		  argv, argvlen, argv_copy,
+ 		  envp, envplen, envp_copy,
+ 		  dtable, dtablesize, dtable_copy,
+diff --git a/exec/hashexec.c b/exec/hashexec.c
+index 68b48816..e8e94844 100644
+--- a/exec/hashexec.c
++++ b/exec/hashexec.c
+@@ -1,5 +1,6 @@
+ /* GNU Hurd standard exec server, #! script execution support.
+-   Copyright (C) 1995,96,97,98,99,2000,02 Free Software Foundation, Inc.
++   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2010
++   Free Software Foundation, Inc.
+    Written by Roland McGrath.
+ 
+    This file is part of the GNU Hurd.
+@@ -35,6 +36,7 @@ check_hashbang (struct execdata *e,
+ 		file_t file,
+ 		task_t oldtask,
+ 		int flags,
++		char *file_name_exec,
+ 		char *argv, u_int argvlen, boolean_t argv_copy,
+ 		char *envp, u_int envplen, boolean_t envp_copy,
+ 		mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
+@@ -227,10 +229,12 @@ check_hashbang (struct execdata *e,
+ 	    file_name = NULL;
+ 	  else if (! (flags & EXEC_SECURE))
+ 	    {
+-	      /* Try to figure out the file's name.  We guess that if ARGV[0]
+-		 contains a slash, it might be the name of the file; and that
+-		 if it contains no slash, looking for files named by ARGV[0] in
+-		 the `PATH' environment variable might find it.  */
++	      /* Try to figure out the file's name.  If FILE_NAME_EXEC
++		 is not NULL, then it's the file's name.  Otherwise we
++		 guess that if ARGV[0] contains a slash, it might be
++		 the name of the file; and that if it contains no slash,
++		 looking for files named by ARGV[0] in the `PATH'
++		 environment variable might find it.  */
+ 
+ 	      error_t error;
+ 	      char *name;
+@@ -280,7 +284,9 @@ check_hashbang (struct execdata *e,
+ 	      else
+ 		name = argv;
+ 
+-	      if (strchr (name, '/') != NULL)
++	      if (file_name_exec && file_name_exec[0] != '\0')
++		error = lookup (name = file_name_exec, 0, &name_file);
++	      else if (strchr (name, '/') != NULL)
+ 		error = lookup (name, 0, &name_file);
+ 	      else if ((error = hurd_catch_signal
+ 			(sigmask (SIGBUS) | sigmask (SIGSEGV),
+diff --git a/exec/priv.h b/exec/priv.h
+index be085803..e84d8150 100644
+--- a/exec/priv.h
++++ b/exec/priv.h
+@@ -1,5 +1,6 @@
+ /* GNU Hurd standard exec server, private declarations.
+-   Copyright (C) 1992,93,94,95,96,99,2000,02, 04 Free Software Foundation, Inc.
++   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999, 2000, 2002, 2004,
++   2010 Free Software Foundation, Inc.
+    Written by Roland McGrath.
+ 
+ This file is part of the GNU Hurd.
+@@ -135,6 +136,7 @@ void check_hashbang (struct execdata *e,
+ 		     file_t file,
+ 		     task_t oldtask,
+ 		     int flags,
++		     char *filename,
+ 		     char *argv, u_int argvlen, boolean_t argv_copy,
+ 		     char *envp, u_int envplen, boolean_t envp_copy,
+ 		     mach_port_t *dtable, u_int dtablesize,
+diff --git a/hurd/exec.defs b/hurd/exec.defs
+index 2888fb1e..d879df1a 100644
+--- a/hurd/exec.defs
++++ b/hurd/exec.defs
+@@ -1,5 +1,6 @@
+ /* Interface definitions for the exec servers.
+-   Copyright (C) 1991,92,93,94,95,2001 Free Software Foundation, Inc.
++   Copyright (C) 1991, 1992, 1993, 1994, 1995, 2001, 2010
++   Free Software Foundation, Inc.
+ 
+ This file is part of the GNU Hurd.
+ 
+@@ -29,6 +30,7 @@ EXEC_IMPORTS
+ 
+ INTR_INTERFACE
+ 
++/* Deprecated: use exec_exec_paths instead.  */
+ routine exec_exec (
+ 	execserver: file_t;
+ 	file: mach_port_send_t;
+@@ -55,3 +57,18 @@ simpleroutine exec_setexecdata (
+ 	execserver: file_t;
+ 	ports: portarray_t SCP;
+ 	ints: intarray_t SCP);
++
++routine exec_exec_paths (
++	execserver: file_t;
++	file: mach_port_send_t;
++	oldtask: task_t;
++	flags: int;
++	path: string_t;
++	abspath: string_t;
++	argv: data_t SCP;
++	envp: data_t SCP;
++	dtable: portarray_t SCP;
++	portarray: portarray_t SCP;
++	intarray: intarray_t SCP;
++	deallocnames: mach_port_name_array_t;
++	destroynames: mach_port_name_array_t);

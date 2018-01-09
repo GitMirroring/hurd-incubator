@@ -1,13 +1,17 @@
-Add basic support for $ORIGIN rpath expansion
+commit 9d3ba19ddc56ad929f673af23eb87ab07ae30631
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Jan 8 22:56:23 2018 +0100
 
-This only supports absolute paths, which is enough for ghc, but won't be enough
-for other uses. Perhaps it would be better to support it in glibc instead?
+    Add support for $ORIGIN rpath expansion
+    
+    * exec/exec.c (do_exec): When abspath is absolute, record its dirname
+    into the LD_ORIGIN_PATH environment variable.
 
-Index: hurd-debian/exec/exec.c
-===================================================================
---- hurd-debian.orig/exec/exec.c
-+++ hurd-debian/exec/exec.c
-@@ -890,7 +890,7 @@ do_exec (file_t file,
+diff --git a/exec/exec.c b/exec/exec.c
+index cc613527..94f0a733 100644
+--- a/exec/exec.c
++++ b/exec/exec.c
+@@ -951,7 +951,7 @@ do_exec (file_t file,
      secure = (flags & EXEC_SECURE);
      defaults = (flags & EXEC_DEFAULTS);
  
@@ -16,7 +20,7 @@ Index: hurd-debian/exec/exec.c
         Whatever arrived inline, we must allocate space for so it can
         survive after this RPC returns.  */
  
-@@ -901,11 +901,91 @@ do_exec (file_t file,
+@@ -962,11 +962,90 @@ do_exec (file_t file,
        goto stdout;
      boot->argv = argv;
      boot->argvlen = argvlen;
@@ -24,12 +28,11 @@ Index: hurd-debian/exec/exec.c
 -    if (e.error)
 -      goto stdout;
 +
-+    if (filename && filename[0] == '/')
++    if (abspath && abspath[0] == '/')
 +      {
 +	/* Explicit absolute filename, put its dirname in the LD_ORIGIN_PATH
-+	   environment variable for $ORIGIN rpath expansion.
-+	   XXX: thus does not work with relative paths.  */
-+	const char *end = strrchr (filename, '/');
++	   environment variable for $ORIGIN rpath expansion. */
++	const char *end = strrchr (abspath, '/');
 +	size_t pathlen;
 +	const char ld_origin_s[] = "\0LD_ORIGIN_PATH=";
 +	const char *existing;
@@ -38,14 +41,14 @@ Index: hurd-debian/exec/exec.c
 +	char *new_envp;
 +
 +	/* Drop trailing slashes.  */
-+	while (end > filename && end[-1] == '/')
++	while (end > abspath && end[-1] == '/')
 +	  end--;
 +
-+	if (end == filename)
++	if (end == abspath)
 +	  /* Root, keep explicit heading/trailing slash.   */
 +	  end++;
 +
-+	pathlen = end - filename;
++	pathlen = end - abspath;
 +
 +	if (memcmp (envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2) == 0)
 +	  /* Existing variable at the beginning of envp.  */
@@ -72,7 +75,7 @@ Index: hurd-debian/exec/exec.c
 +
 +	    /* And copy.  */
 +	    memcpy (new_envp, envp, existing - envp);
-+	    memcpy (new_envp + (existing - envp), filename, pathlen);
++	    memcpy (new_envp + (existing - envp), abspath, pathlen);
 +	    memcpy (new_envp + (existing - envp) + pathlen,
 +		    existing + existing_len,
 +		    envplen - ((existing - envp) + existing_len));
@@ -85,7 +88,7 @@ Index: hurd-debian/exec/exec.c
 +			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 +
 +	    memcpy (new_envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2);
-+	    memcpy (new_envp + sizeof (ld_origin_s) - 2, filename, pathlen);
++	    memcpy (new_envp + sizeof (ld_origin_s) - 2, abspath, pathlen);
 +	    new_envp [sizeof (ld_origin_s) - 2 + pathlen] = 0;
 +	    memcpy (new_envp + sizeof (ld_origin_s) - 2 + pathlen + 1, envp, envplen);
 +	  }
@@ -99,7 +102,7 @@ Index: hurd-debian/exec/exec.c
 +      }
 +    else
 +      {
-+	/* No explicit filename, just copy the existing environment */
++	/* No explicit abspath, just copy the existing environment */
 +	envp = servercopy (envp, envplen, envp_copy, &e.error);
 +	if (e.error)
 +	  goto stdout;

@@ -1,33 +1,34 @@
-From: Justus Winter <4winter@informatik.uni-hamburg.de>
+commit 16eff1b637f13f90ea3f00d7f1dd0d99945611f6
+Author: Justus Winter <4winter@informatik.uni-hamburg.de>
+Date:   Mon Jan 8 22:54:27 2018 +0100
 
-This patch is an amendment of exec_filename_exec.patch.
+    Fix exec_paths through fakeroot or chroot
+    
+    If file_name_exec is not given, check_hashbang will try to locate the
+    file. If argv[0] contains a '/', the file path is assumed to be
+    absolute and it will try to open the file. Otherwise, the file is
+    searched in the PATH. In either case, the resulting file identity port
+    is compared to the identity port of the original file handle passed to
+    check_hashbang.
+    
+    exec_paths_exec.patch explicitly provides the script files path in
+    file_name_exec. According to the comment, if this path is provided, it
+    is assumed to be the path to the script file and no attempt at
+    locating the script file is done. However, the identity ports are
+    still compared. This cannot succeed if fakeroot or chroot is used,
+    because the process doing the exec and thus the initial file lookup is
+    running in the chrooted environment, while the exec server is not.
+    
+    Fix this by skipping the identity test if file_name_exec is provided.
+    
+    * exec/hashexec.c (check_hashbang): Skip the file identity test if the
+    file_name_exec is provided.
 
-If file_name_exec is not given, check_hashbang will try to locate the
-file. If argv[0] contains a '/', the file path is assumed to be
-absolute and it will try to open the file. Otherwise, the file is
-searched in the PATH. In either case, the resulting file identity port
-is compared to the identity port of the original file handle passed to
-check_hashbang.
-
-exec_filename_exec.patch explicitly provides the script files path in
-file_name_exec. According to the comment, if this path is provided, it
-is assumed to be the path to the script file and no attempt at
-locating the script file is done. However, the identity ports are
-still compared. This cannot succeed if fakeroot or chroot is used,
-because the process doing the exec and thus the initial file lookup is
-running in the chrooted environment, while the exec server is not.
-
-Fix this by skipping the identity test if file_name_exec is provided.
-
-* exec/hashexec.c (check_hashbang): Skip the file identity test if the
-  file_name_exec is provided.
----
- exec/hashexec.c |   91 ++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 50 insertions(+), 41 deletions(-)
-
+diff --git a/exec/hashexec.c b/exec/hashexec.c
+index a7368390..71c02386 100644
 --- a/exec/hashexec.c
 +++ b/exec/hashexec.c
-@@ -231,11 +231,12 @@ check_hashbang (struct execdata *e,
+@@ -230,11 +230,12 @@ check_hashbang (struct execdata *e,
  	  else if (! (flags & EXEC_SECURE))
  	    {
  	      /* Try to figure out the file's name.  If FILE_NAME_EXEC
@@ -45,7 +46,7 @@ Fix this by skipping the identity test if file_name_exec is provided.
  
  	      error_t error;
  	      char *name;
-@@ -271,51 +272,59 @@ check_hashbang (struct execdata *e,
+@@ -270,51 +271,59 @@ check_hashbang (struct execdata *e,
  		  return err;
  		}
  
