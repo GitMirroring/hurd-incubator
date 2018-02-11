@@ -3,6 +3,8 @@ hurd (1:0.9.git20180108-3) UNRELEASED; urgency=medium
   * debian/patches/git-proc_mounts_firmlink.patch: Cherry-pick fix for
     firmlinks in /proc/mounts.
   * debian/rules: Preseed more symbols for rebootstrap.
+  * debian/patches/git-rpcscan-link: Cherry-pick fix for rpcscan link in
+    rebootstrap.
 
  -- Samuel Thibault <sthibault@debian.org>  Tue, 16 Jan 2018 21:48:39 +0000
 

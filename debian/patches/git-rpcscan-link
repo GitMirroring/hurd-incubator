@@ -1,0 +1,22 @@
+commit b1c8dd9d231dac88338c6c9f2c2c0b51afee8cba
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Feb 11 14:13:27 2018 +0100
+
+    Add missing lib in link
+    
+    * Makefile (rpcscan): Depend on ../libshouldbeinlibc/libshouldbeinlibc.a.
+
+diff --git a/utils/Makefile b/utils/Makefile
+index f3f76e9c..48f9e7a0 100644
+--- a/utils/Makefile
++++ b/utils/Makefile
+@@ -70,7 +70,8 @@ $(filter-out $(special-targets), $(targets)): %: %.o
+ 
+ rpctrace: ../libports/libports.a
+ rpctrace rpcscan: msgids.o \
+-	  ../libihash/libihash.a
++	  ../libihash/libihash.a \
++	  ../libshouldbeinlibc/libshouldbeinlibc.a
+ msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
+ 
+ fakeauth: authServer.o auth_requestUser.o interruptServer.o \
