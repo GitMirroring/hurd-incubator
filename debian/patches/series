@@ -25,6 +25,3 @@ crash-logging.patch
 using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
-git-fix-sync
-git-proc_mounts_firmlink.patch
-git-rpcscan-link
