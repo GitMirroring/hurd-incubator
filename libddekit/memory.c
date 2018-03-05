@@ -19,6 +19,7 @@
 
 #include "mach_U.h"
 #include <hurd/slab.h>
+#include <mach_init.h>
 
 #include "util.h"
 #include "ddekit/memory.h"
