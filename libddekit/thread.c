@@ -8,6 +8,7 @@
 #include <hurd.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "ddekit/memory.h"
 #include "ddekit/semaphore.h"
