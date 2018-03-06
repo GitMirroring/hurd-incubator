@@ -12,7 +12,7 @@ Index: hurd-debian/configure.ac
 +AC_CHECK_FUNCS(file_exec_file_name exec_exec_file_name _hurd_exec_file_name)
  AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
  
- 
+ # Compatibility with glibc < 2.28
 Index: hurd-debian/utils/fakeauth.c
 ===================================================================
 --- hurd-debian.orig/utils/fakeauth.c

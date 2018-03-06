@@ -10,20 +10,18 @@ http://lists.gnu.org/archive/html/bug-hurd/2009-04/msg00006.html
 
 --- a/libdiskfs/file-utimes.c
 +++ b/libdiskfs/file-utimes.c
-@@ -33,7 +33,7 @@ diskfs_S_file_utimes (struct protid *cre
+@@ -33,6 +33,7 @@ diskfs_S_file_utimes (struct protid *cre
  			 else
  			   {
- 			     np->dn_stat.st_atim.tv_sec = atime.seconds;
--			     np->dn_stat.st_atim.tv_nsec = atime.microseconds * 1000;
+ 			     np->dn_stat.st_atim = atime;
 +			     np->dn_stat.st_atim.tv_nsec = 0;
  			     np->dn_set_atime = 0;
  			   }
  			 
-@@ -42,7 +42,7 @@ diskfs_S_file_utimes (struct protid *cre
+@@ -42,6 +42,7 @@ diskfs_S_file_utimes (struct protid *cre
  			 else
  			   {
- 			     np->dn_stat.st_mtim.tv_sec = mtime.seconds;
--			     np->dn_stat.st_mtim.tv_nsec = mtime.microseconds * 1000;
+ 			     np->dn_stat.st_mtim = mtime;
 +			     np->dn_stat.st_mtim.tv_nsec = 0;
  			     np->dn_set_mtime = 0;
  			   }
