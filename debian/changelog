@@ -1,4 +1,10 @@
-hurd (1:0.9.git20180222-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20180305-1) UNRELEASED; urgency=medium
+
+  * New upstream snapshot.
+
+ -- Samuel Thibault <sthibault@debian.org>  Tue, 06 Mar 2018 00:05:45 +0000
+
+hurd (1:0.9.git20180222-1) unstable; urgency=medium
 
   * New upstream snapshot.
     - debian/patches/git-fix-sync: Merged.
@@ -6,7 +12,7 @@ hurd (1:0.9.git20180222-1) UNRELEASED; urgency=medium
     - debian/patches/git-rpcscan-link: Merged.
   * debian/rules: Preseed more symbols for rebootstrap.
 
- -- Samuel Thibault <sthibault@debian.org>  Tue, 16 Jan 2018 21:48:39 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Thu, 22 Feb 2018 20:58:25 +0000
 
 hurd (1:0.9.git20180108-2) unstable; urgency=medium
 
