@@ -80,22 +80,29 @@ load_section (void *section, struct execdata *u)
   if (! anywhere)
     addr += u->info.elf.loadbase;
   else
+    {
 #if 0
-    switch (elf_machine)
-      {
-      case EM_386:
-      case EM_486:
-	/* On the i386, programs normally load at 0x08000000, and
-	   expect their data segment to be able to grow dynamically
-	   upward from its start near that address.  We need to make
-	   sure that the dynamic linker is not mapped in a conflicting
-	   address.  */
-	/* mask = 0xf8000000UL; */ /* XXX */
-	break;
-      default:
-	break;
-      }
+      /* XXX: gnumach currently does not support high bits set in mask to prevent
+       * loading at high addresses.
+       * Instead, in rtld we prevent mappings there through a huge mapping done by
+       * fmh().
+       */
+      switch (elf_machine)
+	{
+	case EM_386:
+	case EM_486:
+	  /* On the i386, programs normally load at 0x08000000, and
+	     expect their data segment to be able to grow dynamically
+	     upward from its start near that address.  We need to make
+	     sure that the dynamic linker is not mapped in a conflicting
+	     address.  */
+	  /* mask = 0xf8000000UL; */ /* XXX */
+	  break;
+	default:
+	  break;
+	}
 #endif
+    }
   if (anywhere && addr < vm_page_size)
     addr = vm_page_size;
 
@@ -1278,6 +1285,9 @@ do_exec (file_t file,
     }
 
 
+  /* Leave room for mmaps etc. before PIE binaries.
+   * Could add address randomization here.  */
+  anywhere_start += 128 << 20;
   /* Load the file into the task.  */
   anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
