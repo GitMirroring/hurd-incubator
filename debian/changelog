@@ -7,7 +7,7 @@ hurd (1:0.9.git20180422-1) unstable; urgency=medium
     localstatedir paths at configure time. Use DESTDIR/--destdir instead of
     prefix at install time instead of explicit variables.
 
- -- Samuel Thibault <sthibault@debian.org>  Sun, 22 Apr 2018 00:11:04 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 22 Apr 2018 15:33:52 +0000
 
 hurd (1:0.9.git20180305-1) unstable; urgency=medium
 
