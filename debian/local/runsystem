@@ -5,8 +5,10 @@ export PATH
 
 umask 022
 
+# These are needed very early
 mkdir -p /servers/socket
 settrans -c /servers/socket/1 /hurd/pflocal
+settrans -c /dev/null /hurd/null
 
 mem=`vmstat-hurd --size -k`
 if [ "$mem" -lt 240000 ]
