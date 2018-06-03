@@ -1,4 +1,4 @@
-hurd (1:0.9.git20180422-2) UNRELEASED; urgency=medium
+hurd (1:0.9.git20180603-1) UNRELEASED; urgency=medium
 
   * Bump Standards-Version to 4.1.4 (no changes).
   * hurd-udeb.install.in: Fix installing console drivers.
@@ -9,7 +9,7 @@ hurd (1:0.9.git20180422-2) UNRELEASED; urgency=medium
     of /var/spool/random-seed.
   * local/runsystem: Set up /dev/null early.
 
- -- Samuel Thibault <sthibault@debian.org>  Sat, 28 Apr 2018 16:57:10 +0200
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 03 Jun 2018 15:44:23 +0000
 
 hurd (1:0.9.git20180422-1) unstable; urgency=medium
 
