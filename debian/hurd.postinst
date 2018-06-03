@@ -63,8 +63,20 @@ fi
 
 #DEBHELPER#
 
+if [ "$1" = configure ] ; then
+	# Generate initial pool
+	UMASK=`umask`
+	umask 077
+	[ -f /var/spool/random-seed ] || dd < /dev/urandom > /var/spool/random-seed bs=1 count=600 2> /dev/null
+        # TODO: will need to run settrans -ga /dev/random at system stop to make
+        # it save it back
+	umask $UMASK
+fi
+
 # Remove alternative introduced by 20111106-1
 update-alternatives --remove random /dev/random-hurd
+update-alternatives --install /hurd/random.sh random.sh /hurd/random-hurd.sh 10 \
+		    --slave /hurd/urandom.sh urandom.sh /hurd/urandom-hurd.sh
 
 if [ "$1" = configure ] && [ "$2" ]; then
 	# Upgrade: create the missing device and server nodes
@@ -90,17 +102,4 @@ if [ "$1" = configure ] && [ "$2" ]; then
 		PFINET6=`echo "$PFINET6" | sed 's_=eth_=/dev/eth_'`
 		settrans -pk /servers/socket/26 $PFINET6
 	fi
-fi
-
-update-alternatives --install /hurd/random.sh random.sh /hurd/random-hurd.sh 10 \
-		    --slave /hurd/urandom.sh urandom.sh /hurd/urandom-hurd.sh
-
-if [ "$1" = configure ] ; then
-	# Generate initial pool
-	UMASK=`umask`
-	umask 077
-	[ -f /var/spool/random-seed ] || dd < /dev/urandom > /var/spool/random-seed bs=1 count=600 2> /dev/null
-        # TODO: will need to run settrans -ga /dev/random at system stop to make
-        # it save it back
-	umask $UMASK
 fi
