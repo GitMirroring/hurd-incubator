@@ -134,9 +134,9 @@ endif
 ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_install -Bbuild-udeb --destdir=$(DEB_DESTDIR_UDEB)
 endif
-  ifeq (,$(filter stage3,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage3,$(DEB_BUILD_PROFILES)))
 	$(MAKE) -C libdde-linux26 INSTALLDIR=$(CURDIR)/debian/tmp/usr/share/libdde_linux26/build/include install
-  endif
+endif
 
 	# runsystem is managed by update-alternatives
 	mv debian/tmp/lib/hurd/runsystem debian/tmp/lib/hurd/runsystem.gnu
