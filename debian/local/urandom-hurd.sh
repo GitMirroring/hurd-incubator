@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /hurd/random --seed-file /var/spool/random-seed --fast
+exec /hurd/random --seed-file /var/lib/random-seed --fast

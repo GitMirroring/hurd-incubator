@@ -20,6 +20,7 @@ then
 fi
 
 # Create a minimal subset of device and server nodes
+date > /var/lib/random-seed 2> /dev/null
 /usr/lib/hurd/setup-translators -m -k -p
 settrans -c /proc /hurd/procfs -c
 

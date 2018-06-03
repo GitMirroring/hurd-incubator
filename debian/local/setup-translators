@@ -142,8 +142,8 @@ if [ "$MINIMAL" ]; then
 	md ttyX 1234
 	md ptypX 0123456789
 	md comX 0123
-	st random /hurd/random random
-	st urandom /hurd/random urandom
+	st random "/hurd/random --seed-file /var/lib/random-seed" random
+	st urandom "/hurd/random --seed-file /var/lib/random-seed --fast" urandom
 else
 	md loopX 01234567
 	md ttyX 123456
