@@ -23,7 +23,7 @@ DEB_DESTDIR = $(CURDIR)/debian/tmp
 DEB_DESTDIR_UDEB = $(CURDIR)/debian/tmp-udeb
 DEB_DESTDIR_PROF = $(CURDIR)/debian/tmp-prof
 
-TRANSLATORS_PROF = auth exec ext2fs pfinet pflocal proc procfs term
+TRANSLATORS_PROF = auth exec ext2fs pfinet lwip pflocal proc procfs term
 
 ifeq (,$(filter stage1 stage2 stage3,$(DEB_BUILD_PROFILES)))
 CONFIGURE_ARGS = --disable-profile --enable-static-progs='ext2fs,iso9660fs'
