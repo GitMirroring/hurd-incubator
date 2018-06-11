@@ -23,7 +23,8 @@ Build-Depends:
  zlib1g-dev <!stage1 !stage2 !stage3>,
  libbz2-dev <!stage1 !stage2 !stage3>,
  uuid-dev <!stage1 !stage2 !stage3>,
- libblkid-dev <!stage1 !stage2 !stage3>
+ libblkid-dev <!stage1 !stage2 !stage3>,
+ liblwip-dev <!stage1 !stage2 !stage3>
 Uploaders: Michael Banck <mbanck@debian.org>, 
  Samuel Thibault <sthibault@debian.org>
 Homepage: http://www.gnu.org/software/hurd/hurd.html

@@ -1,3 +1,9 @@
+hurd (1:0.9.git20180603-2) unstable; urgency=medium
+
+  * control: Build-depend on liblwip-dev, to add lwip-based TCP/IP stack.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 10 Jun 2018 22:52:05 +0000
+
 hurd (1:0.9.git20180603-1) unstable; urgency=medium
 
   * Bump Standards-Version to 4.1.4 (no changes).
