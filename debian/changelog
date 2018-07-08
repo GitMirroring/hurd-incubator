@@ -1,6 +1,7 @@
 hurd (1:0.9.git20180603-3) UNRELEASED; urgency=medium
 
   * rules: Build profiling version of lwip.
+  * control: Bump Standards-Version to 4.1.5 (no changes).
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 11 Jun 2018 00:00:43 +0000
 
