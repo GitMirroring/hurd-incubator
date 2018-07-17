@@ -119,6 +119,7 @@ Package: hurd-doc
 Priority: optional
 Section: doc
 Architecture: all
+Multi-Arch: foreign
 Build-Profiles: <!stage1 !stage2>
 Depends: ${misc:Depends}
 Suggests: www-browser
