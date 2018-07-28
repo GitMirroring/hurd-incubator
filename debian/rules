@@ -45,6 +45,7 @@ export ac_cv_func__hurd_exec_file_name=no
 export ac_cv_func_file_exec_paths=no
 export ac_cv_func_exec_exec_paths=no
 export ac_cv_func__hurd_exec_paths=no
+export ac_cv_func_file_futimens=no
 export LEX=:
 export YACC=:
 export MIG=:
