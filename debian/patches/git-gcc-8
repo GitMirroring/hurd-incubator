@@ -6,11 +6,11 @@ Date:   Sat Jul 28 20:31:00 2018 +0200
     
     * ./libdde_linux26/contrib/include/linux/compiler-gcc8.h: New file.
 
-diff --git a/libdde_linux26/contrib/include/linux/compiler-gcc8.h b/libdde_linux26/contrib/include/linux/compiler-gcc8.h
+diff --git a/libdde-linux26/contrib/include/linux/compiler-gcc8.h b/libdde-linux26/contrib/include/linux/compiler-gcc8.h
 new file mode 100644
 index 000000000..accf892e2
 --- /dev/null
-+++ b/libdde_linux26/contrib/include/linux/compiler-gcc8.h
++++ b/libdde-linux26/contrib/include/linux/compiler-gcc8.h
 @@ -0,0 +1,25 @@
 +#ifndef __LINUX_COMPILER_H
 +#error "Please don't include <linux/compiler-gcc8.h> directly, include <linux/compiler.h> instead."
