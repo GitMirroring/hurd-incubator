@@ -3,6 +3,8 @@ hurd (1:0.9.git20180603-3) unstable; urgency=medium
   * rules: Build profiling version of lwip.
   * rules: Add missing cross-build preseeding.
   * patches/git-gcc-8: Fix build with gcc-8.
+  * control: Bump Standards-Version to 4.1.5 (no changes).
+  * control: Mark hurd-doc Multi-Arch: foreign.
 
  -- Samuel Thibault <sthibault@debian.org>  Sat, 28 Jul 2018 17:56:50 +0000
 
