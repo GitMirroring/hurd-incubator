@@ -50,6 +50,7 @@ hurd/magic
 hurd/mtab
 hurd/new-fifo
 hurd/null
+hurd/pci-arbiter
 hurd/pfinet
 hurd/pflocal
 hurd/proc
