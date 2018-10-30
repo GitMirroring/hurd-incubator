@@ -18,24 +18,14 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <startup.h>
+/* Startup and shutdown notifications management */
+
+#include "startup.h"
 
 #include <unistd.h>
-#include <signal.h>
 #include <hurd/paths.h>
 #include <hurd/startup.h>
-
-#include <lwip-hurd.h>
-
-static void
-sigterm_handler (int signo)
-{
-  ports_class_iterate (socketport_class, ports_destroy_right);
-  ports_class_iterate (addrport_class, ports_destroy_right);
-  sleep (10);
-  signal (SIGTERM, SIG_DFL);
-  raise (SIGTERM);
-}
+#include <hurd/netfs.h>
 
 void
 arrange_shutdown_notification ()
@@ -44,14 +34,12 @@ arrange_shutdown_notification ()
   mach_port_t initport, notify;
   struct port_info *pi;
 
-  shutdown_notify_class = ports_create_class (0, 0);
-
-  signal (SIGTERM, sigterm_handler);
+  pci_shutdown_notify_class = ports_create_class (0, 0);
 
   /* Arrange to get notified when the system goes down,
      but if we fail for some reason, just silently give up.  No big deal. */
 
-  err = ports_create_port (shutdown_notify_class, lwip_bucket,
+  err = ports_create_port (pci_shutdown_notify_class, netfs_port_bucket,
 			   sizeof (struct port_info), &pi);
   if (err)
     return;
