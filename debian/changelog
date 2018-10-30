@@ -6,6 +6,7 @@ hurd (1:0.9.git20181030-1) UNRELEASED; urgency=medium
     - hurd-udeb.install: Install pci-arbiter.
     - hurd-prof.lintian-overrides: Avoid lintian warning about prof version of
     pci-arbiter being statically linked.
+    - local/setup-translators: Setup pci-arbiter translator.
   * control: Bump Standards-Version to 4.2.0 (no changes).
 
  -- Samuel Thibault <sthibault@debian.org>  Fri, 10 Aug 2018 02:10:43 +0200

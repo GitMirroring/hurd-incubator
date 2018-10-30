@@ -98,6 +98,7 @@ md () {
 echo -n "Setting up translators:"
 cd /servers
 mkdir -p socket
+mkdir -p bus/pci
 
 st exec /hurd/exec
 st default-pager /hurd/proxy-defpager
@@ -107,6 +108,7 @@ st socket/2 '/hurd/pfinet -6 /servers/socket/26' inet
 st socket/inet  '/hurd/symlink 2'  '(+link)'
 st socket/26 '/hurd/pfinet -4 /servers/socket/2' inet6
 st socket/inet6 '/hurd/symlink 26' '(+link)'
+st bus/pci /hurd/pci-arbiter
 touch startup 2> /dev/null
 
 if [ -z "$MINIMAL" ]; then
