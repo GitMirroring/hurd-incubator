@@ -102,6 +102,7 @@ mkdir -p bus/pci
 
 st exec /hurd/exec
 st default-pager /hurd/proxy-defpager
+chmod 755 default-pager
 st socket/1 /hurd/pflocal
 st socket/local '/hurd/symlink 1' '(+link)'
 st socket/2 '/hurd/pfinet -6 /servers/socket/26' inet

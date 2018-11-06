@@ -1,3 +1,9 @@
+hurd (1:0.9.git20181030-2) UNRELEASED; urgency=medium
+
+  * local/setup-translators: Allow default-pager for everybody.
+
+ -- Samuel Thibault <sthibault@debian.org>  Wed, 07 Nov 2018 00:13:27 +0100
+
 hurd (1:0.9.git20181030-1) unstable; urgency=medium
 
   * New upstream snapshot.
