@@ -2,6 +2,7 @@ hurd (1:0.9.git20181030-3) unstable; urgency=medium
 
   * debian/patches/io-write-crash.patch: Avoid ext2fs crash on faulty pager
     requests.
+  * debian/local/setup-translators: Fix fixing shm.
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 18 Nov 2018 00:25:05 +0000
 
