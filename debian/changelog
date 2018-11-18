@@ -1,3 +1,10 @@
+hurd (1:0.9.git20181030-3) unstable; urgency=medium
+
+  * debian/patches/io-write-crash.patch: Avoid ext2fs crash on faulty pager
+    requests.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 18 Nov 2018 00:25:05 +0000
+
 hurd (1:0.9.git20181030-2) unstable; urgency=medium
 
   * local/setup-translators: Allow default-pager for everybody.
