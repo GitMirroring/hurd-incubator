@@ -1,0 +1,32 @@
+commit 162db89eff70660963f416e862f62fa35d718593
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Jan 5 14:46:51 2019 +0100
+
+    hurd: fix error on opening symlink with O_NOFOLLOW|O_WRITE
+    
+    POSIX requires ELOOP in that case.
+    
+    * libdiskfs/dir-lookup.c (diskfs_S_dir_lookup): Return ELOOP instead of
+    EACCES when the result is a symlink and O_WRITE|O_EXEC was requested
+
+diff --git a/libdiskfs/dir-lookup.c b/libdiskfs/dir-lookup.c
+index eafeefc3..05e3fc5b 100644
+--- a/libdiskfs/dir-lookup.c
++++ b/libdiskfs/dir-lookup.c
+@@ -460,12 +460,14 @@ diskfs_S_dir_lookup (struct protid *dircred,
+   if (!newnode)
+     /* Check permissions on existing nodes, but not new ones. */
+     {
+-      if (((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
++      if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
+ 	    type == S_IFIFO)
+ 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
+-	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
+ 	err = EACCES;
+ 
++      if (!err && type == S_IFLNK && (flags & (O_WRITE|O_EXEC)))
++	err = ELOOP;
++
+       if (!err && (flags & O_READ))
+ 	err = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
+ 
