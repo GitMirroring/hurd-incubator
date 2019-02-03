@@ -1,3 +1,11 @@
+hurd (1:0.9.git20181030-5) UNRELEASED; urgency=medium
+
+  * patches/run.patch: Drop, now useless with proper sysvinit support
+    (Closes: #920618).
+  * setup-translators: Make sure /dev/shm is a symlink to /tmp for now.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 03 Feb 2019 14:04:05 +0100
+
 hurd (1:0.9.git20181030-4) unstable; urgency=medium
 
   * debian/patches/git-gcrypt-version.patch: Avoid requiring the libgcrypt20
