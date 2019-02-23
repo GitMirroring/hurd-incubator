@@ -163,7 +163,7 @@ st mouse '/hurd/symlink cons/mouse' mouse
 ! [ -L shm ] || rm -f shm
 ! [ -d shm ] || rmdir shm
 
-# TODO make it a tmpfs when tmpfs open/mmap/close/unlink/dereference crash is fixed
+# TODO let initscript make it a tmpfs when tmpfs open/mmap/close/unlink/dereference crash is fixed, see #923078 and /lib/init/tmpfs.sh
 st shm '/hurd/symlink /tmp' shm
 
 echo .
