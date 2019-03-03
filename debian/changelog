@@ -1,6 +1,8 @@
 hurd (1:0.9.git20190303-1) unstable; urgency=medium
 
   * New upstream snapshot.
+    - patches/git-gcrypt-version.patch: Merged.
+    - patches/git-tar-symlinks.patch: Merged.
   * patches/run.patch: Drop, now useless with proper sysvinit support
     (Closes: #920618).
   * setup-translators: Make sure /dev/shm is a symlink to /tmp for now. Set up
