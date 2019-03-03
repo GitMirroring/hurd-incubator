@@ -1,0 +1,24 @@
+Index: hurd-debian/libstore/device.c
+===================================================================
+--- hurd-debian.orig/libstore/device.c
++++ hurd-debian/libstore/device.c
+@@ -94,7 +94,10 @@ static error_t
+ dopen (const char *name, device_t *device, int *mod_flags)
+ {
+   device_t dev_master;
+-  error_t err;
++  error_t err = ENODEV;
++
++if (name[0] == '/')
++{
+   if (*mod_flags & STORE_HARD_READONLY)
+     {
+       dev_master = file_name_lookup (name, O_READ, 0);
+@@ -131,6 +134,7 @@ dopen (const char *name, device_t *devic
+       else
+ 	err = ENODEV;
+     }
++}
+ 
+   if (err)
+     {
