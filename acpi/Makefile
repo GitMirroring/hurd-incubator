@@ -1,4 +1,4 @@
-#   Copyright (C) 2017 Free Software Foundation, Inc.
+#   Copyright (C) 2018 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -13,29 +13,23 @@
 #   General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
+#  along with the GNU Hurd.  If not, see <<a rel="nofollow" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>>.
 
-dir		= pci-arbiter
-makemode	= server
+dir            = acpi
+makemode       = server
 
 PORTDIR = $(srcdir)/port
 
-SRCS		= main.c pci-ops.c pci_access.c x86_pci.c netfs_impl.c \
-		  pcifs.c ncache.c options.c func_files.c startup.c \
-		  startup-ops.c
-MIGSRCS		= pciServer.c startup_notifyServer.c
-OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
+SRCS           = main.c netfs_impl.c acpi.c \
+                 acpifs.c ncache.c options.c func_files.c
+MIGSRCS        =
+OBJS           = $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
 
-HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash
+HURDLIBS= fshelp ports shouldbeinlibc netfs
 LDLIBS = -lpthread
 
-target = pci-arbiter
+target = acpi
 
 include ../Makeconf
 
 CFLAGS += -I$(PORTDIR)/include
-
-pci-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-
-# cpp doesn't automatically make dependencies for -imacros dependencies. argh.
-pci_S.h pciServer.c: mig-mutate.h
