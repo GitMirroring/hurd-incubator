@@ -3,7 +3,8 @@ hurd (1:0.9.git20190303-1) UNRELEASED; urgency=medium
   * New upstream snapshot.
   * patches/run.patch: Drop, now useless with proper sysvinit support
     (Closes: #920618).
-  * setup-translators: Make sure /dev/shm is a symlink to /tmp for now.
+  * setup-translators: Make sure /dev/shm is a symlink to /tmp for now. Set up
+    acpi and shutdown translators.
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 03 Feb 2019 14:04:05 +0100
 
