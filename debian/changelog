@@ -1,5 +1,6 @@
-hurd (1:0.9.git20181030-5) UNRELEASED; urgency=medium
+hurd (1:0.9.git20190303-1) UNRELEASED; urgency=medium
 
+  * New upstream snapshot.
   * patches/run.patch: Drop, now useless with proper sysvinit support
     (Closes: #920618).
   * setup-translators: Make sure /dev/shm is a symlink to /tmp for now.

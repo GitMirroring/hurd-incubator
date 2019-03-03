@@ -52,7 +52,9 @@
 #include <argp.h>
 #include <pids.h>
 #include <idvec.h>
+#include <stdlib.h>
 
+#include "shutdown_U.h"
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -73,6 +75,8 @@ static int verbose = 0;
 const char *argp_program_version = STANDARD_HURD_VERSION (startup);
 
 #define OPT_KERNEL_TASK	-1
+
+#define _SERVERS_SHUTDOWN	_SERVERS	"/shutdown"
 
 static struct argp_option
 options[] =
@@ -173,6 +177,22 @@ getstring (char *buf, size_t bufsize)
 
 /** System shutdown **/
 
+/* Do an RPC to /servers/shutdown
+ * to call platform specific shutdown routine
+ */
+error_t
+do_shutdown (void)
+{
+  shutdown_t pc;
+
+  pc = file_name_lookup (_SERVERS_SHUTDOWN, O_READ, 0);
+  if (! MACH_PORT_VALID (pc))
+    return errno;
+
+  shutdown_shutdown (pc);
+  return 0;
+}
+
 /* Reboot the microkernel.  */
 void
 reboot_mach (int flags)
@@ -186,9 +206,18 @@ reboot_mach (int flags)
   else
     {
       error_t err;
+      sleep (5);
+      if (flags & RB_HALT) {
+	fprintf (stderr, "%s: %sing Hurd...\n",
+	         program_invocation_short_name, BOOT (flags));
+	err = do_shutdown ();
+	if (err)
+	  error (0, err, "shutdown");
+	sleep (2);
+	fprintf (stderr, "Didn't succeed\n");
+      }
       fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
                program_invocation_short_name, BOOT (flags), flags);
-      sleep (5);
       err = host_reboot (host_priv, flags);
       if (err)
 	error (1, err, "reboot");

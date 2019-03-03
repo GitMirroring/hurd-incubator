@@ -52,6 +52,7 @@ typedef mach_port_t interrupt_t;
 typedef mach_port_t proccoll_t;
 typedef mach_port_t ctty_t;
 typedef mach_port_t pci_t;
+typedef mach_port_t shutdown_t;
 
 #include <errno.h>		/* Defines `error_t'.  */
 
@@ -360,6 +361,7 @@ typedef const int *const_procinfo_t;
 #define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
 #define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
 #define FSTYPE_PCI     0x0000001b /* PCI filesystem */
+#define FSTYPE_ACPI    0x0000001c /* ACPI filesystem */
 
 /* Standard port assignments for file_exec_paths and exec_* */
 enum
