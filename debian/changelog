@@ -1,3 +1,11 @@
+hurd (1:0.9.git20190331-1) unstable; urgency=medium
+
+  * New upstream snapshot.
+    - Fixes build with lwip 2.1.2.
+    - patches/git-fix-dopen: Merged.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 31 Mar 2019 18:46:17 +0000
+
 hurd (1:0.9.git20190303-1) unstable; urgency=medium
 
   * New upstream snapshot.

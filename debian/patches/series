@@ -25,4 +25,3 @@ using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
 io-write-crash.patch
-git-fix-dopen
