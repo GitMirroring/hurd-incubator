@@ -23,8 +23,7 @@
 #include <netif/ifcommon.h>
 
 #include <net/if.h>
-
-#include <lwip/netifapi.h>
+#include <errno.h>
 
 /* Open the device and set the interface up */
 static error_t
@@ -39,7 +38,7 @@ if_open (struct netif *netif)
     {
       /* Up the inerface */
       ifc->flags |= IFF_UP | IFF_RUNNING;
-      netifapi_netif_set_up (netif);
+      netif_set_up (netif);
     }
 
   return err;
@@ -58,7 +57,7 @@ if_close (struct netif *netif)
     {
       /* Down the inerface */
       ifc->flags &= ~(IFF_UP | IFF_RUNNING);
-      netifapi_netif_set_down (netif);
+      netif_set_down (netif);
     }
 
   return err;
@@ -70,12 +69,12 @@ if_close (struct netif *netif)
  * This function doesn't assume there's a device nor tries to open it.
  * If a device is present, it must be opened from the ifc->init() callback.
  */
-error_t
-if_init (struct netif * netif)
+err_t
+if_init (struct netif *netif)
 {
   struct ifcommon *ifc = netif_get_state (netif);
 
-  if (netif == NULL)
+  if (ifc == NULL)
     /* The user provided no interface */
     return -1;
 
@@ -89,7 +88,7 @@ if_terminate (struct netif * netif)
   error_t err;
   struct ifcommon *ifc = netif_get_state (netif);
 
-  if (netif == NULL)
+  if (ifc == NULL)
     /* The user provided no interface */
     return -1;
 
