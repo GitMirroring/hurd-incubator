@@ -15,7 +15,19 @@ index ced79702..8c219c4c 100644
  
  SRCS = shutdown.c acpi_shutdown.c
 -HURDLIBS = ports shouldbeinlibc trivfs
-+HURDLIBS = ports shouldbeinlibc trivfs iohelp ihash
++HURDLIBS = ports shouldbeinlibc trivfs iohelp ihash fshelp
+ target = shutdown
+ MIGSTUBS = shutdownServer.o
+ MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+diff --git a/shutdown/Makefile b/shutdown/Makefile
+index 2d2593c0..73813dab 100644
+--- a/shutdown/Makefile
++++ b/shutdown/Makefile
+@@ -20,6 +20,7 @@ makemode := server
+ 
+ SRCS = shutdown.c acpi_shutdown.c
+ HURDLIBS = ports shouldbeinlibc trivfs iohelp ihash fshelp
++LDLIBS = -lpthread
  target = shutdown
  MIGSTUBS = shutdownServer.o
  MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
