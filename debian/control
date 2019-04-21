@@ -92,7 +92,7 @@ Build-Profiles: <!stage1 !stage2>
 Description: GNU Hurd (development files)
  This package includes the header files and the static libraries.
 
-# Dropped for now, see #838392 and #913965
+# Fix for #838392, dropped for now, depends on #818618 and #913965
 #Package: hurd-headers-dev
 #Priority: standard
 #Section: libdevel
