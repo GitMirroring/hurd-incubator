@@ -1,0 +1,48 @@
+From dee1f77256ec7d02b4cc023476c28f4c7e719819 Mon Sep 17 00:00:00 2001
+From: Damien Zammit <damien@zamaudio.com>
+Date: Thu, 25 Apr 2019 23:05:57 -0400
+Subject: [PATCH 2/2] Carve out two holes in the ioperm range belonging to
+ Hurd's pci-arbiter
+
+Signed-off-by: Damien Zammit <damien@zamaudio.com>
+---
+ src-gnu/pci_user-gnu.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/src-gnu/pci_user-gnu.c b/src-gnu/pci_user-gnu.c
+index 0545fb1..cbafa80 100644
+--- a/src-gnu/pci_user-gnu.c
++++ b/src-gnu/pci_user-gnu.c
+@@ -77,9 +77,29 @@ static int numdevs = -1;
+ static mach_port_t master_host;
+ static mach_port_t master_device;
+ 
++#define PCI_CFG1_START 0xcf8
++#define PCI_CFG1_END   0xcff
++#define PCI_CFG2_START 0xc000
++#define PCI_CFG2_END   0xcfff
++
+ int
+ rumpcomp_pci_iospace_init(void)
+ {
++	/* Avoid giving ioperm to the PCI cfg registers
++	 * since GNU/Hurd controls these.
++	 * Carve out two holes in the range
++	 */
++
++	/* 0-0xcf7 */
++	if (ioperm(0, PCI_CFG1_START-1, 1))
++		return rumpuser_component_errtrans(errno);
++	/* 0xd00-0xbfff */
++	if (ioperm(PCI_CFG1_END+1, (PCI_CFG2_START-1) - (PCI_CFG1_END+1), 1))
++		return rumpuser_component_errtrans(errno);
++	/* 0xd000-0xffff */
++	if (ioperm(PCI_CFG2_END+1, 0xffff - (PCI_CFG2_END+1), 1))
++		return rumpuser_component_errtrans(errno);
++
+ 	return 0;
+ }
+ 
+-- 
+2.17.1
+

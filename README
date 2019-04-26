@@ -1,0 +1,77 @@
+rump drivers in userspace
+=========================
+
+This is an extension of Robert Millan's work with rump and Hurd.
+Thanks to luckyluke for blockrump.c
+
+
+hurd/libmachdevrump/
+
+This folder contains an implementation of the mach device RPC
+and presents a character device to the system as a device node,
+using a rumpkernel to provide access to raw disk storage via pci in
+userspace.  (It is mostly a copy of libmachdev with the block device
+implementation from linux replaced with a rump one).
+
+WIP: Currently requires the hurd repository as a dependency,
+     since it is built as part of hurd.
+
+Status: Still can't open the pci raw device (ENXIO) -- working on it!
+
+
+hurd/rumpdisk/
+
+This folder contains the translator main function that calls
+into libmachdevrump.
+
+
+rump-patches/
+
+This folder has a few patches needed for rump
+
+
+Preparation:
+Drop libmachdevrump/ and rumpdisk/ into the root of a recent hurd checkout.
+Add to the main hurd Makefile the lib-dirs = ... libmachdevrump
+
+Build and install rump:
+	
+	git clone https://github.com/rumpkernel/buildrump.sh.git
+	cd buildrump.sh
+	#(apply 0001-buildrump.patch)
+	./buildrump.sh checkout
+	cd src
+	#(apply 0001-buildrump-src.patch)
+	cd ..
+	./buildrump.sh fullbuild
+	#(make coffee)
+	cd ..
+	git clone https://github.com/rumpkernel/pci-userspace.git
+	cd pci-userspace
+	#(apply *-pci-userspace.patch)
+	cd src-gnu
+	# Don't use the submodule buildrump.sh that comes with pci-userspace
+	../../buildrump.sh/obj/tooldir/rumpmake dependall
+
+	Find all the libs librump*.so that buildrump.sh created and install 
+	them somewhere in /lib/i386-gnu or /usr/lib
+	You probably also need the headers installed to /usr/include/rump
+	Look in rump/ for outputs
+	
+	The rumpmake step is awkward because the libs are compiled in the src
+	directory, so I provided a list of files to grab from the tree in
+	"rump-extra-libs".
+
+Build the libmachdevrump component of hurd
+
+Build rumpdisk as a hurd utility (its the translator)
+
+
+Running:
+	WARNING: This will probably clash with your system's IDE /dev/hd0s3
+
+	sudo touch /dev/disk
+	sudo settrans -fga /dev/disk /hurd/rumpdisk
+	sudo settrans -fga /mnt /hurd/ext2fs -T typed part:3:device:/dev/disk
+
+	This is not expected to work (yet).

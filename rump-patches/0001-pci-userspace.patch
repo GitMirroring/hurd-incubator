@@ -1,0 +1,146 @@
+From 9de1df8d4f7ca41cac472e820ba133590312be04 Mon Sep 17 00:00:00 2001
+From: Damien Zammit <damien@zamaudio.com>
+Date: Wed, 28 Nov 2018 07:48:05 -0500
+Subject: [PATCH 1/2] GNU/Hurd support for rump accessing pci in userspace via
+ pci-arbiter
+
+---
+ src-gnu/pci_user-gnu.c | 66 +++++++++++++++++++++++++++---------------
+ 1 file changed, 42 insertions(+), 24 deletions(-)
+
+diff --git a/src-gnu/pci_user-gnu.c b/src-gnu/pci_user-gnu.c
+index 502b7d9..0545fb1 100644
+--- a/src-gnu/pci_user-gnu.c
++++ b/src-gnu/pci_user-gnu.c
+@@ -2,6 +2,7 @@
+  * Copyright (c) 2014 Antti Kantee.  All Rights Reserved.
+  * Copyright (c) 2015 Robert Millan
+  * Copyright (c) 2009,2010 Zheng Da
++ * Copyright (c) 2018 Damien Zammit
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -71,7 +72,7 @@
+ 
+ /* highest dev for which we've returned something sensible in config space */
+ static pthread_mutex_t genericmtx = PTHREAD_MUTEX_INITIALIZER;
+-static int highestdev = -1;
++static int numdevs = -1;
+ 
+ static mach_port_t master_host;
+ static mach_port_t master_device;
+@@ -79,9 +80,6 @@ static mach_port_t master_device;
+ int
+ rumpcomp_pci_iospace_init(void)
+ {
+-	if (ioperm(0, 0x10000, 1))
+-		return rumpuser_component_errtrans(errno);
+-
+ 	return 0;
+ }
+ 
+@@ -97,9 +95,6 @@ pci_userspace_init(void)
+ 		return;
+ 	is_init = 1;
+ 
+-	if (get_privileged_ports (&master_host, &master_device))
+-		err(1, "get_privileged_ports");
+-
+ 	pci_system_init ();
+ 	struct pci_device_iterator *dev_iter;
+ 	struct pci_device *pci_dev;
+@@ -108,35 +103,52 @@ pci_userspace_init(void)
+         while ((pci_dev = pci_device_next (dev_iter)) != NULL) {
+ 		pci_devices[i++] = pci_dev;
+ 	}
++	numdevs = i;
+ }
+ 
+ void *
+ rumpcomp_pci_map(unsigned long addr, unsigned long len)
+ {
+-	errno = rumpuser_component_errtrans(ENOSYS);
++	int residx;
++	int i;
++
++	/*
++	 * We search the pciaccess memory structure for the address
++	 */
++	for (i = 0; i < numdevs; i++) {
++		for (residx = 0; residx < 6; residx++) {
++			if (pci_devices[i]->regions[residx].size == 0)
++				continue;
++			if (pci_devices[i]->regions[residx].base_addr == addr)
++				goto found;
++		}
++	}
+ 	return NULL;
++
++found:
++	return pci_devices[i]->regions[residx].memory;
+ }
+ 
+ int
+ rumpcomp_pci_confread(unsigned bus, unsigned dev, unsigned fun,
+ 	int reg, unsigned int *rv)
+ {
+-	*rv = 0xffffffff;
+-	if (fun != 0 || bus != 0)
+-		return 1;
+-
+-	if (dev >= NUMDEVS)
+-		return 1;
++	int i;
+ 
+ 	pci_userspace_init();
+ 
+-	pci_device_cfg_read_u32(pci_devices[dev], rv, reg);
++	for (i = 0; i < numdevs; i++) {
++		if ((pci_devices[i]->bus == bus) &&
++		    (pci_devices[i]->dev == dev) &&
++		    (pci_devices[i]->func == fun)) {
++			goto found;
+ 
+-	pthread_mutex_lock(&genericmtx);
+-	if ((int)dev > highestdev)
+-		highestdev = dev;
+-	pthread_mutex_unlock(&genericmtx);
++		}
++	}
++	return 1;
+ 
++found:
++	pci_device_cfg_read_u32(pci_devices[i], rv, reg);
+ 	return 0;
+ }
+ 
+@@ -144,15 +156,21 @@ int
+ rumpcomp_pci_confwrite(unsigned bus, unsigned dev, unsigned fun,
+ 	int reg, unsigned int v)
+ {
+-	assert(bus == 0 && fun == 0);
+-
+-	if (dev >= NUMDEVS)
+-		return 1;
++	int i;
+ 
+ 	pci_userspace_init();
+ 
+-	pci_device_cfg_write_u32(pci_devices[dev], v, reg);
++	for (i = 0; i < numdevs; i++) {
++		if ((pci_devices[i]->bus == bus) &&
++		    (pci_devices[i]->dev == dev) &&
++		    (pci_devices[i]->func == fun)) {
++			goto found;
++		}
++	}
++	return 1;
+ 
++found:
++	pci_device_cfg_write_u32(pci_devices[i], v, reg);
+ 	return 0;
+ }
+ 
+-- 
+2.17.1
+
