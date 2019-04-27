@@ -46,6 +46,6 @@
 ./sys/rump/dev/lib/libpci_if_wm/librumpdev_pci_if_wm.so.0.0
 ./sys/rump/dev/lib/libpci_if_wm/librumpdev_pci_if_wm.so.0
 ./sys/rump/dev/lib/libpci_if_wm/librumpdev_pci_if_wm.so
-./sys/rump/dev/lib/libpci_pciide/librumpdev_pciide.so.0.0
-./sys/rump/dev/lib/libpci_pciide/librumpdev_pciide.so.0
-./sys/rump/dev/lib/libpci_pciide/librumpdev_pciide.so
+./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so.0.0
+./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so.0
+./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so

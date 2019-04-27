@@ -53,8 +53,6 @@
 #define  DIOCGMEDIASIZE  _IOR('d', 132, off_t)
 #define  DIOCGSECTORSIZE _IOR('d', 133, unsigned int)
 
-static bool rump_init_done = false;
-
 /* One of these is associated with each open instance of a device.  */
 struct block_data
 {
@@ -79,49 +77,12 @@ static struct device_emulation_ops rump_block_emulation_ops;
 
 #define DISK_NAME_LEN 32
 
-// FIXME Need a better function
-/* Parse the device NAME.
-   Set *SLICE to be the DOS partition and
-   *PART the BSD/Mach partition, if any.  */
 static char *
-translate_name (char *name, int *slice, int *part)
+translate_name (char *name)
 {
-  char *p, *q;
   char *ret;
-  int disk_num;
-
-  /* Parse name into name, unit, DOS partition (slice) and partition.  */
-  for (*slice = 0, *part = -1, p = name; isalpha (*p); p++)
-    ;
-  if (p == name || ! isdigit (*p))
-    return NULL;
-  disk_num = strtol (p, &p, 0);
-  if (disk_num < 0 || disk_num > 26)
-    return NULL;
-//  do
-//    p++;
-//  while (isdigit (*p));
-  if (*p)
-    {
-      q = p;
-      if (*q == 's' && isdigit (*(q + 1)))
-	{
-	  q++;
-	  do
-	    *slice = *slice * 10 + *q++ - '0';
-	  while (isdigit (*q));
-	  if (! *q)
-	    goto find_major;
-	}
-      if (! isalpha (*q) || *(q + 1))
-	return NULL;
-      *part = *q - 'a';
-    }
-
-find_major:
   ret = malloc (DISK_NAME_LEN);
-  //sprintf (ret, "hd%c", 'a' + disk_num);
-  sprintf (ret, "/dev/wd%cd", '0' + disk_num);
+  sprintf (ret, "/dev/%sd", name);
   return ret;
 }
 
@@ -143,6 +104,26 @@ static int dev_mode_to_rump_mode(const dev_mode_t mode)
   return ret;
 }
 
+static void
+device_init (void)
+{
+  rump_init ();
+}
+
+static io_return_t
+device_close (void *d)
+{
+  struct block_data *bd = d;
+  
+  return rump_errno2host (rump_sys_close (bd->rump_fd));
+}
+
+static void
+device_dealloc (void *d)
+{
+  rump_sys_reboot(0, NULL);
+}
+
 static io_return_t
 device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 	     dev_mode_t mode, char *name, device_t *devp,
@@ -150,9 +131,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 {
   io_return_t err = D_SUCCESS;
   struct block_data *bd = NULL;
-  int slice, part;
-  // FIXME Hardcoded for now let's get the disk working!
-  const char *dev_name = "/dev/wd0d";
+  char *dev_name;
 
   // TODO Need to check whether the device has been opened before.
   // if it has been opened with the same `flag', return the same port,
@@ -160,7 +139,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   // Need to have a reference to count the times opened.
   
   mach_print("hello open\n");
-  // FIXME dev_name = translate_name (name, &slice, &part);
+  dev_name = translate_name (name);
   if (dev_name == NULL)
   {
     mach_print ("no such device\n");
@@ -174,22 +153,10 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
       goto out;
     }
 
-  if (!rump_init_done)
-  {
-    if (rump_init() != 0)
-    {
-      err = EPERM;
-      mach_print("EPERM on rump_init()\n");
-      goto out;
-    }
-    else
-      rump_init_done = true;
-  }
-
   bd->rump_fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
   if (bd->rump_fd < 0)
   {
-    mach_print ("rump_sys_open fails:\n");
+    mach_print ("rump_sys_open fails: ");
     mach_print (dev_name);
     mach_print ("\n");
     err = rump_errno2host (errno);
@@ -198,7 +165,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 
   off_t media_size;
   err = rump_sys_ioctl (bd->rump_fd, DIOCGMEDIASIZE, &media_size);
-  if (err != 0)
+  if (err)
   {
     mach_print ("DIOCGMEDIASIZE ioctl fails\n");
     rump_sys_close(bd->rump_fd);
@@ -207,7 +174,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 
   uint32_t block_size;
   err = rump_sys_ioctl (bd->rump_fd, DIOCGSECTORSIZE, &block_size);
-  if (err != 0)
+  if (err)
   {
     mach_print ("DIOCGSECTORSIZE ioctl fails\n");
     rump_sys_close(bd->rump_fd);
@@ -219,13 +186,11 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   bd->mode = mode;
   bd->media_size = media_size;
   bd->block_size = block_size;
+  
+  err = D_SUCCESS;
 
-  mach_print ("media_size:\n");
-  mach_print (media_size);
-  mach_print ("block_size\n");
-  mach_print (block_size);
 out:
-  //free (dev_name);
+  free (dev_name);
   if (err)
     {
       if (bd)
@@ -258,21 +223,21 @@ device_write (void *d, mach_port_t reply_port,
   err = rump_sys_lseek (bd->rump_fd, bn * bd->block_size, SEEK_SET);
   if (err < 0)
   {
-    err = rump_errno2host(errno);
-    ds_device_write_reply (reply_port, reply_port_type, err, 0);
+    err = MIG_NO_REPLY;
     return err;
   }
 
   err = rump_sys_write (bd->rump_fd, data, count);
-  if (err > 0)
+  if (err < 0)
   {
-    *bytes_written = err;
-    return MIG_NO_REPLY;
+    err = MIG_NO_REPLY;
+    return err;
   }
   else
   {
-    err = rump_errno2host(errno);
-    ds_device_write_reply (reply_port, reply_port_type, err, 0);
+    *bytes_written = err;
+    err = D_SUCCESS;
+    ds_device_write_reply (reply_port, reply_port_type, err, *bytes_written);
     return err;
   }
 }
@@ -285,34 +250,40 @@ device_read (void *d, mach_port_t reply_port,
 {
   struct block_data *bd = d;
   io_return_t err = D_SUCCESS;
+  char *buf;
+  int pagesize = sysconf(_SC_PAGE_SIZE);
+  int npages = (count + pagesize - 1) / pagesize;
 
   if ((bd->mode & D_READ) == 0)
     return D_INVALID_OPERATION;
 
   if (count == 0)
-    return 0;
+    return D_SUCCESS;
 
   *data = 0;
-
+  buf = mmap (NULL, npages * pagesize, PROT_READ|PROT_WRITE,
+              MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+  if (buf == MAP_FAILED)
+    return errno;
+  
   err = rump_sys_lseek(bd->rump_fd, bn * bd->block_size, SEEK_SET);
   if (err < 0)
   {
-    err = rump_errno2host(errno);
-    ds_device_read_reply (reply_port, reply_port_type, err, *data, 0);
+    err = MIG_NO_REPLY;
     return err;
   }
 
-  err = rump_sys_read(bd->rump_fd, data, count);
-  if (err > 0)
+  err = rump_sys_read(bd->rump_fd, buf, count);
+  if (err < 0)
   {
-    *bytes_read = err;
-    err = 0;
-    return MIG_NO_REPLY;
+    err = MIG_NO_REPLY;
+    return err;
   }
   else
   {
-    err = rump_errno2host(errno);
-    ds_device_read_reply (reply_port, reply_port_type, err, *data, 0);
+    *bytes_read = err;
+    err = D_SUCCESS;
+    ds_device_read_reply (reply_port, reply_port_type, err, buf, *bytes_read);
     return err;
   }
 }
@@ -322,7 +293,7 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 		   mach_msg_type_number_t *count)
 {
   struct block_data *bd = d;
-  mach_print("device_get_status");
+  mach_print("device_get_status\n");
 
   switch (flavor)
   {
@@ -345,12 +316,12 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 
 static struct device_emulation_ops rump_block_emulation_ops =
 {
+  device_init,
   NULL,
-  NULL,
-  NULL,
+  device_dealloc,
   dev_to_port,
   device_open,
-  NULL,
+  device_close,
   device_write,
   NULL,
   device_read,

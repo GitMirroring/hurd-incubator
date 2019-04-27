@@ -16,7 +16,7 @@ implementation from linux replaced with a rump one).
 WIP: Currently requires the hurd repository as a dependency,
      since it is built as part of hurd.
 
-Status: Still can't open the pci raw device (ENXIO) -- working on it!
+Status: Mounts disk after 20 seconds (still has irq problems)
 
 
 hurd/rumpdisk/
@@ -46,9 +46,9 @@ Build and install rump:
 	./buildrump.sh fullbuild
 	#(make coffee)
 	cd ..
-	git clone https://github.com/rumpkernel/pci-userspace.git
+	git clone https://github.com/zamaudio/pci-userspace.git
 	cd pci-userspace
-	#(apply *-pci-userspace.patch)
+	git checkout upstreaming-rump-hurd
 	cd src-gnu
 	# Don't use the submodule buildrump.sh that comes with pci-userspace
 	../../buildrump.sh/obj/tooldir/rumpmake dependall
@@ -70,8 +70,22 @@ Build rumpdisk as a hurd utility (its the translator)
 Running:
 	WARNING: This will probably clash with your system's IDE /dev/hd0s3
 
-	sudo touch /dev/disk
-	sudo settrans -fga /dev/disk /hurd/rumpdisk
-	sudo settrans -fga /mnt /hurd/ext2fs -T typed part:3:device:/dev/disk
+	sudo touch /dev/rumpdisk
+	sudo touch /dev/wd0
+	sudo settrans /dev/wd0 /hurd/devnode -M /dev/rumpdisk wd0
+	sudo settrans /dev/rumpdisk /hurd/rumpdisk
+	sudo settrans -fga /mnt /hurd/ext2fs -T typed part:3:device:/dev/wd0
 
-	This is not expected to work (yet).
+	This works on my system but takes about 20 seconds to mount due
+	to bad interrupts.
+
+
+test/
+
+This is a simplified test case that attempts to open a device node internal
+to rump kernel with rump_sys_open() to test whether the pci device can work.
+
+As root:
+	make
+	RUMP_VERBOSE=yes ./open-rump /dev/wd0d
+

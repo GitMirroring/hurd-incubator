@@ -1,118 +1,97 @@
-From 76411cebf8bad2c142ab5c836c4b9db66498e231 Mon Sep 17 00:00:00 2001
-From: Damien Zammit <damien@zamaudio.com>
-Date: Thu, 25 Apr 2019 03:23:44 -0400
-Subject: [PATCH] Add pciide drivers to rump
+commit f73843a8b713b6c312cf8c0c694c3277933a1eea
+Author: Damien Zammit <damien@zamaudio.com>
+Date:   Thu Apr 25 03:23:44 2019 -0400
 
-Signed-off-by: Damien Zammit <damien@zamaudio.com>
----
- sys/rump/dev/Makefile.rumpdevcomp             |  1 +
- sys/rump/dev/files.rump                       |  3 ++
- sys/rump/dev/lib/libpci_pciide/Makefile       | 19 ++++++++++
- sys/rump/dev/lib/libpci_pciide/PCIIDE.ioconf  | 15 ++++++++
- sys/rump/dev/lib/libpci_pciide/ataraid.h      |  0
- sys/rump/dev/lib/libpci_pciide/opt_ata.h      |  0
- sys/rump/dev/lib/libpci_pciide/opt_wdc.h      |  1 +
- .../dev/lib/libpci_pciide/pciide_component.c  | 38 +++++++++++++++++++
- sys/rump/dev/lib/libpci_pciide/sata.h         |  0
- sys/rump/dev/lib/libpci_pciide/sata_pmp.h     |  0
- 10 files changed, 77 insertions(+)
- create mode 100644 sys/rump/dev/lib/libpci_pciide/Makefile
- create mode 100644 sys/rump/dev/lib/libpci_pciide/PCIIDE.ioconf
- create mode 100644 sys/rump/dev/lib/libpci_pciide/ataraid.h
- create mode 100644 sys/rump/dev/lib/libpci_pciide/opt_ata.h
- create mode 100644 sys/rump/dev/lib/libpci_pciide/opt_wdc.h
- create mode 100644 sys/rump/dev/lib/libpci_pciide/pciide_component.c
- create mode 100644 sys/rump/dev/lib/libpci_pciide/sata.h
- create mode 100644 sys/rump/dev/lib/libpci_pciide/sata_pmp.h
+    Add piixide driver to rump
+    
+    Signed-off-by: Damien Zammit <damien@zamaudio.com>
 
 diff --git a/sys/rump/dev/Makefile.rumpdevcomp b/sys/rump/dev/Makefile.rumpdevcomp
-index d59783d1..a42de658 100644
+index d59783d1..272304e3 100644
 --- a/sys/rump/dev/Makefile.rumpdevcomp
 +++ b/sys/rump/dev/Makefile.rumpdevcomp
 @@ -8,6 +8,7 @@ RUMPDEVCOMP=	audio bpf cgd disk dm drvctl fss md netsmb		\
  RUMPUSBDEVS=	ubt ucom ugenhc ulpt umass usb
  
  RUMPPCIDEVS=	pci pci_if_iwn pci_if_pcn pci_if_wm
-+RUMPPCIDEVS+=	pci_pciide
++RUMPPCIDEVS+=	pci_piixide
  RUMPPCIDEVS+=	pci_usbhc
  RUMPPCIDEVS+=	pci_virtio virtio_if_vioif virtio_ld virtio_viornd
  RUMPPCIDEVS+=	virtio_vioscsi
-diff --git a/sys/rump/dev/files.rump b/sys/rump/dev/files.rump
-index c3363a20..e3b0b6cf 100644
---- a/sys/rump/dev/files.rump
-+++ b/sys/rump/dev/files.rump
-@@ -11,3 +11,6 @@ attach ugenhc at mainbus
- 
- device scsitest: scsi
- attach scsitest at mainbus
-+
-+device idetest: atabus
-+attach idetest at mainbus
-diff --git a/sys/rump/dev/lib/libpci_pciide/Makefile b/sys/rump/dev/lib/libpci_pciide/Makefile
+diff --git a/sys/rump/dev/lib/libpci_piixide/Makefile b/sys/rump/dev/lib/libpci_piixide/Makefile
 new file mode 100644
-index 00000000..2d455bb6
+index 00000000..cc46c8f2
 --- /dev/null
-+++ b/sys/rump/dev/lib/libpci_pciide/Makefile
++++ b/sys/rump/dev/lib/libpci_piixide/Makefile
 @@ -0,0 +1,19 @@
 +.PATH:	${.CURDIR}/../../../../dev/pci \
 +	${.CURDIR}/../../../../dev/ata \
 +	${.CURDIR}/../../../../dev/scsipi \
 +	${.CURDIR}/../../../../dev/ic
 +
-+LIB=	rumpdev_pciide
-+COMMENT=IDE & ATAPI support
++LIB=	rumpdev_piixide
++COMMENT=PIIX IDE & ATAPI support
 +
-+IOCONF=	PCIIDE.ioconf
++IOCONF=	PIIXIDE.ioconf
 +
-+SRCS+=	pciide.c pciide_common.c
++SRCS+=	pciide_common.c piixide.c
 +SRCS+=	wd.c ata.c ata_wdc.c
 +SRCS+=	atapi_wdc.c atapi_base.c cd.c
 +SRCS+=	wdc.c
 +
-+SRCS+=	pciide_component.c
++SRCS+=	piixide_component.c
 +
 +.include <bsd.lib.mk>
 +.include <bsd.klinks.mk>
-diff --git a/sys/rump/dev/lib/libpci_pciide/PCIIDE.ioconf b/sys/rump/dev/lib/libpci_pciide/PCIIDE.ioconf
+diff --git a/sys/rump/dev/lib/libpci_piixide/PIIXIDE.ioconf b/sys/rump/dev/lib/libpci_piixide/PIIXIDE.ioconf
 new file mode 100644
-index 00000000..e5ab4962
+index 00000000..110fc0ce
 --- /dev/null
-+++ b/sys/rump/dev/lib/libpci_pciide/PCIIDE.ioconf
-@@ -0,0 +1,15 @@
-+ioconf pciide
++++ b/sys/rump/dev/lib/libpci_piixide/PIIXIDE.ioconf
+@@ -0,0 +1,20 @@
++ioconf piixide
 +
 +include "conf/files"
 +include "dev/ata/files.ata"
++include "dev/pci/files.pci"
++include "rump/dev/files.rump"
 +
-+pseudo-root ata*
-+pseudo-root atapi*
++pseudo-root pci*
++
++# PIIX support
++piixide* at pci? dev ? function ?
 +
 +# IDE support
-+atabus* at ata? drive ?
-+wd*	at atabus?
++atabus* at piixide? channel ?
++ata_hl* at atabus? drive ?
++wd*	at ata_hl?
 +
 +# ATAPI support
-+atapibus* at atapi?
-+cd*	at atapibus? drive ? flags 0x0000
-diff --git a/sys/rump/dev/lib/libpci_pciide/ataraid.h b/sys/rump/dev/lib/libpci_pciide/ataraid.h
++atapibus*	at piixide? channel ?
++cd*		at atapibus? drive ? flags 0x0000
+diff --git a/sys/rump/dev/lib/libpci_piixide/ataraid.h b/sys/rump/dev/lib/libpci_piixide/ataraid.h
 new file mode 100644
 index 00000000..e69de29b
-diff --git a/sys/rump/dev/lib/libpci_pciide/opt_ata.h b/sys/rump/dev/lib/libpci_pciide/opt_ata.h
+diff --git a/sys/rump/dev/lib/libpci_piixide/opt_ata.h b/sys/rump/dev/lib/libpci_piixide/opt_ata.h
 new file mode 100644
-index 00000000..e69de29b
-diff --git a/sys/rump/dev/lib/libpci_pciide/opt_wdc.h b/sys/rump/dev/lib/libpci_pciide/opt_wdc.h
+index 00000000..74ab5ee2
+--- /dev/null
++++ b/sys/rump/dev/lib/libpci_piixide/opt_ata.h
+@@ -0,0 +1 @@
++#define ATADEBUG
+diff --git a/sys/rump/dev/lib/libpci_piixide/opt_wdc.h b/sys/rump/dev/lib/libpci_piixide/opt_wdc.h
 new file mode 100644
 index 00000000..4f7d74d6
 --- /dev/null
-+++ b/sys/rump/dev/lib/libpci_pciide/opt_wdc.h
++++ b/sys/rump/dev/lib/libpci_piixide/opt_wdc.h
 @@ -0,0 +1 @@
 +#define NWD	4
-diff --git a/sys/rump/dev/lib/libpci_pciide/pciide_component.c b/sys/rump/dev/lib/libpci_pciide/pciide_component.c
+diff --git a/sys/rump/dev/lib/libpci_piixide/piixide_component.c b/sys/rump/dev/lib/libpci_piixide/piixide_component.c
 new file mode 100644
-index 00000000..de2a9ef1
+index 00000000..fde63636
 --- /dev/null
-+++ b/sys/rump/dev/lib/libpci_pciide/pciide_component.c
-@@ -0,0 +1,38 @@
++++ b/sys/rump/dev/lib/libpci_piixide/piixide_component.c
+@@ -0,0 +1,37 @@
 +#include <sys/param.h>
 +#include <sys/conf.h>
 +#include <sys/device.h>
@@ -126,37 +105,33 @@ index 00000000..de2a9ef1
 +
 +RUMP_COMPONENT(RUMP_COMPONENT_DEV)
 +{
-+	extern struct bdevsw wd_bdevsw /*, cd_bdevsw */ ;
-+	extern struct cdevsw wd_cdevsw /*, cd_cdevsw */ ;
++	extern struct bdevsw wd_bdevsw, cd_bdevsw;
++	extern struct cdevsw wd_cdevsw, cd_cdevsw;
 +	devmajor_t bmaj, cmaj;
 +
-+	config_init_component(cfdriver_ioconf_pciide,
-+	    cfattach_ioconf_pciide, cfdata_ioconf_pciide);
++	config_init_component(cfdriver_ioconf_piixide,
++	    cfattach_ioconf_piixide, cfdata_ioconf_piixide);
 +
 +	bmaj = cmaj = -1;
 +	FLAWLESSCALL(devsw_attach("wd", &wd_bdevsw, &bmaj, &wd_cdevsw, &cmaj));
 +
 +	FLAWLESSCALL(rump_vfs_makedevnodes(S_IFBLK, "/dev/wd0", 'a',
-+	    bmaj, 0, 8));
++	    bmaj, 0, 4));
 +	FLAWLESSCALL(rump_vfs_makedevnodes(S_IFCHR, "/dev/rwd0", 'a',
-+	    cmaj, 0, 8));
-+
++	    cmaj, 0, 4));
 +/* Borked
 +	bmaj = cmaj = -1;
 +	FLAWLESSCALL(devsw_attach("cd", &cd_bdevsw, &bmaj, &cd_cdevsw, &cmaj));
 +
 +	FLAWLESSCALL(rump_vfs_makedevnodes(S_IFBLK, "/dev/cd0", 'a',
-+	    bmaj, 0, 8));
++	    bmaj, 0, 1));
 +	FLAWLESSCALL(rump_vfs_makedevnodes(S_IFCHR, "/dev/rcd0", 'a',
-+	    cmaj, 0, 8));
++	    cmaj, 0, 1));
 +*/
 +}
-diff --git a/sys/rump/dev/lib/libpci_pciide/sata.h b/sys/rump/dev/lib/libpci_pciide/sata.h
+diff --git a/sys/rump/dev/lib/libpci_piixide/sata.h b/sys/rump/dev/lib/libpci_piixide/sata.h
 new file mode 100644
 index 00000000..e69de29b
-diff --git a/sys/rump/dev/lib/libpci_pciide/sata_pmp.h b/sys/rump/dev/lib/libpci_pciide/sata_pmp.h
+diff --git a/sys/rump/dev/lib/libpci_piixide/sata_pmp.h b/sys/rump/dev/lib/libpci_piixide/sata_pmp.h
 new file mode 100644
 index 00000000..e69de29b
--- 
-2.17.1
-
