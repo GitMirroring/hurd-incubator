@@ -1,0 +1,113 @@
+commit 31ff1ee3d4b344a5c17fb04f5cf100db6222ecf0
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Apr 28 20:44:34 2019 +0200
+
+    diskfs: Fix rename_dir(excl=1) for source directories
+    
+    Starting from coreutils 8.30 which uses
+    renameat2(flag=RENAME_NOREPLACE), we need to have excl=1 to behave
+    correctly, notably in this case:
+    
+    $ mkdir a
+    $ mkdir b
+    $ touch b/t
+    $ mv b a
+    
+    diskfs_rename("b", "a", excl=1) called by mv shall return EEXIST.
+    
+    * libdiskfs/diskfs.h (diskfs_rename_dir): Add `excl' parameter.
+    * doc/hurd.texi (diskfs_rename_dir): Document `excl' parameter.
+    * libdiskfs/dir-renamed.c (diskfs_rename_dir): Add `excl' parameter.
+    Return EEXIST when target exists and `excl' is not 0.
+    * libdiskfs/dir-rename.c (diskfs_S_dir_rename): Pass `excl' to
+    diskfs_rename_dir.
+
+diff --git a/doc/hurd.texi b/doc/hurd.texi
+index 7ad798a9..e74ad2d4 100644
+--- a/doc/hurd.texi
++++ b/doc/hurd.texi
+@@ -4442,14 +4442,16 @@ file data) is used.  If it returns any other error, it is returned to
+ the user.
+ @end deftypefn
+ 
+-@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}})
++@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}}, @w{int @var{excl}})
+ Rename directory node @var{fnp} (whose parent is @var{fdp}, and which
+ has name @var{fromname} in that directory) to have name @var{toname}
+ inside directory @var{tdp}.  None of these nodes are locked, and none
+ should be locked upon return.  This routine is serialized, so it doesn't
+ have to be reentrant.  Directories will never be renamed except by this
+ routine.  @var{fromcred} is the user responsible for @var{fdp} and
+-@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.  This
++@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.
++If @var{excl} is set, then fail if @var{toname} already exists inside
++directory @var{tdp}. This
+ routine assumes the usual convention where @file{.}  and @file{..} are
+ represented by ordinary links; if that is not true for your format, you
+ have to redefine this function.
+diff --git a/libdiskfs/dir-rename.c b/libdiskfs/dir-rename.c
+index 9ac48398..90f7c683 100644
+--- a/libdiskfs/dir-rename.c
++++ b/libdiskfs/dir-rename.c
+@@ -80,7 +80,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
+ 	  goto try_again;
+ 	}
+       err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
+-			       tocred);
++			       tocred, excl);
+       if (diskfs_synchronous)
+ 	{
+ 	  pthread_mutex_lock (&fdp->lock);
+diff --git a/libdiskfs/dir-renamed.c b/libdiskfs/dir-renamed.c
+index 772258d2..69fd7fe3 100644
+--- a/libdiskfs/dir-renamed.c
++++ b/libdiskfs/dir-renamed.c
+@@ -64,11 +64,12 @@ checkpath(struct node *source,
+    upon return.  This routine is serialized, so it doesn't have to be
+    reentrant.  Directories will never be renamed except by this
+    routine.  FROMCRED and TOCRED are the users responsible for
+-   FDP/FNP and TDP respectively.  */
++   FDP/FNP and TDP respectively.  If EXCL is set, then fail if TONAME
++   already exists inside directory TDP. */
+ error_t
+ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
+ 		   struct node *tdp, const char *toname,
+-		   struct protid *fromcred, struct protid *tocred)
++		   struct protid *fromcred, struct protid *tocred, int excl)
+ {
+   error_t err;
+   struct node *tnp, *tmpnp;
+@@ -96,6 +97,11 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
+   assert_backtrace (err != EAGAIN);	/* <-> assert_backtrace (TONAME != "..") */
+   if (err && err != ENOENT)
+     goto out;
++  if (tnp && excl)
++    {
++      err = EEXIST;
++      goto out;
++    }
+ 
+   if (tnp == fnp)
+     {
+diff --git a/libdiskfs/diskfs.h b/libdiskfs/diskfs.h
+index 40af37a9..f04b163a 100644
+--- a/libdiskfs/diskfs.h
++++ b/libdiskfs/diskfs.h
+@@ -1017,14 +1017,15 @@ struct node *diskfs_check_lookup_cache (struct node *dir, const char *name);
+    upon return.  This routine is serialized, so it doesn't have to be
+    reentrant.  Directories will never be renamed except by this
+    routine.  FROMCRED and TOCRED are the users responsible for
+-   FDP/FNP and TDP respectively.  This routine assumes the usual
++   FDP/FNP and TDP respectively. If EXCL is set, then fail if TONAME
++   already exists inside directory TDP. This routine assumes the usual
+    convention where `.' and `..' are represented by ordinary links;
+    if that is not true for your format, you have to redefine this
+    function.*/
+ error_t
+ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
+ 		   struct node *tdp, const char *toname,
+-		   struct protid *fromcred, struct protid *tocred);
++		   struct protid *fromcred, struct protid *tocred, int excl);
+ 
+ /* Clear the `.' and `..' entries from directory DP.  Its parent is
+    PDP, and the user responsible for this is identified by CRED.  Both
