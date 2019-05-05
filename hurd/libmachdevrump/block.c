@@ -62,6 +62,7 @@ struct block_data
   int rump_fd;                  /* block device fd handle */
   off_t media_size;             /* total block device size */
   uint32_t block_size;          /* size in bytes of 1 sector */
+  bool taken;			/* simple refcount */
 };
 
 /* Return a send right associated with network device ND.  */
@@ -73,16 +74,19 @@ dev_to_port (void *nd)
 	  : MACH_PORT_NULL);
 }
 
+static struct block_data block_ref;
 static struct device_emulation_ops rump_block_emulation_ops;
 
 #define DISK_NAME_LEN 32
 
+/* BSD name of whole disk device is /dev/wdXd 
+ * but we will receive /dev/wdX as the name */
 static char *
 translate_name (char *name)
 {
   char *ret;
   ret = malloc (DISK_NAME_LEN);
-  sprintf (ret, "/dev/%sd", name);
+  sprintf (ret, "%sd", name);
   return ret;
 }
 
@@ -107,15 +111,20 @@ static int dev_mode_to_rump_mode(const dev_mode_t mode)
 static void
 device_init (void)
 {
+  block_ref.taken = false;
   rump_init ();
 }
 
 static io_return_t
 device_close (void *d)
 {
+  io_return_t err;
   struct block_data *bd = d;
   
-  return rump_errno2host (rump_sys_close (bd->rump_fd));
+  err = rump_errno2host (rump_sys_close (bd->rump_fd));
+  block_ref.taken = false;
+  
+  return err;
 }
 
 static void
@@ -133,11 +142,6 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   struct block_data *bd = NULL;
   char *dev_name;
 
-  // TODO Need to check whether the device has been opened before.
-  // if it has been opened with the same `flag', return the same port,
-  // otherwise, return a different port.
-  // Need to have a reference to count the times opened.
-  
   mach_print("hello open\n");
   dev_name = translate_name (name);
   if (dev_name == NULL)
@@ -153,14 +157,23 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
       goto out;
     }
 
-  bd->rump_fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
-  if (bd->rump_fd < 0)
+  if (block_ref.taken)
   {
-    mach_print ("rump_sys_open fails: ");
-    mach_print (dev_name);
-    mach_print ("\n");
-    err = rump_errno2host (errno);
-    goto out;
+    bd->rump_fd = block_ref.rump_fd;
+  }
+  else
+  {
+    bd->rump_fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
+    if (bd->rump_fd < 0)
+    {
+      mach_print ("rump_sys_open fails: ");
+      mach_print (dev_name);
+      mach_print ("\n");
+      err = rump_errno2host (errno);
+      goto out;
+    }
+    block_ref.taken = true;
+    block_ref.rump_fd = bd->rump_fd;
   }
 
   off_t media_size;
@@ -168,7 +181,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   if (err)
   {
     mach_print ("DIOCGMEDIASIZE ioctl fails\n");
-    rump_sys_close(bd->rump_fd);
+    device_close(bd);
     return rump_errno2host (errno);
   }
 
@@ -177,7 +190,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   if (err)
   {
     mach_print ("DIOCGSECTORSIZE ioctl fails\n");
-    rump_sys_close(bd->rump_fd);
+    device_close(bd);
     return rump_errno2host (errno);
   }
 

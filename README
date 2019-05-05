@@ -17,7 +17,7 @@ WIP: Currently requires the hurd repository as a dependency,
      since it is built as part of hurd.
 
 Status: Mounts disk after 20 seconds (still has irq problems)
-
+        fdisk on /dev/wd0, fsck on /dev/wd0s1 and mounting /dev/wd0s1 works.
 
 hurd/rumpdisk/
 
@@ -62,19 +62,29 @@ Build and install rump:
 	directory, so I provided a list of files to grab from the tree in
 	"rump-extra-libs".
 
+Apply 0001-hurd.patch to hurd and rebuild libstore
+
 Build the libmachdevrump component of hurd
 
 Build rumpdisk as a hurd utility (its the translator)
 
 
 Running:
-	WARNING: This will probably clash with your system's IDE /dev/hd0s3
+	WARNING: This will attempt to open the system's IDE /dev/hd0
 
+	Set up translators:
 	sudo touch /dev/rumpdisk
 	sudo touch /dev/wd0
-	sudo settrans /dev/wd0 /hurd/devnode -M /dev/rumpdisk wd0
+	sudo touch /dev/dwd0
 	sudo settrans /dev/rumpdisk /hurd/rumpdisk
-	sudo settrans -fga /mnt /hurd/ext2fs -T typed part:3:device:/dev/wd0
+	sudo settrans /dev/dwd0 /hurd/devnode -M /dev/rumpdisk /dev/wd0
+	sudo settrans /dev/wd0 /hurd/storeio /dev/dwd0
+	sudo settrans /dev/wd0s1 /hurd/storeio -T typed part:1:device:/dev/dwd0
+
+	Testing:
+	sudo fdisk /dev/wd0
+	sudo e2fsck /dev/wd0s1
+	sudo mount /dev/wd0s1 /mnt -t ext2fs
 
 	This works on my system but takes about 20 seconds to mount due
 	to bad interrupts.

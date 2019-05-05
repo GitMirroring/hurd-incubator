@@ -1,0 +1,40 @@
+diff --git a/Makefile b/Makefile
+index f1d10c35..1bb8144a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -30,7 +30,8 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
+ 	      libpager libfshelp libdiskfs libtrivfs libps \
+ 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
+ 	      libhurd-slab \
+-	      libbpf \
++	      libmachdevrump \
++	      libbpf
+ 
+ # Hurd programs
+ prog-subdirs = auth proc exec term \
+diff --git a/libstore/device.c b/libstore/device.c
+index 1d8f57fd..f293fdba 100644
+--- a/libstore/device.c
++++ b/libstore/device.c
+@@ -103,7 +103,7 @@ dopen (const char *name, device_t *device, int *mod_flags)
+ 	  dev_master = file_name_lookup (name, O_READ, 0);
+ 	  if (dev_master != MACH_PORT_NULL)
+ 	    {
+-	      err = device_open (dev_master, D_READ, "disk", device);
++	      err = device_open (dev_master, D_READ, (char *)name, device);
+ 	      if (err)
+ 		err = ENODEV;
+ 
+@@ -117,10 +117,10 @@ dopen (const char *name, device_t *device, int *mod_flags)
+ 	  dev_master = file_name_lookup (name, O_READ | O_WRITE, 0);
+ 	  if (dev_master != MACH_PORT_NULL)
+ 	    {
+-	      err = device_open (dev_master, D_READ | D_WRITE, "disk", device);
++	      err = device_open (dev_master, D_READ | D_WRITE, (char *)name, device);
+ 	      if (err == ED_READ_ONLY)
+ 		{
+-		  err = device_open (dev_master, D_READ, "disk", device);
++		  err = device_open (dev_master, D_READ, (char *)name, device);
+ 		  if (! err)
+ 		    *mod_flags |= STORE_HARD_READONLY;
+ 		  else
