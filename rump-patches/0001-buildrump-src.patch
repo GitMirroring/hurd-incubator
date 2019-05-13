@@ -1,10 +1,28 @@
-commit f73843a8b713b6c312cf8c0c694c3277933a1eea
-Author: Damien Zammit <damien@zamaudio.com>
-Date:   Thu Apr 25 03:23:44 2019 -0400
+From 44c9e06ba02a9bb5e8ac884c3b34ef4634f51ab4 Mon Sep 17 00:00:00 2001
+From: Damien Zammit <damien@zamaudio.com>
+Date: Thu, 25 Apr 2019 03:23:44 -0400
+Subject: [PATCH] Add piixide driver to rump
 
-    Add piixide driver to rump
-    
-    Signed-off-by: Damien Zammit <damien@zamaudio.com>
+Signed-off-by: Damien Zammit <damien@zamaudio.com>
+---
+ sys/rump/dev/Makefile.rumpdevcomp             |  1 +
+ sys/rump/dev/lib/libpci_piixide/Makefile      | 19 ++++++++++
+ .../dev/lib/libpci_piixide/PIIXIDE.ioconf     | 20 ++++++++++
+ sys/rump/dev/lib/libpci_piixide/ataraid.h     |  0
+ sys/rump/dev/lib/libpci_piixide/opt_ata.h     |  1 +
+ sys/rump/dev/lib/libpci_piixide/opt_wdc.h     |  2 +
+ .../lib/libpci_piixide/piixide_component.c    | 37 +++++++++++++++++++
+ sys/rump/dev/lib/libpci_piixide/sata.h        |  0
+ sys/rump/dev/lib/libpci_piixide/sata_pmp.h    |  0
+ 9 files changed, 80 insertions(+)
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/Makefile
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/PIIXIDE.ioconf
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/ataraid.h
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/opt_ata.h
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/opt_wdc.h
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/piixide_component.c
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/sata.h
+ create mode 100644 sys/rump/dev/lib/libpci_piixide/sata_pmp.h
 
 diff --git a/sys/rump/dev/Makefile.rumpdevcomp b/sys/rump/dev/Makefile.rumpdevcomp
 index d59783d1..272304e3 100644
@@ -81,11 +99,12 @@ index 00000000..74ab5ee2
 +#define ATADEBUG
 diff --git a/sys/rump/dev/lib/libpci_piixide/opt_wdc.h b/sys/rump/dev/lib/libpci_piixide/opt_wdc.h
 new file mode 100644
-index 00000000..4f7d74d6
+index 00000000..8bdf3d5b
 --- /dev/null
 +++ b/sys/rump/dev/lib/libpci_piixide/opt_wdc.h
-@@ -0,0 +1 @@
-+#define NWD	4
+@@ -0,0 +1,2 @@
++#define NWD	1
++#define WDC_NO_IDS
 diff --git a/sys/rump/dev/lib/libpci_piixide/piixide_component.c b/sys/rump/dev/lib/libpci_piixide/piixide_component.c
 new file mode 100644
 index 00000000..fde63636
@@ -135,3 +154,6 @@ index 00000000..e69de29b
 diff --git a/sys/rump/dev/lib/libpci_piixide/sata_pmp.h b/sys/rump/dev/lib/libpci_piixide/sata_pmp.h
 new file mode 100644
 index 00000000..e69de29b
+-- 
+2.20.1
+
