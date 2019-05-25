@@ -108,13 +108,6 @@ static int dev_mode_to_rump_mode(const dev_mode_t mode)
   return ret;
 }
 
-static void
-device_init (void)
-{
-  block_ref.taken = false;
-  rump_init ();
-}
-
 static io_return_t
 device_close (void *d)
 {
@@ -163,6 +156,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   }
   else
   {
+    rump_init();
     bd->rump_fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
     if (bd->rump_fd < 0)
     {
@@ -329,7 +323,7 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 
 static struct device_emulation_ops rump_block_emulation_ops =
 {
-  device_init,
+  NULL,
   NULL,
   device_dealloc,
   dev_to_port,

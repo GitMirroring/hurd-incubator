@@ -49,3 +49,6 @@
 ./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so.0.0
 ./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so.0
 ./sys/rump/dev/lib/libpci_piixide/librumpdev_piixide.so
+./sys/rump/dev/lib/libpci_ahcisata/librumpdev_ahcisata.so.0.0
+./sys/rump/dev/lib/libpci_ahcisata/librumpdev_ahcisata.so.0
+./sys/rump/dev/lib/libpci_ahcisata/librumpdev_ahcisata.so

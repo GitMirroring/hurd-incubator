@@ -1,0 +1,29 @@
+From d3e53a5484de5c3e27b62be580f83ce4eca4c795 Mon Sep 17 00:00:00 2001
+From: Damien Zammit <damien@zamaudio.com>
+Date: Tue, 7 May 2019 21:40:16 +1000
+Subject: [PATCH 3/3] Implement noop for bus_space_unmap() in rump
+
+---
+ sys/rump/dev/lib/libpci/rumpdev_bus_space.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/sys/rump/dev/lib/libpci/rumpdev_bus_space.c b/sys/rump/dev/lib/libpci/rumpdev_bus_space.c
+index 8d97ea0d..31c3caa0 100644
+--- a/sys/rump/dev/lib/libpci/rumpdev_bus_space.c
++++ b/sys/rump/dev/lib/libpci/rumpdev_bus_space.c
+@@ -271,11 +271,7 @@ void
+ bus_space_unmap(bus_space_tag_t bst, bus_space_handle_t bsh,
+ 	bus_size_t size)
+ {
+-
+-	if (bst == 0)
+-		return;
+-
+-	panic("%s: unimplemented", __func__);
++	return;
+ }
+ 
+ void
+-- 
+2.20.1
+

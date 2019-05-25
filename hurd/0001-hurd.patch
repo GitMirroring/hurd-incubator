@@ -13,28 +13,55 @@ index f1d10c35..1bb8144a 100644
  # Hurd programs
  prog-subdirs = auth proc exec term \
 diff --git a/libstore/device.c b/libstore/device.c
-index 1d8f57fd..f293fdba 100644
+index 1d8f57fd..3be6d25d 100644
 --- a/libstore/device.c
 +++ b/libstore/device.c
-@@ -103,7 +103,7 @@ dopen (const char *name, device_t *device, int *mod_flags)
- 	  dev_master = file_name_lookup (name, O_READ, 0);
+@@ -95,15 +95,28 @@ dopen (const char *name, device_t *device, int *mod_flags)
+ {
+   device_t dev_master;
+   error_t err = ENODEV;
++  char *master;
++  char *rest;
++  char *copy;
++  char *pos;
+ 
+-  if (name[0] == '/')
++  if (name[0] == '@')
+     {
++      /* Parse @master:/dev/hello */
++      master = strdup (name);
++      copy = strdup (name);
++      pos = strchr (copy, ':');
++      *pos = '\0';
++      sprintf(master, "%s", &copy[1]);
++      rest = strdup (pos+1);
++      free(copy);
++
+       if (*mod_flags & STORE_HARD_READONLY)
+ 	{
+-	  dev_master = file_name_lookup (name, O_READ, 0);
++	  dev_master = file_name_lookup (master, O_READ, 0);
  	  if (dev_master != MACH_PORT_NULL)
  	    {
 -	      err = device_open (dev_master, D_READ, "disk", device);
-+	      err = device_open (dev_master, D_READ, (char *)name, device);
++	      err = device_open (dev_master, D_READ, rest, device);
  	      if (err)
  		err = ENODEV;
  
-@@ -117,10 +117,10 @@ dopen (const char *name, device_t *device, int *mod_flags)
- 	  dev_master = file_name_lookup (name, O_READ | O_WRITE, 0);
+@@ -114,13 +127,13 @@ dopen (const char *name, device_t *device, int *mod_flags)
+ 	}
+       else
+ 	{
+-	  dev_master = file_name_lookup (name, O_READ | O_WRITE, 0);
++	  dev_master = file_name_lookup (master, O_READ | O_WRITE, 0);
  	  if (dev_master != MACH_PORT_NULL)
  	    {
 -	      err = device_open (dev_master, D_READ | D_WRITE, "disk", device);
-+	      err = device_open (dev_master, D_READ | D_WRITE, (char *)name, device);
++	      err = device_open (dev_master, D_READ | D_WRITE, rest, device);
  	      if (err == ED_READ_ONLY)
  		{
 -		  err = device_open (dev_master, D_READ, "disk", device);
-+		  err = device_open (dev_master, D_READ, (char *)name, device);
++		  err = device_open (dev_master, D_READ, rest, device);
  		  if (! err)
  		    *mod_flags |= STORE_HARD_READONLY;
  		  else

@@ -16,9 +16,14 @@ implementation from linux replaced with a rump one).
 WIP: Currently requires the hurd repository as a dependency,
      since it is built as part of hurd.
 
-Status: Mounts disk after 20 seconds (still has irq problems)
-        fdisk on /dev/wd0, fsck on /dev/wd0s1 and mounting /dev/wd0s1 works.
+Status: IDE:
+	Mounts disk after 20 seconds (still has irq problems)
+        fdisk on /dev/wd0, fsck on /dev/wd0s1 and mounting /dev/wd0s1 works.	
 
+	AHCI:
+	Mounts without delay
+	fdisk on /dev/wd0, fsck on /dev/wd0s1 and mounting /dev/wd0s1 works.
+	
 hurd/rumpdisk/
 
 This folder contains the translator main function that calls
@@ -32,7 +37,6 @@ This folder has a few patches needed for rump
 
 Preparation:
 Drop libmachdevrump/ and rumpdisk/ into the root of a recent hurd checkout.
-Add to the main hurd Makefile the lib-dirs = ... libmachdevrump
 
 Build and install rump:
 	
@@ -41,7 +45,7 @@ Build and install rump:
 	#(apply 0001-buildrump.patch)
 	./buildrump.sh checkout
 	cd src
-	#(apply 0001-buildrump-src.patch)
+	#(apply other rump patches)
 	cd ..
 	./buildrump.sh fullbuild
 	#(make coffee)
@@ -75,19 +79,15 @@ Running:
 	Set up translators:
 	sudo touch /dev/rumpdisk
 	sudo touch /dev/wd0
-	sudo touch /dev/dwd0
-	sudo settrans /dev/rumpdisk /hurd/rumpdisk
-	sudo settrans /dev/dwd0 /hurd/devnode -M /dev/rumpdisk /dev/wd0
-	sudo settrans /dev/wd0 /hurd/storeio /dev/dwd0
-	sudo settrans /dev/wd0s1 /hurd/storeio -T typed part:1:device:/dev/dwd0
+	sudo touch /dev/wd0s1
+	sudo settrans /dev/rumpdisk /usr/bin/env RUMP_NCPU=1 /hurd/rumpdisk
+	sudo settrans /dev/wd0 /hurd/storeio @/dev/rumpdisk:/dev/wd0
+	sudo settrans /dev/wd0s1 /hurd/storeio -T typed part:1:device:@/dev/rumpdisk:/dev/wd0
 
 	Testing:
 	sudo fdisk /dev/wd0
 	sudo e2fsck /dev/wd0s1
 	sudo mount /dev/wd0s1 /mnt -t ext2fs
-
-	This works on my system but takes about 20 seconds to mount due
-	to bad interrupts.
 
 
 test/

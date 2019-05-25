@@ -27,7 +27,7 @@ LCLHDRS = dev_hdr.h device_emul.h ds_routines.h vm_param.h \
 installhdrs = machdevrump.h
 HURDLIBS = ports trivfs
 LDLIBS += -lpthread
-LDLIBS += -lrump -lrumpuser -lrumpdev -lrumpdev_disk -lrumpdev_pci -lrumpvfs -lrumpdev_scsipi -lrumpdev_piixide
+LDLIBS += -lrump -lrumpdev -lrumpdev_disk -lrumpdev_pci -lrumpvfs -lrumpdev_scsipi -lrumpdev_ahcisata
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
