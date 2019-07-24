@@ -1,3 +1,9 @@
+hurd (1:0.9.git20190331-6) unreleased; urgency=medium
+
+  * Upload to unreleased.
+
+ -- Samuel Thibault <sthibault@debian.org>  Tue, 09 Jul 2019 07:04:40 +0000
+
 hurd (1:0.9.git20190331-5) unstable; urgency=medium
 
   * patches/rename_dir_excl.patch: Fix taking excl into account in libdiskfs.
