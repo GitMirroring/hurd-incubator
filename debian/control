@@ -45,7 +45,7 @@ Description: GNU Hurd (libraries)
 Package: hurd
 Essential: yes
 Pre-Depends: hurd-libs0.3
-Depends: ${misc:Depends}, lsb-base (>= 3.0-6), hurd-libs0.3 (= ${binary:Version}), sysv-rc <!stage3> | openrc <!stage3>, netdde (>= 0.0.20120518~) <!stage3>, ${shlibs:Depends}, xkb-data <!stage3>
+Depends: ${misc:Depends}, lsb-base (>= 3.0-6), hurd-libs0.3 (= ${binary:Version}), sysv-rc <!stage3> | openrc <!stage3>, ${shlibs:Depends}, xkb-data <!stage3>
 Breaks: gnumach-image-1-486 (<< 2:1.8+git20170102-1~),
 	gnumach-image-1-xen-486 (<< 2:1.8+git20170102-1~),
 	gnumach-image-1.8-486 (<< 2:1.8+git20170102-1~),
@@ -55,7 +55,7 @@ Breaks: gnumach-image-1-486 (<< 2:1.8+git20170102-1~),
 	libc0.3 (<< 2.24-9~), netdde (<< 0.0.20121127-2)
 Built-Using: ${built-using}
 Suggests: hurd-doc
-Recommends: bf-utf-source
+Recommends: bf-utf-source, netdde (>= 0.0.20120518~) <!stage3>
 Provides: makedev, login, console-driver-xkb
 Replaces: makedev, login (<< 1:4.0.14-4), random-egd, console-driver-xkb
 Conflicts: makedev, login (<< 1:4.0.14-4), console-driver-xkb
