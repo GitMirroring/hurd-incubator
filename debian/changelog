@@ -1,6 +1,7 @@
 hurd (1:0.9.git20190331-8) UNRELEASED; urgency=medium
 
   * control: Set Vcs-* to salsa.debian.org.
+  * control: Bump Standards-Version to 4.4.0 (no changes).
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 05 Aug 2019 21:21:45 +0200
 
