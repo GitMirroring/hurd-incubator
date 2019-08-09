@@ -1,9 +1,11 @@
-hurd (1:0.9.git20190331-8) UNRELEASED; urgency=medium
+hurd (1:0.9.git20190331-8) unstable; urgency=medium
 
   * control: Set Vcs-* to salsa.debian.org.
   * control: Bump Standards-Version to 4.4.0 (no changes).
+  * hurd.install: Take over initscripts' runsystem.sysv (Closes: Bug#928918)
+  * control: Make hurd Replace initscripts accordingly.
 
- -- Samuel Thibault <sthibault@debian.org>  Mon, 05 Aug 2019 21:21:45 +0200
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 09 Aug 2019 23:00:29 +0000
 
 hurd (1:0.9.git20190331-7) unstable; urgency=medium
 

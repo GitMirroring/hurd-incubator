@@ -57,7 +57,7 @@ Built-Using: ${built-using}
 Suggests: hurd-doc
 Recommends: bf-utf-source, netdde (>= 0.0.20120518~) <!stage3>
 Provides: makedev, login, console-driver-xkb
-Replaces: makedev, login (<< 1:4.0.14-4), random-egd, console-driver-xkb
+Replaces: makedev, login (<< 1:4.0.14-4), random-egd, console-driver-xkb, initscripts (<< 2.95-4A)
 Conflicts: makedev, login (<< 1:4.0.14-4), console-driver-xkb
 Architecture: hurd-any
 Build-Profiles: <!stage1 !stage2>
