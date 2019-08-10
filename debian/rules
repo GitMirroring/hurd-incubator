@@ -194,8 +194,8 @@ ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
 endif
 	dh_strip -Nhurd-prof --remaining-packages
 
-override_dh_fixperms:
-	dh_fixperms
+override_dh_fixperms-arch:
+	dh_fixperms -a
 ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
 	chmod u+s $(patsubst %,$(CURDIR)/debian/hurd%,$(SUID_PROGRAMS))
 endif
