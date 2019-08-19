@@ -6,11 +6,11 @@ Date:   Mon Aug 19 20:32:33 2019 +0200
     
     * ./libdde_linux26/contrib/include/linux/compiler-gcc9.h: New file.
 
-diff --git a/libdde_linux26/contrib/include/linux/compiler-gcc9.h b/libdde_linux26/contrib/include/linux/compiler-gcc9.h
+diff --git a/libdde-linux26/contrib/include/linux/compiler-gcc9.h b/libdde-linux26/contrib/include/linux/compiler-gcc9.h
 new file mode 100644
 index 000000000..7b10fa5dd
 --- /dev/null
-+++ b/libdde_linux26/contrib/include/linux/compiler-gcc9.h
++++ b/libdde-linux26/contrib/include/linux/compiler-gcc9.h
 @@ -0,0 +1,25 @@
 +#ifndef __LINUX_COMPILER_H
 +#error "Please don't include <linux/compiler-gcc9.h> directly, include <linux/compiler.h> instead."
