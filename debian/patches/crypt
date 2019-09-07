@@ -1,0 +1,124 @@
+commit be23c671cf6ae0bbeb6acdad856ed59601af6007
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Sep 1 17:25:49 2019 +0200
+
+    Fix password checking with as-needed linking
+    
+    Newer gcc toolchains tend to enable as-needed by default, so runtime
+    detection of libcrypt will fail.  We can just explicitly link against
+    libcrypt anyway.
+    
+    * configure.ac: Check for `crypt()' in libcrypt.
+    * config.make.in: Substitute HAVE_LIBCRYPT.
+    * libshouldbeinlibc/idvec-verify.c: Include <crypt.h> only when libcrypt
+    is available.  Replace weak reference with explicit call and fallback
+    macro.
+    * utils/x.c: Likewise.
+    * libshouldbeinlibc/Makefile (LDLIBS): Add -lcrypt when libcrypt is
+    available.
+
+Index: hurd-debian/config.make.in
+===================================================================
+--- hurd-debian.orig/config.make.in
++++ hurd-debian/config.make.in
+@@ -96,6 +96,9 @@ libblkid_LIBS = @libblkid_LIBS@
+ # Whether Sun RPC support is available.
+ HAVE_SUN_RPC = @HAVE_SUN_RPC@
+ 
++# Whether we found libcrypt.
++HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
++
+ # Whether we found libgcrypt.
+ HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
+ 
+Index: hurd-debian/configure.ac
+===================================================================
+--- hurd-debian.orig/configure.ac
++++ hurd-debian/configure.ac
+@@ -171,6 +171,11 @@ AC_CHECK_FUNCS(file_futimens)
+ AC_DEFINE([UTIME_NOW],[-1])
+ AC_DEFINE([UTIME_OMIT],[-2])
+ 
++AC_CHECK_LIB([crypt], [crypt],
++	     [HAVE_LIBCRYPT=1
++	      AC_DEFINE([HAVE_LIBCRYPT], [1], [Use libcrypt])])
++AC_SUBST([HAVE_LIBCRYPT])
++
+ 
+ # From glibc HEAD, 2007-11-07.
+ AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl
+Index: hurd-debian/libshouldbeinlibc/Makefile
+===================================================================
+--- hurd-debian.orig/libshouldbeinlibc/Makefile
++++ hurd-debian/libshouldbeinlibc/Makefile
+@@ -38,6 +38,8 @@ installhdrs = idvec.h timefmt.h maptime.
+ 
+ installhdrsubdir = .
+ 
++LDLIBS += $(and $(HAVE_LIBCRYPT),-lcrypt)
++
+ OBJS = $(SRCS:.c=.o)
+ 
+ include ../Makeconf
+Index: hurd-debian/libshouldbeinlibc/idvec-verify.c
+===================================================================
+--- hurd-debian.orig/libshouldbeinlibc/idvec-verify.c
++++ hurd-debian/libshouldbeinlibc/idvec-verify.c
+@@ -27,12 +27,15 @@
+ #include <grp.h>
+ #include <pwd.h>
+ #include <shadow.h>
++#ifdef HAVE_LIBCRYPT
+ #include <crypt.h>
++#else
++#warning "No crypt on this system!  Using plain-text passwords."
++#define crypt(password, encrypted) password
++#endif
+ 
+ #define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
+ 
+-#pragma weak crypt
+-
+ static error_t verify_id (); /* FWD */
+ 
+ /* Get a password from the user, returning it in malloced storage.  */
+@@ -71,12 +74,8 @@ verify_passwd (const char *password,
+   if (sys_encrypted[0] == '\0')
+     return 0;			/* No password.  */
+ 
+-  if (crypt)
+-    /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
+-    encrypted = crypt (password, sys_encrypted);
+-  else
+-    /* No crypt on this system!  Use plain-text passwords.  */
+-    encrypted = password;
++  /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
++  encrypted = crypt (password, sys_encrypted);
+ 
+   if (! encrypted)
+     /* Crypt failed.  */
+Index: hurd-debian/utils/x.c
+===================================================================
+--- hurd-debian.orig/utils/x.c
++++ hurd-debian/utils/x.c
+@@ -30,6 +30,12 @@
+ #include <grp.h>
+ #include <netdb.h>
+ #include <time.h>
++#ifdef HAVE_LIBCRYPT
++#include <crypt.h>
++#else
++#warning "No crypt on this system!  Using plain-text passwords."
++#define crypt(password, encrypted) password
++#endif
+ 
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+@@ -136,7 +142,6 @@ count_parent_gids ()
+ void verify_passwd (const char *name, const char *password,
+ 		    uid_t id, int is_group, structh auth *auth)
+ {
+-  extern char *crypt (const char salt[2], const char *string);
+   char *prompt, *unencrypted, *encrypted;
+ 
+   if (!password || !*password

@@ -29,3 +29,4 @@ acpi-static-link.patch
 shutdown-static-link.patch
 rename_dir_excl.patch
 gcc-9.patch
+crypt
