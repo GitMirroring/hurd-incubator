@@ -5,6 +5,7 @@ hurd (1:0.9.git20190331-9) UNRELEASED; urgency=medium
   * rules: Fix noudeb profile build with latest debhelper.
   * control: Replace autotools-dev dep with debhelper (>= 9.20160114) dep.
   * rules: Drom --with autotools_dev.
+  * rules: Use dpkg's architecture.mk
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 19 Aug 2019 18:33:22 +0000
 

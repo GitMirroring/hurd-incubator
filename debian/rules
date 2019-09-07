@@ -17,6 +17,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
 # 02111-1307 USA.
 
+include /usr/share/dpkg/architecture.mk
+
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all,-pie
 
 DEB_DESTDIR = $(CURDIR)/debian/tmp
@@ -55,8 +57,6 @@ CONFIGURE_ARGS += prefix=/ libdir=/lib/$(DEB_HOST_MULTIARCH) libexecdir=/lib/hur
 CONFIGURE_ARGS_deb =
 CONFIGURE_ARGS_udeb = libdir=/lib --without-libdaemon --without-libbz2
 SUID_PROGRAMS = /bin/ids /bin/login /bin/ps-hurd /usr/bin/w-hurd
-
-DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 INSTALL_in := $(wildcard debian/*.install.in)
 INSTALL_generated := $(patsubst %.in,%,$(INSTALL_in))
