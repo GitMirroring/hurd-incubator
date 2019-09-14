@@ -1,0 +1,24 @@
+commit 6be88d4142eec781fd0de6c80b4b4fdaef20c5df
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Sep 14 02:56:44 2019 +0200
+
+    console-client libraries: fix link against external libraries
+    
+    This is needed since "as-needed" is now the default.
+    
+    * console-client/Makefile (%.so.$(hurd-version)): Put $^ before -l
+    flags.
+
+diff --git a/console-client/Makefile b/console-client/Makefile
+index 1b59b99d..e4d9504d 100644
+--- a/console-client/Makefile
++++ b/console-client/Makefile
+@@ -94,7 +94,7 @@ $(DESTDIR)$(module-dir)/%: %
+ %.so.$(hurd-version): 
+ 	$(CC) -shared -Wl,-soname=$@ -o $@ $(lpath) \
+ 		$(CFLAGS) $($*-CFLAGS) $(LDFLAGS) \
+-		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
++		$^ '-Wl,-(' $($*-LDLIBS) '-Wl,-)'
+ 
+ lex.c: lex.l parser.tab.h
+ %.tab.h %.c: %.y
