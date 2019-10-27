@@ -1,0 +1,103 @@
+commit 9b6afcec2f6cfb2f0e0f01962f8d8fe6bd9f6762
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Oct 27 18:32:35 2019 +0100
+
+    libdiskfs: Do not register active translator if it failed to start
+    
+    * libdiskfs/dir-lookup.c (diskfs_S_dir_lookup): Do not call
+    fshelp_set_active_translator if fshelp_fetch_root returned an error
+    which is not ENOENT.
+
+diff --git a/libdiskfs/dir-lookup.c b/libdiskfs/dir-lookup.c
+index 05e3fc5b..b2d480f1 100644
+--- a/libdiskfs/dir-lookup.c
++++ b/libdiskfs/dir-lookup.c
+@@ -275,6 +275,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
+ 	      if (!err)
+ 		{
+ 		  char *end = strchr (retry_name, '\0');
++		  char *translator_path = strdupa (relpath);
++		  char *end;
++		  char *complete_path;
++
+ 		  if (mustbedir)
+ 		    *end++ = '/'; /* Trailing slash.  */
+ 		  else if (!lastcomp) {
+@@ -282,45 +286,40 @@ diskfs_S_dir_lookup (struct protid *dircred,
+ 		      *end++ = '/';
+ 		    strcpy (end, nextname);
+ 		  }
+-		}
+ 
+-	      {
+-		char *translator_path = strdupa (relpath);
+-		char *end;
+-		char *complete_path;
+-		if (nextname != NULL)
+-		  {
+-		    /* This was not the last path component.
+-		       NEXTNAME points to the next component, locate
+-		       the end of the current component and use it
+-		       to trim TRANSLATOR_PATH.  */
+-		    end = nextname;
+-		    while (*end != 0)
+-		      end--;
+-		    translator_path[end - filename_start] = '\0';
+-		  }
++		  if (nextname != NULL)
++		    {
++		      /* This was not the last path component.
++			 NEXTNAME points to the next component, locate
++			 the end of the current component and use it
++			 to trim TRANSLATOR_PATH.  */
++		      end = nextname;
++		      while (*end != 0)
++			end--;
++		      translator_path[end - filename_start] = '\0';
++		    }
+ 
+-		/* Trim trailing slashes.  */
+-		end = &translator_path[strlen (translator_path) - 1];
+-		while (*end == '/' && end >= translator_path)
+-		  *end = '\0', end--;
+-
+-		if (dircred->po->path == NULL
+-		    || !strcmp (dircred->po->path,"."))
+-		  /* dircred is the root directory.  */
+-		  complete_path = translator_path;
+-		else
+-		  asprintf (&complete_path, "%s/%s", dircred->po->path,
+-			    translator_path);
+-
+-		err = fshelp_set_active_translator (&newpi->pi,
+-						    complete_path,
+-						    &np->transbox);
+-		if (complete_path != translator_path)
+-		  free(complete_path);
+-		if (err)
+-		  goto out;
+-	      }
++		  /* Trim trailing slashes.  */
++		  end = &translator_path[strlen (translator_path) - 1];
++		  while (*end == '/' && end >= translator_path)
++		    *end = '\0', end--;
++
++		  if (dircred->po->path == NULL
++		      || !strcmp (dircred->po->path,"."))
++		    /* dircred is the root directory.  */
++		    complete_path = translator_path;
++		  else
++		    asprintf (&complete_path, "%s/%s", dircred->po->path,
++			      translator_path);
++
++		  err = fshelp_set_active_translator (&newpi->pi,
++						      complete_path,
++						      &np->transbox);
++		  if (complete_path != translator_path)
++		    free(complete_path);
++		  if (err)
++		    goto out;
++		}
+ 
+ 	      goto out;
+ 	    }

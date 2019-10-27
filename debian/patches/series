@@ -31,3 +31,4 @@ rename_dir_excl.patch
 gcc-9.patch
 crypt
 console-client
+open-active-fail.patch
