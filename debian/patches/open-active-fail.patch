@@ -12,12 +12,11 @@ diff --git a/libdiskfs/dir-lookup.c b/libdiskfs/dir-lookup.c
 index 05e3fc5b..b2d480f1 100644
 --- a/libdiskfs/dir-lookup.c
 +++ b/libdiskfs/dir-lookup.c
-@@ -275,6 +275,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
+@@ -275,6 +275,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
  	      if (!err)
  		{
  		  char *end = strchr (retry_name, '\0');
 +		  char *translator_path = strdupa (relpath);
-+		  char *end;
 +		  char *complete_path;
 +
  		  if (mustbedir)
