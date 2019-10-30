@@ -1,5 +1,6 @@
-hurd (1:0.9.git20190331-9) UNRELEASED; urgency=medium
+hurd (1:0.9.git20191029-1) UNRELEASED; urgency=medium
 
+  * New upstream snapshot.
   * patches/gcc-9.patch: Fix build with gcc-9.
   * patches/crypt: Fix password checking with as-needed link of gcc-9.
   * rules: Fix noudeb profile build with latest debhelper.

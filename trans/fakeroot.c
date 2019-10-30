@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <sys/sysmacros.h>
 #include <hurd/ihash.h>
 #include <hurd/paths.h>
 
@@ -983,9 +984,9 @@ kern_return_t
 netfs_S_file_exec (struct protid *user,
                    task_t task,
                    int flags,
-                   char *argv,
+                   data_t argv,
                    size_t argvlen,
-                   char *envp,
+                   data_t envp,
                    size_t envplen,
                    mach_port_t *fds,
                    size_t fdslen,

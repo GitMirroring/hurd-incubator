@@ -24,10 +24,11 @@
 #include "netfs.h"
 #include "fs_S.h"
 #include <sys/mman.h>
+#include <sys/sysmacros.h>
 
 error_t
 netfs_S_file_get_translator (struct protid *user,
-			     char **trans,
+			     data_t *trans,
 			     mach_msg_type_number_t *translen)
 {
   struct node *np;

@@ -347,11 +347,11 @@ lwip_S_socket_send (struct sock_user * user,
   int sent;
   int sockflags;
   struct iovec iov = { data, datalen };
-struct msghdr m = { msg_name:addr ? &addr->address : 0,
-  msg_namelen:addr ? addr->address.sa.sa_len : 0,
-  msg_flags:flags,
-  msg_controllen: 0, msg_iov: &iov, msg_iovlen:1
-  };
+  struct msghdr m = { msg_name:addr ? &addr->address : 0,
+    msg_namelen:addr ? addr->address.sa.sa_len : 0,
+    msg_flags:flags,
+    msg_controllen: 0, msg_iov: &iov, msg_iovlen:1
+    };
 
   if (!user)
     return EOPNOTSUPP;
@@ -361,8 +361,11 @@ struct msghdr m = { msg_name:addr ? &addr->address : 0,
     return EINVAL;
 
   sockflags = lwip_fcntl (user->sock->sockno, F_GETFL, 0);
+  /* XXX: missing !MSG_NOSIGNAL support, i.e. generate SIGPIPE */
+  flags &= ~MSG_NOSIGNAL;
   if (sockflags & O_NONBLOCK)
     flags |= MSG_DONTWAIT;
+
   sent = lwip_sendmsg (user->sock->sockno, &m, flags);
 
   /* MiG should do this for us, but it doesn't. */
@@ -392,10 +395,13 @@ lwip_S_socket_recv (struct sock_user * user,
 		    int *outflags, mach_msg_type_number_t amount)
 {
   error_t err;
-  struct sockaddr_storage addr;
-  socklen_t addrlen = sizeof (addr);
+  union { struct sockaddr_storage storage; struct sockaddr sa; } addr;
   int alloced = 0;
   int sockflags;
+  struct iovec iov;
+  struct msghdr m = { msg_name: &addr.sa, msg_namelen:sizeof addr,
+    msg_controllen: 0, msg_iov: &iov, msg_iovlen:1
+    };
 
   if (!user)
     return EOPNOTSUPP;
@@ -413,13 +419,14 @@ lwip_S_socket_recv (struct sock_user * user,
       alloced = 1;
     }
 
+  iov.iov_base = *data;
+  iov.iov_len = amount;
+
   sockflags = lwip_fcntl (user->sock->sockno, F_GETFL, 0);
   if (sockflags & O_NONBLOCK)
     flags |= MSG_DONTWAIT;
 
-  /* TODO: use recvmsg instead */
-  err = lwip_recvfrom (user->sock->sockno, *data, amount,
-		       flags, (struct sockaddr *) &addr, &addrlen);
+  err = lwip_recvmsg (user->sock->sockno, &m, flags);
 
   if (err < 0)
     {
@@ -435,13 +442,14 @@ lwip_S_socket_recv (struct sock_user * user,
 
       /* Set the peer's address for the caller */
       err =
-	lwip_S_socket_create_address (0, addr.ss_family, (void *) &addr,
-				      addrlen, addrport, addrporttype);
+	lwip_S_socket_create_address (0, addr.sa.sa_family,
+				      (void *) &addr.sa, m.msg_namelen,
+				      addrport, addrporttype);
 
       if (err && alloced)
 	munmap (*data, *datalen);
 
-      *outflags = 0;		/* FIXME */
+      *outflags = m.msg_flags;
       *nports = 0;
       *portstype = MACH_MSG_TYPE_COPY_SEND;
       *controllen = 0;
