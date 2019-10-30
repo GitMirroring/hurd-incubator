@@ -1,18 +1,16 @@
-hurd (1:0.9.git20191029-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20191029-1) unstable; urgency=medium
 
-  * New upstream snapshot.
-  * patches/gcc-9.patch: Fix build with gcc-9.
-  * patches/crypt: Fix password checking with as-needed link of gcc-9.
+  * New upstream snapshot (Closes: Bug#942558).
+    - acpi-static-link.patch: Upstreamed.
+    - shutdown-static-link.patch: Upstreamed.
+    - rename_dir_excl.patch: Upstreamed.
   * rules: Fix noudeb profile build with latest debhelper.
   * control: Replace autotools-dev dep with debhelper (>= 9.20160114) dep.
   * rules: Drom --with autotools_dev.
   * rules: Use dpkg's architecture.mk
   * source/options: Drop compression option.
-  * patches/console-client: Fix linking console client modules with libraries.
-  * patches/open-active-fail.patch: Fix error reporting on opening fifo
-    (Closes: Bug#942558).
 
- -- Samuel Thibault <sthibault@debian.org>  Mon, 19 Aug 2019 18:33:22 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Wed, 30 Oct 2019 01:14:03 +0000
 
 hurd (1:0.9.git20190331-8) unstable; urgency=medium
 

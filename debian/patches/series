@@ -25,10 +25,3 @@ using_std.patch
 netdde_log.patch
 libports-iterate-refcount.patch
 io-write-crash.patch
-acpi-static-link.patch
-shutdown-static-link.patch
-rename_dir_excl.patch
-gcc-9.patch
-crypt
-console-client
-open-active-fail.patch
