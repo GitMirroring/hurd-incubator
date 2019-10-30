@@ -21,13 +21,14 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <sys/sysmacros.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
 error_t
 netfs_S_file_set_translator (struct protid *user,
 			     int passive_flags, int active_flags,
-			     int killtrans_flags, char *passive,
+			     int killtrans_flags, data_t passive,
 			     mach_msg_type_number_t passivelen,
 			     mach_port_t active)
 {
