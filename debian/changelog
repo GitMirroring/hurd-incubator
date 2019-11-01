@@ -188,7 +188,7 @@ hurd (1:0.9.git20180108-2) unstable; urgency=medium
 
 hurd (1:0.9.git20180108-1) unstable; urgency=medium
 
-  * New upstream snapshot.
+  * New upstream snapshot (Closes: #807924)
   * debian/patches/exec_filename_exec.patch,exec_filename_fs.patch,
     exec_filename_use.patch: Keep compatibility.
   * debian/patches/exec_filename_fix.patch: Remove, merged upstream.
