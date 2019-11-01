@@ -1,3 +1,9 @@
+hurd (1:0.9.git20191029-2) unstable; urgency=medium
+
+  * patches/git-rlock-len-0.patch: Fix len=0 case.
+
+ -- Samuel Thibault <sthibault@debian.org>  Fri, 01 Nov 2019 14:16:28 +0000
+
 hurd (1:0.9.git20191029-1) unstable; urgency=medium
 
   * New upstream snapshot (Closes: Bug#942558).
