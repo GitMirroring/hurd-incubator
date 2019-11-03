@@ -132,7 +132,7 @@ BLACKLIST = \
 # This one is included by others, don't build it by itself!
 NO_BUILD = dde/lib8390.c
 
-SRC_ORIG := $(filter-out $(BLACKLIST),$(shell find $(SRC) -name \*.c))
+SRC_ORIG := $(filter-out $(BLACKLIST),$(shell find $(SRC) -name \*.c | LC_ALL=C sort))
 SRC_TARGET := $(patsubst $(SRC)/%,dde/%,$(SRC_ORIG))
 
 SRC_C		+= $(filter-out $(NO_BUILD),$(SRC_TARGET))
