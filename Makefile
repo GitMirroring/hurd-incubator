@@ -99,6 +99,7 @@ BLACKLIST = \
 	    $(SRC)/tun.c \
 	    $(SRC)/slip.c $(SRC)/netconsole.c \
 	    $(SRC)/veth.c $(SRC)/virtio_net.c \
+	    $(SRC)/atp.c \
 	    \
 	    These are missing some symbols \
 	    \
