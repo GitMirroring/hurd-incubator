@@ -1,0 +1,24 @@
+Index: hurd-debian/libdiskfs/peropen-rele.c
+===================================================================
+--- hurd-debian.orig/libdiskfs/peropen-rele.c
++++ hurd-debian/libdiskfs/peropen-rele.c
+@@ -37,6 +37,7 @@ diskfs_release_peropen (struct peropen *
+     diskfs_nput (po->np);
+   else
+     diskfs_nrele (po->np);
++  free (po->lock_status.locks);
+ 
+   free (po->path);
+   free (po);
+Index: hurd-debian/libnetfs/release-peropen.c
+===================================================================
+--- hurd-debian.orig/libnetfs/release-peropen.c
++++ hurd-debian/libnetfs/release-peropen.c
+@@ -39,6 +39,7 @@ netfs_release_peropen (struct peropen *p
+     mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
+ 
+   fshelp_rlock_drop_peropen (&po->lock_status);
++  free (po->lock_status.locks);
+ 
+   netfs_nput (po->np);
+ 
