@@ -1,0 +1,21 @@
+commit dc229fb098be918e0e60c47d8f5a0de5956a559f
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Nov 11 02:21:22 2019 +0100
+
+    login: Set non-insecure default umask
+    
+    * utils/login.c (default_args): Set UMASK to 022.
+
+diff --git a/utils/login.c b/utils/login.c
+index b70ee8ad..44bce2fd 100644
+--- a/utils/login.c
++++ b/utils/login.c
+@@ -66,7 +66,7 @@ char *default_args[] = {
+   "BACKUP_SHELLS=/bin/bash:" _PATH_BSHELL,
+   "HOME=/etc/login",		/* Initial WD.  */
+   "USER=login",
+-  "UMASK=0",
++  "UMASK=022",
+   "NAME=Not logged in",
+   "HUSHLOGIN=.hushlogin",	/* Looked up relative new home dir.  */
+   "MOTD=/etc/motd",
