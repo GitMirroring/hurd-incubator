@@ -70,12 +70,11 @@
 struct port_bucket *device_bucket;
 struct port_class *dev_class;
 
-#define NUM_EMULATION num_emul
 #define MAX_NUM_EMULATION 32
 
 /* List of emulations.  */
 static struct device_emulation_ops *emulation_list[MAX_NUM_EMULATION];
-static int num_emul;
+static int num_emul = 0;
 
 boolean_t is_master_device (mach_port_t port);
 
@@ -100,7 +99,7 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
     }
 
   /* Call each emulation's open routine to find the device.  */
-  for (i = 0; i < NUM_EMULATION; i++)
+  for (i = 0; i < num_emul; i++)
     {
       err = (*emulation_list[i]->open) (reply_port, reply_port_type,
 					mode, name, devp, devicePoly);
@@ -292,7 +291,7 @@ void rump_device_init()
 	device_bucket = ports_create_bucket ();
 	dev_class = ports_create_class (0, 0);
 
-	for (i = 0; i < NUM_EMULATION; i++) {
+	for (i = 0; i < num_emul; i++) {
 		if (emulation_list[i]->init)
 			emulation_list[i]->init();
 	}

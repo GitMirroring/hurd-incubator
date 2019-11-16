@@ -15,6 +15,10 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+RUMPPATH=/usr/lib
+RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata
+RUMPEXTRA=rumpdev_scsipi
+
 dir := rumpdisk
 makemode := utility
 
@@ -25,3 +29,6 @@ HURDLIBS = machdevrump
 LDLIBS += -lpthread
 
 include ../Makeconf
+
+rumpdisk.static: main.o
+	$(CC) -static main.o -Wl,--whole-archive $(RUMPLIBS:%=$(RUMPPATH)/lib%_pic.a) ../libmachdevrump/libmachdevrump_pic.a -Wl,--no-whole-archive $(RUMPEXTRA:%=$(RUMPPATH)/lib%_pic.a) ../libtrivfs/libtrivfs_pic.a ../libshouldbeinlibc/libshouldbeinlibc_pic.a ../libports/libports_pic.a ../libiohelp/libiohelp_pic.a ../libihash/libihash_pic.a ../libfshelp/libfshelp_pic.a /usr/lib/i386-gnu/libpthread.a /usr/lib/i386-gnu/libpciaccess.a /usr/lib/i386-gnu/libdl.a -o $@
