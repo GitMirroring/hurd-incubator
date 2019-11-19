@@ -91,6 +91,8 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
   int i;
   io_return_t err = D_NO_SUCH_DEVICE;
 
+  mach_port_deallocate(mach_task_self (), open_port);
+
   /* There must be a reply port.  */
   if (! MACH_PORT_VALID (reply_port))
     {
