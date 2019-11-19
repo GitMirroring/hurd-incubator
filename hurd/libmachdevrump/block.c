@@ -243,7 +243,6 @@ device_write (void *d, mach_port_t reply_port,
   if (err < 0)
   {
     *bytes_written = 0;
-    ds_device_write_reply (reply_port, reply_port_type, EIO, *bytes_written);
     return EIO;
   }
 
@@ -251,7 +250,6 @@ device_write (void *d, mach_port_t reply_port,
   if (err < 0)
   {
     *bytes_written = 0;
-    ds_device_write_reply (reply_port, reply_port_type, EIO, *bytes_written);
     return EIO;
   }
   else
@@ -290,7 +288,6 @@ device_read (void *d, mach_port_t reply_port,
   if (err < 0)
   {
     *bytes_read = 0;
-    ds_device_read_reply (reply_port, reply_port_type, EIO, buf, *bytes_read);
     return EIO;
   }
 
@@ -298,7 +295,6 @@ device_read (void *d, mach_port_t reply_port,
   if (err < 0)
   {
     *bytes_read = 0;
-    ds_device_read_reply (reply_port, reply_port_type, EIO, buf, *bytes_read);
     return EIO;
   }
   else
