@@ -64,7 +64,7 @@ struct block_data
   dev_mode_t mode;		/* r/w etc */
   int rump_fd;                  /* block device fd handle */
   char name[DISK_NAME_LEN];	/* eg /dev/wd0 */
-  uint64_t media_size;          /* total block device size */
+  off_t media_size;             /* total block device size */
   uint32_t block_size;          /* size in bytes of 1 sector */
   bool taken;			/* simple refcount */
   struct block_data *next;
@@ -156,7 +156,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   io_return_t err = D_SUCCESS;
   struct block_data *bd = NULL;
   char *dev_name;
-  uint64_t media_size;
+  off_t media_size;
   uint32_t block_size;
 
   mach_print("device open\n");
@@ -239,8 +239,7 @@ device_write (void *d, mach_port_t reply_port,
   if ((bd->mode & D_WRITE) == 0)
     return D_INVALID_OPERATION;
 
-  err = rump_sys_lseek (bd->rump_fd, bn * bd->block_size, SEEK_SET);
-  if (err < 0)
+  if (rump_sys_lseek (bd->rump_fd, (off_t)bn * bd->block_size, SEEK_SET) < 0)
   {
     *bytes_written = 0;
     return EIO;
@@ -255,8 +254,7 @@ device_write (void *d, mach_port_t reply_port,
   else
   {
     *bytes_written = err;
-    ds_device_write_reply (reply_port, reply_port_type, D_SUCCESS, *bytes_written);
-    return MIG_NO_REPLY;
+    return D_SUCCESS;
   }
 }
 
@@ -284,8 +282,7 @@ device_read (void *d, mach_port_t reply_port,
   if (buf == MAP_FAILED)
     return errno;
 
-  err = rump_sys_lseek(bd->rump_fd, bn * bd->block_size, SEEK_SET);
-  if (err < 0)
+  if (rump_sys_lseek(bd->rump_fd, (off_t)bn * bd->block_size, SEEK_SET) < 0)
   {
     *bytes_read = 0;
     return EIO;
@@ -300,8 +297,8 @@ device_read (void *d, mach_port_t reply_port,
   else
   {
     *bytes_read = err;
-    ds_device_read_reply (reply_port, reply_port_type, D_SUCCESS, buf, *bytes_read);
-    return MIG_NO_REPLY;
+    *data = buf;
+    return D_SUCCESS;
   }
 }
 
