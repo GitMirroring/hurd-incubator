@@ -1,0 +1,16 @@
+commit 116672a85cb3df6a54220baab1cb0d8c00d1598e
+Author: Damien Zammit <damien@zamaudio.com>
+Date:   Sun Oct 27 18:54:43 2019 +1100
+
+    Fix CDROM ATAPI for AHCI
+
+diff --git a/sys/rump/dev/lib/libpci_ahcisata/AHCISATA.ioconf b/sys/rump/dev/lib/libpci_ahcisata/AHCISATA.ioconf
+index 2b7263bf..958065b6 100644
+--- a/sys/rump/dev/lib/libpci_ahcisata/AHCISATA.ioconf
++++ b/sys/rump/dev/lib/libpci_ahcisata/AHCISATA.ioconf
+@@ -16,4 +16,4 @@ ata_hl*		at atabus? drive ?
+ wd*     	at ata_hl?
+ 
+ # ATAPI support
+-atapi*		at atabus?
++atapi*		at ahcisata?
