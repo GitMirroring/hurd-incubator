@@ -45,7 +45,8 @@ create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
   entry->dev = dev;
   entry->func = func;
   entry->device_class = device_class;
-  strncpy (entry->name, name, NAME_SIZE);
+  strncpy (entry->name, name, NAME_SIZE - 1);
+  entry->name[NAME_SIZE - 1] = '\0';
   entry->parent = parent;
   entry->stat = stat;
   entry->dir = 0;
@@ -114,7 +115,6 @@ init_file_system (file_t underlying_node, struct pcifs * fs)
   fs->entries = calloc (1, sizeof (struct pcifs_dirent));
   if (!fs->entries)
     {
-      free (fs->entries);
       return ENOMEM;
     }
 
@@ -133,7 +133,7 @@ init_file_system (file_t underlying_node, struct pcifs * fs)
 }
 
 error_t
-create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
+create_fs_tree (struct pcifs * fs)
 {
   error_t err = 0;
   int c_domain, c_bus, c_dev, i, j;
@@ -143,11 +143,17 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
     *func_parent, *list;
   struct stat e_stat;
   char entry_name[NAME_SIZE];
+  const struct pci_slot_match match =
+    { PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, 0 };
+  /*  domain         bus            device         func  */
+  struct pci_device_iterator *iter;
 
   nentries = 1;			/* Skip root entry */
   c_domain = c_bus = c_dev = -1;
-  for (i = 0, device = pci_sys->devices; i < pci_sys->num_devices;
-       i++, device++)
+  iter = pci_slot_match_iterator_create(&match);
+  device = pci_device_next(iter);
+
+  for (i = 0; device != NULL; i++, device = pci_device_next(iter) )
     {
       if (device->domain != c_domain)
 	{
@@ -180,22 +186,32 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	nentries++;		/* + rom */
     }
 
+  pci_iterator_destroy(iter);
+
+  if (nentries == 1)
+    {
+      /* No devices found, no need to continue */
+      return 0;
+    }
+
   list = realloc (fs->entries, nentries * sizeof (struct pcifs_dirent));
   if (!list)
     return ENOMEM;
 
   e = list + 1;
+  memset (e, 0, sizeof (struct pcifs_dirent));
   c_domain = c_bus = c_dev = -1;
   domain_parent = bus_parent = dev_parent = func_parent = 0;
-  for (i = 0, device = pci_sys->devices; i < pci_sys->num_devices;
-       i++, device++)
+  iter = pci_slot_match_iterator_create(&match);
+  device = pci_device_next(iter);
+
+  for (i = 0; device != NULL; i++, device = pci_device_next(iter))
     {
       if (device->domain != c_domain)
 	{
 	  /* We've found a new domain. Add an entry for it */
 	  e_stat = list->stat;
 	  e_stat.st_mode &= ~S_IROOT;	/* Remove the root mode */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%04x", device->domain);
 	  err =
 	    create_dir_entry (device->domain, -1, -1, -1, -1, entry_name,
@@ -213,7 +229,6 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       if (device->bus != c_bus)
 	{
 	  /* We've found a new bus. Add an entry for it */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%02x", device->bus);
 	  err =
 	    create_dir_entry (device->domain, device->bus, -1, -1, -1,
@@ -231,7 +246,6 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       if (device->dev != c_dev)
 	{
 	  /* We've found a new dev. Add an entry for it */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%02x", device->dev);
 	  err =
 	    create_dir_entry (device->domain, device->bus, device->dev, -1,
@@ -250,7 +264,6 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       e_stat.st_mode &= ~(S_IROTH | S_IWOTH | S_IXOTH);
 
       /* Add func entry */
-      memset (entry_name, 0, NAME_SIZE);
       snprintf (entry_name, NAME_SIZE, "%01u", device->func);
       err =
 	create_dir_entry (device->domain, device->bus, device->dev,
@@ -266,10 +279,10 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       e_stat = func_parent->stat;
       e_stat.st_mode &= ~(S_IFDIR | S_IXUSR | S_IXGRP);
       e_stat.st_mode |= S_IFREG | S_IWUSR | S_IWGRP;
-      e_stat.st_size = device->config_size;
+      e_stat.st_size = PCI_CONFIG_SIZE; // FIXME: Hardcoded
 
       /* Create config entry */
-      strncpy (entry_name, FILE_CONFIG_NAME, NAME_SIZE);
+      strncpy (entry_name, FILE_CONFIG_NAME, NAME_SIZE - 1);
       err =
 	create_dir_entry (device->domain, device->bus, device->dev,
 			  device->func, device->device_class, entry_name,
@@ -300,7 +313,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	  /* Make rom is read only */
 	  e_stat.st_mode &= ~(S_IWUSR | S_IWGRP);
 	  e_stat.st_size = device->rom_size;
-	  strncpy (entry_name, FILE_ROM_NAME, NAME_SIZE);
+	  strncpy (entry_name, FILE_ROM_NAME, NAME_SIZE - 1);
 	  err =
 	    create_dir_entry (device->domain, device->bus, device->dev,
 			      device->func, device->device_class, entry_name,
@@ -309,6 +322,8 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	    return err;
 	}
     }
+
+  pci_iterator_destroy(iter);
 
   /* The root node points to the first element of the entry list */
   fs->entries = list;
