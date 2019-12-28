@@ -8,7 +8,7 @@ Index: hurd-debian/Makefile
  	      libhurd-slab \
  	      libbpf \
  
-+ifneq ($(LIBPCIACCESS),no)
++ifneq ($(HAVE_LIBPCIACCESS),no)
 +lib-subdirs += libmachdev libddekit
 +endif
 +
@@ -23,7 +23,7 @@ Index: hurd-debian/Makeconf
 ===================================================================
 --- hurd-debian.orig/Makeconf
 +++ hurd-debian/Makeconf
-@@ -575,7 +575,7 @@ vpath %.defs $(top_srcdir)/hurd
+@@ -577,7 +577,7 @@ vpath %.defs $(top_srcdir)/hurd
  # These we want to find in the libc include directory...
  mach_defs_names = bootstrap exc mach mach4 \
  	mach_host mach_port mach_timer_reply memory_object \
@@ -36,15 +36,10 @@ Index: hurd-debian/configure.ac
 ===================================================================
 --- hurd-debian.orig/configure.ac
 +++ hurd-debian/configure.ac
-@@ -247,6 +247,13 @@ AC_SUBST(boot_store_types)dnl
+@@ -261,6 +261,8 @@ AC_SUBST(boot_store_types)dnl
  AC_MSG_CHECKING(boot store types)
  AC_MSG_RESULT($boot_store_types)
  
-+AC_CHECK_LIB(pciaccess, pci_system_init, LIBPCIACCESS=-lpciaccess, LIBPCIACCESS=no)
-+AC_SUBST(LIBPCIACCESS)
-+if test "$LIBPCIACCESS" = "no"; then
-+  AC_MSG_WARN([libpciaccess must be installed in order to use libddekit])
-+fi
 +AC_CHECK_HEADER([pcap.h], [HAVE_PCAP=yes], [HAVE_PCAP=no])
 +
  # Check for ncursesw, which is needed for the console-curses client.
@@ -54,15 +49,12 @@ Index: hurd-debian/config.make.in
 ===================================================================
 --- hurd-debian.orig/config.make.in
 +++ hurd-debian/config.make.in
-@@ -106,6 +106,12 @@ HAVE_LIBLWIP = @HAVE_LIBLWIP@
- liblwip_CFLAGS = @liblwip_CFLAGS@
- liblwip_LIBS = @liblwip_LIBS@
+@@ -116,6 +116,9 @@ HAVE_LIBPCIACCESS = @HAVE_LIBPCIACCESS@
+ libpciaccess_CFLAGS = @libpciaccess_CFLAGS@
+ libpciaccess_LIBS = @libpciaccess_LIBS@
  
 +# Whether pcap support is available.
 +HAVE_PCAP = @HAVE_PCAP@
-+
-+# Whether libpciaccess is available.
-+LIBPCIACCESS = @LIBPCIACCESS@
 +
  # Installation tools.
  INSTALL = @INSTALL@
