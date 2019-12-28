@@ -20,20 +20,20 @@ makemode	= server
 
 PORTDIR = $(srcdir)/port
 
-SRCS		= main.c pci-ops.c pci_access.c x86_pci.c netfs_impl.c \
+SRCS		= main.c pci-ops.c netfs_impl.c \
 		  pcifs.c ncache.c options.c func_files.c startup.c \
 		  startup-ops.c
 MIGSRCS		= pciServer.c startup_notifyServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
 
 HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash
-LDLIBS = -lpthread
+LDLIBS = -lpthread $(libpciaccess_LIBS)
 
 target = pci-arbiter
 
 include ../Makeconf
 
-CFLAGS += -I$(PORTDIR)/include
+CFLAGS += -I$(PORTDIR)/include $(libpciaccess_CFLAGS)
 
 pci-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
