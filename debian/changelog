@@ -2,6 +2,7 @@ hurd (1:0.9.git20191228-2) UNRELEASED; urgency=medium
 
   * rules [stage1 stage2 stage3] (CONFIGURE_ARGS): Add --without-libcrypt.
   * rules: Fix staged build.
+  * patches/getty-noclear: Discard --noclear passed by inittab.
 
  -- Samuel Thibault <sthibault@debian.org>  Wed, 01 Jan 2020 02:01:43 +0100
 

@@ -1,0 +1,17 @@
+Discard --noclear passed by inittab
+
+Index: hurd-debian/daemons/getty.c
+===================================================================
+--- hurd-debian.orig/daemons/getty.c
++++ hurd-debian/daemons/getty.c
+@@ -168,6 +168,10 @@ main (int argc, char **argv)
+       exit (1);
+     }
+ 
++  if (strcmp(argv[1], "--noclear") == 0)
++    /* Discard */
++    argv++;
++
+   /* Don't do anything with this for now. */
+   linespec = argv[1];
+ 
