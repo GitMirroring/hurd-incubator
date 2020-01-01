@@ -34,7 +34,8 @@ CONFIGURE_ARGS = \
 		 --disable-ncursesw \
 		 --without-libbz2 \
 		 --without-libz \
-		 --without-parted
+		 --without-parted \
+		 --without-libcrypt
 # Skip some checks because they expect
 # a working glibc causing a circular dependency.
 # TODO: rather disable the corresponding features in configure.ac
