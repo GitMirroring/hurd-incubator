@@ -202,7 +202,7 @@ ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
 endif
 
 override_dh_makeshlibs:
-ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_makeshlibs -phurd-libs0.3 --add-udeb=hurd-libs0.3-udeb
 endif
 	dh_makeshlibs --remaining-packages -Xusr/lib/hurd/
