@@ -30,6 +30,7 @@ bin/umount
 bin/unsu
 bin/vminfo
 dev/MAKEDEV
+hurd/acpi
 hurd/auth
 hurd/console
 hurd/devnode
@@ -57,6 +58,7 @@ hurd/proc
 hurd/procfs
 hurd/proxy-defpager
 hurd/random
+hurd/shutdown
 hurd/storeio
 hurd/streamio
 hurd/symlink
