@@ -1,17 +1,20 @@
-Discard --noclear passed by inittab
+Ignore --noclear passed by sysvinit since version 2.95-5
 
-Index: hurd-debian/daemons/getty.c
-===================================================================
---- hurd-debian.orig/daemons/getty.c
-+++ hurd-debian/daemons/getty.c
-@@ -168,6 +168,10 @@ main (int argc, char **argv)
-       exit (1);
-     }
+diff --git a/daemons/getty.c b/daemons/getty.c
+index 40ad4d73..cfa5b71d 100644
+--- a/daemons/getty.c
++++ b/daemons/getty.c
+@@ -160,6 +160,13 @@ main (int argc, char **argv)
  
-+  if (strcmp(argv[1], "--noclear") == 0)
-+    /* Discard */
-+    argv++;
+   openlog ("getty", LOG_ODELAY|LOG_CONS|LOG_PID, LOG_AUTH);
+ 
++  if (argc > 1)
++    if (strcmp(argv[1], "--noclear") == 0)
++      {
++	argc--;
++	argv++;
++      }
 +
-   /* Don't do anything with this for now. */
-   linespec = argv[1];
- 
+   /* Nothing to do .... */
+   if (argc != 3)
+     {
