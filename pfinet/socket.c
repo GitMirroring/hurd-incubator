@@ -17,6 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#define _HACK_ERRNO_H
 #include <assert-backtrace.h>
 #include "pfinet.h"
 
@@ -81,7 +82,10 @@ make_sock_user (struct socket *sock, int isroot, int noinstall, int consume)
     err = ports_create_port (socketport_class, pfinet_bucket,
 			     sizeof (struct sock_user), &user);
   if (err)
-    return 0;
+    {
+      errno = err;
+      return 0;
+    }
 
   /* We maintain a reference count in `struct socket' (a member not
      in the original Linux structure), because there can be multiple
