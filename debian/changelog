@@ -1,5 +1,6 @@
-hurd (1:0.9.git20191228-2) UNRELEASED; urgency=medium
+hurd (1:0.9.git20200314-1) UNRELEASED; urgency=medium
 
+  * New upstream snapshot
   * rules [stage1 stage2 stage3] (CONFIGURE_ARGS): Add --without-libcrypt.
   * rules: Fix staged build.
   * patches/getty-noclear: Discard --noclear passed by inittab.
