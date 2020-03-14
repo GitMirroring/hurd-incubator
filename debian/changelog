@@ -1,4 +1,4 @@
-hurd (1:0.9.git20200314-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20200314-1) unstable; urgency=medium
 
   * New upstream snapshot
   * rules [stage1 stage2 stage3] (CONFIGURE_ARGS): Add --without-libcrypt.
@@ -7,7 +7,7 @@ hurd (1:0.9.git20200314-1) UNRELEASED; urgency=medium
   * hurd-udeb.install: Add acpi and shutdown translators, to fix d-i shutting
     down box.
 
- -- Samuel Thibault <sthibault@debian.org>  Wed, 01 Jan 2020 02:01:43 +0100
+ -- Samuel Thibault <sthibault@debian.org>  Sat, 14 Mar 2020 15:35:28 +0000
 
 hurd (1:0.9.git20191228-1) unstable; urgency=medium
 
