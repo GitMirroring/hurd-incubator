@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <sys/sysmacros.h>
 #include "isofs.h"
 
 /* These tell whether the specified extensions are on or not. */
@@ -347,7 +348,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  struct rr_pn *pn = body;
 
 	  rr->valid |= VALID_PN;
-	  rr->rdev = makedev (isonum_733 (pn->high), isonum_733 (pn->low));
+	  rr->rdev = gnu_dev_makedev (isonum_733 (pn->high), isonum_733 (pn->low));
 
 	  goto next_field;
 	}

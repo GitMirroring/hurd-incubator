@@ -1,6 +1,6 @@
 #
-#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006, 2009, 2011, 2012, 2013 Free Software Foundation, Inc.
+#   Copyright (C) 1993-1999, 2001, 2002, 2004, 2006, 2009,
+#   2011-2013, 2015-2019 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -31,8 +31,9 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
 	      libhurd-slab \
 	      libbpf \
+	      libmachdev \
 
-ifneq ($(LIBPCIACCESS),no)
+ifeq ($(HAVE_LIBPCIACCESS),yes)
 lib-subdirs += libmachdevdde libddekit
 endif
 
@@ -42,7 +43,7 @@ prog-subdirs = auth proc exec term \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons boot console \
 	       hostmux usermux ftpfs trans \
-	       console-client utils sutils \
+	       console-client utils sutils libfshelp-tests \
 	       benchmarks fstests \
 	       procfs \
 	       startup \
@@ -50,9 +51,19 @@ prog-subdirs = auth proc exec term \
 	       devnode \
 	       eth-multiplexer \
 	       proc_proxy \
+	       acpi \
+	       shutdown
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd
+endif
+
+ifeq ($(HAVE_LIBLWIP),yes)
+prog-subdirs += lwip
+endif
+
+ifeq ($(HAVE_LIBPCIACCESS),yes)
+prog-subdirs += pci-arbiter
 endif
 
 # Other directories
@@ -87,7 +98,7 @@ dist-version := $(shell cd $(top_srcdir)/ && $(git_describe))
 
 .PHONY: dist
 ifdef configured
-dist: $(foreach Z,bz2 gz,$(dist-version).tar.$(Z))
+dist: $(foreach Z,xz gz,$(dist-version).tar.$(Z))
 else
 dist:
 	@echo >&2 'Cannot build a distribution from an unconfigured tree.'
@@ -242,8 +253,8 @@ install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
 TAGS: $(addsuffix -TAGS,$(working-prog-subdirs) $(lib-subdirs))
 	etags -o $@ $(patsubst %-TAGS,-i %/TAGS,$^)
 
-%.bz2: %
-	bzip2 -9 < $< > $@
+%.xz: %
+	xz < $< > $@
 
 %.gz: %
 	gzip -9n < $< > $@

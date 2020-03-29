@@ -32,6 +32,7 @@
 #include <hurd/fshelp.h>
 #include <error.h>
 #include "ourmsg_U.h"
+#include <signal.h>
 
 
 #undef ECHO
@@ -560,7 +561,7 @@ error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
-		   char *data,
+		   data_t data,
 		   size_t datalen,
 		   loff_t offset,
 		   size_t *amt)
@@ -638,14 +639,14 @@ error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply,
 		  mach_msg_type_name_t replytype,
-		  char **data,
+		  data_t *data,
 		  size_t *datalen,
 		  loff_t offset,
 		  size_t amount)
 {
   int cancel;
   int i, max;
-  char *cp;
+  data_t cp;
   int avail;
 
   if (!cred)

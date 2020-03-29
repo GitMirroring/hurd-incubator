@@ -25,6 +25,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <argp.h>
+#include <argz.h>
 #include <error.h>
 #include <sys/mman.h>
 
@@ -205,7 +206,7 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  char **data, mach_msg_type_number_t *data_len,
+		  data_t *data, mach_msg_type_number_t *data_len,
 		  loff_t offs, mach_msg_type_number_t amount)
 {
   error_t err = 0;
@@ -285,6 +286,13 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 			    int *type)
 {
   return trivfs_S_io_select (cred, reply, reply_type, type);
+}
+
+error_t
+trivfs_append_args (struct trivfs_control *fsys,
+		    char **argz, size_t *argz_len)
+{
+  return argz_add (argz, argz_len, "");
 }
 
 error_t trivfs_get_source (char *source, size_t source_len)

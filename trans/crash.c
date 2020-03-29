@@ -24,6 +24,7 @@
 #include <hurd.h>
 #include <fcntl.h>
 #include <hurd/trivfs.h>
+#include <hurd/msg.h>
 #include <sys/wait.h>
 #include <error.h>
 #include <argp.h>
@@ -996,5 +997,5 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 error_t
 S_msg_describe_ports (mach_port_t msgport, mach_port_t refport,
 		      mach_port_t *ports, mach_msg_type_number_t nports,
-		      char **desc, mach_msg_type_number_t *desclen)
+		      data_t *desc, mach_msg_type_number_t *desclen)
 { return EBUSY; }

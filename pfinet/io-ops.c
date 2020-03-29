@@ -36,7 +36,7 @@
 
 error_t
 S_io_write (struct sock_user *user,
-	    char *data,
+	    data_t data,
 	    size_t datalen,
 	    off_t offset,
 	    mach_msg_type_number_t *amount)
@@ -69,7 +69,7 @@ S_io_write (struct sock_user *user,
 
 error_t
 S_io_read (struct sock_user *user,
-	   char **data,
+	   data_t *data,
 	   size_t *datalen,
 	   off_t offset,
 	   mach_msg_type_number_t amount)
@@ -374,7 +374,12 @@ S_io_reauthenticate (struct sock_user *user,
   aux_gids = agbuf;
 
   pthread_mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, 0, 1, 0);
+  do
+    newuser = make_sock_user (user->sock, 0, 1, 0);
+    /* Should check whether errno is indeed EINTR --
+       but this can't be done in a straightforward way,
+       because the glue headers #undef errno. */
+  while (!newuser);
 
   auth = getauth ();
   newright = ports_get_send_right (newuser);

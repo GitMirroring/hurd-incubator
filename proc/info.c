@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 #include <hurd/hurd_types.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/resource.h>
@@ -378,7 +379,7 @@ get_string_array (task_t t,
 kern_return_t
 S_proc_getprocargs (struct proc *callerp,
 		  pid_t pid,
-		  char **buf,
+		  data_t *buf,
 		  size_t *buflen)
 {
   struct proc *p = pid_find (pid);
@@ -416,7 +417,7 @@ S_proc_getprocargs (struct proc *callerp,
 kern_return_t
 S_proc_getprocenv (struct proc *callerp,
 		 pid_t pid,
-		 char **buf,
+		 data_t *buf,
 		 size_t *buflen)
 {
   struct proc *p = pid_find (pid);
@@ -461,7 +462,7 @@ S_proc_getprocinfo (struct proc *callerp,
 		    int *flags,
 		    int **piarray,
 		    size_t *piarraylen,
-		    char **waits, mach_msg_type_number_t *waits_len)
+		    data_t *waits, mach_msg_type_number_t *waits_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
@@ -700,6 +701,15 @@ S_proc_getprocinfo (struct proc *callerp,
 	  err = thread_info (thds[i], THREAD_SCHED_INFO,
 			     (thread_info_t) &pi->threadinfos[i].pis_si,
 			     &thcount);
+
+#ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
+	  if (err == 0)
+	    /* If the structure read doesn't include last_processor field, assume
+	       CPU 0.  */
+	    if (thcount < 8)
+	      pi->threadinfos[i].pis_si.last_processor = 0;
+#endif
+
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      pi->threadinfos[i].died = 1;
@@ -712,6 +722,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	      *flags &= ~PI_FETCH_THREAD_SCHED;
 	      err = 0;
 	    }
+
 	}
 
       /* Note that there are thread wait entries only for those threads
@@ -867,8 +878,6 @@ S_proc_getloginpids (struct proc *callerp,
       /* Relay it to the Subhurd's proc server (if any).  */
       error_t err;
       pid_t pid_sub;
-      pid_t leader_sub;
-      task_t leader_task;
 
       /* Release global lock while talking to the other proc server.  */
       pthread_mutex_unlock (&global_lock);
@@ -1017,3 +1026,43 @@ S_proc_getnports (struct proc *callerp,
 
   return err;
 }
+
+/* Implement proc_set_path as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_set_exe (struct proc *p,
+	        char *path)
+{
+  char *copy;
+
+  if (!p)
+    return EOPNOTSUPP;
+
+  copy = strdup(path);
+  if (! copy)
+    return ENOMEM;
+
+  free(p->exe);
+  p->exe = copy;
+  return 0;
+}
+
+/* Implement proc_get_path as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_get_exe (struct proc *callerp,
+		pid_t pid,
+		char *path)
+{
+  struct proc *p = pid_find (pid);
+
+  /* No need to check CALLERP here; we don't use it. */
+
+  if (!p)
+    return ESRCH;
+
+  if (p->exe)
+    snprintf (path, 1024 /* XXX */, "%s", p->exe);
+  else
+    path[0] = 0;
+  return 0;
+}
+

@@ -1,7 +1,7 @@
 /* Start and maintain hurd core servers and system run state
 
    Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-     2005, 2008, 2013 Free Software Foundation, Inc.
+     2005, 2008, 2010, 2013 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -52,7 +52,9 @@
 #include <argp.h>
 #include <pids.h>
 #include <idvec.h>
+#include <stdlib.h>
 
+#include "shutdown_U.h"
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -73,6 +75,8 @@ static int verbose = 0;
 const char *argp_program_version = STANDARD_HURD_VERSION (startup);
 
 #define OPT_KERNEL_TASK	-1
+
+#define _SERVERS_SHUTDOWN	_SERVERS	"/shutdown"
 
 static struct argp_option
 options[] =
@@ -173,6 +177,22 @@ getstring (char *buf, size_t bufsize)
 
 /** System shutdown **/
 
+/* Do an RPC to /servers/shutdown
+ * to call platform specific shutdown routine
+ */
+error_t
+do_shutdown (void)
+{
+  shutdown_t pc;
+
+  pc = file_name_lookup (_SERVERS_SHUTDOWN, O_READ, 0);
+  if (! MACH_PORT_VALID (pc))
+    return errno;
+
+  shutdown_shutdown (pc);
+  return 0;
+}
+
 /* Reboot the microkernel.  */
 void
 reboot_mach (int flags)
@@ -186,9 +206,18 @@ reboot_mach (int flags)
   else
     {
       error_t err;
+      sleep (5);
+      if (flags & RB_HALT) {
+	fprintf (stderr, "%s: %sing Hurd...\n",
+	         program_invocation_short_name, BOOT (flags));
+	err = do_shutdown ();
+	if (err)
+	  error (0, err, "shutdown");
+	sleep (2);
+	fprintf (stderr, "Didn't succeed\n");
+      }
       fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
                program_invocation_short_name, BOOT (flags), flags);
-      sleep (5);
       err = host_reboot (host_priv, flags);
       if (err)
 	error (1, err, "reboot");
@@ -402,13 +431,28 @@ run (const char *server, mach_port_t *ports, task_t *task,
 	      fprintf (stderr, "Pausing for %s\n", prog);
 	      getchar ();
 	    }
-	  err = file_exec (file, *task, 0,
-			   argz, argz_len, /* Args.  */
-			   startup_envz, startup_envz_len,
-			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			   default_ints, INIT_INT_MAX,
-			   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+	  err = file_exec_paths (file, *task, 0, (char *)prog, (char *)prog,
+				 argz,
+				 argz_len, /* Args.  */
+				 startup_envz, startup_envz_len,
+				 default_dtable,
+				 MACH_MSG_TYPE_COPY_SEND, 3,
+				 ports, MACH_MSG_TYPE_COPY_SEND,
+				 INIT_PORT_MAX,
+				 default_ints, INIT_INT_MAX,
+				 NULL, 0, NULL, 0);
+	  /* For backwards compatibility.  Just drop it when we kill
+	     file_exec.  */
+	  if (err == MIG_BAD_ID)
+#endif
+	    err = file_exec (file, *task, 0,
+			     argz, argz_len, /* Args.  */
+			     startup_envz, startup_envz_len,
+			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			     default_ints, INIT_INT_MAX,
+			     NULL, 0, NULL, 0);
 	  if (!err)
 	    break;
 
@@ -450,7 +494,7 @@ argz_task_insert_right (char **argz, size_t *argz_len, task_t task,
     }
   while (err == KERN_NAME_EXISTS);
 
-  if (asprintf (&arg, "--%s=%d", argument, name) < 0)
+  if (asprintf (&arg, "--%s=%lu", argument, name) < 0)
     return errno;
 
   err = argz_add (argz, argz_len, arg);
@@ -538,14 +582,27 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     ++progname;
   else
     progname = filename;
-  err = file_exec (file, task, 0,
-		   args, arglen,
-		   startup_envz, startup_envz_len,
-		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-		   default_ports, MACH_MSG_TYPE_COPY_SEND,
-		   INIT_PORT_MAX,
-		   default_ints, INIT_INT_MAX,
-		   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (file, task, 0, filename, filename,
+			 args, arglen,
+			 startup_envz, startup_envz_len,
+			 default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			 default_ports, MACH_MSG_TYPE_COPY_SEND,
+			 INIT_PORT_MAX,
+			 default_ints, INIT_INT_MAX,
+			 NULL, 0, NULL, 0);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (file, task, 0,
+		     args, arglen,
+		     startup_envz, startup_envz_len,
+		     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+		     default_ports, MACH_MSG_TYPE_COPY_SEND,
+		     INIT_PORT_MAX,
+		     default_ints, INIT_INT_MAX,
+		     NULL, 0, NULL, 0);
+
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), task);
   if (ctty != MACH_PORT_NULL)
@@ -804,6 +861,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (procserver);
   assert_perror_backtrace (err);
+  proc_set_exe (procserver, "/hurd/startup");
 
   /* Declare that the filesystem and auth are our children. */
   err = proc_child (procserver, fstask);
@@ -817,6 +875,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (authproc);
   assert_perror_backtrace (err);
+  proc_set_exe (authproc, "/hurd/auth");
 
   err = install_as_translator ();
   if (err)
@@ -855,6 +914,7 @@ launch_core_servers (void)
     {
       proc_mark_important (procproc);
       proc_mark_exec (procproc);
+      proc_set_exe (procproc, "/hurd/proc");
       mach_port_deallocate (mach_task_self (), procproc);
     }
 
@@ -870,6 +930,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (fsproc);
   assert_perror_backtrace (err);
+  proc_set_exe (fsproc, "fs");
 
   fprintf (stderr, ".\n");
 
@@ -1016,6 +1077,8 @@ frob_kernel_process (void)
 
   err = record_essential_task ("kernel", task);
   assert_perror_backtrace (err);
+
+  proc_set_exe (proc, "kernel");
 
   err = task_get_bootstrap_port (task, &kbs);
   assert_perror_backtrace (err);
@@ -1244,13 +1307,26 @@ start_child (const char *prog, char **progargs)
       getchar ();
     }
 
-  err = file_exec (file, child_task, 0,
-		   args, arglen,
-		   startup_envz, startup_envz_len,
-		   NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
-		   default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-		   default_ints, INIT_INT_MAX,
-		   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (file, child_task, 0, args, args,
+			 args, arglen,
+			 startup_envz, startup_envz_len,
+			 NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
+			 default_ports, MACH_MSG_TYPE_COPY_SEND,
+			 INIT_PORT_MAX,
+			 default_ints, INIT_INT_MAX,
+			 NULL, 0, NULL, 0);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (file, child_task, 0,
+		     args, arglen,
+		     startup_envz, startup_envz_len,
+		     NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
+		     default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+		     default_ints, INIT_INT_MAX,
+		     NULL, 0, NULL, 0);
+
   proc_mark_important (default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), file);
@@ -1414,6 +1490,7 @@ S_startup_essential_task (mach_port_t server,
           mach_port_t execproc;
           proc_task2proc (procserver, task, &execproc);
           proc_mark_important (execproc);
+          proc_set_exe (execproc, "/hurd/exec");
         }
       else if (!strcmp (name, "proc"))
 	procinit = 1;
@@ -1798,7 +1875,7 @@ S_fsys_getroot (mach_port_t fsys_t,
 
 error_t
 S_fsys_get_options (mach_port_t control,
-		    char **data, mach_msg_type_number_t *len)
+		    data_t *data, mach_msg_type_number_t *len)
 {
   /* XXX Implement me.  */
   return EOPNOTSUPP;

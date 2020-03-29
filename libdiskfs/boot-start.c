@@ -202,7 +202,7 @@ diskfs_start_bootstrap ()
       diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
     }
 
-  /* Cache the exec server port for file_exec to use.  */
+  /* Cache the exec server port for file_exec_paths to use.  */
   _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
 
   if (_diskfs_boot_command)
@@ -248,7 +248,7 @@ diskfs_start_bootstrap ()
       while (err == KERN_NAME_EXISTS);
       diskfs_kernel_task = MACH_PORT_NULL;
 
-      len = snprintf (buf, sizeof buf, "--kernel-task=%d", kernel_task_name);
+      len = snprintf (buf, sizeof buf, "--kernel-task=%lu", kernel_task_name);
       assert_backtrace (len < sizeof buf);
       /* Insert as second argument.  */
       err = argz_insert (&exec_argv, &exec_argvlen,
@@ -311,7 +311,7 @@ diskfs_start_bootstrap ()
   printf (" %s", basename (exec_argv));
   fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
-		   newt, 0, exec_argv, exec_argvlen, exec_env, exec_envlen,
+		   newt, 0, (data_t)exec_argv, exec_argvlen, (data_t)exec_env, exec_envlen,
 		   fdarray, MACH_MSG_TYPE_COPY_SEND, 3,
 		   portarray, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 		   /* Supply no intarray, since we have no info for it.
@@ -337,9 +337,9 @@ diskfs_S_exec_startup_get_info (struct bootinfo *upt,
 				vm_address_t *base_addr,
 				vm_size_t *stack_size,
 				int *flags,
-				char **argvP,
+				data_t *argvP,
 				mach_msg_type_number_t *argvlen,
-				char **envpP __attribute__ ((unused)),
+				data_t *envpP __attribute__ ((unused)),
 				mach_msg_type_number_t *envplen,
 				mach_port_t **dtableP,
 				mach_msg_type_name_t *dtablepoly,
