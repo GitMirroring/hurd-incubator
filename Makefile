@@ -33,7 +33,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libbpf \
 
 ifneq ($(LIBPCIACCESS),no)
-lib-subdirs += libmachdev libddekit
+lib-subdirs += libmachdevdde libddekit
 endif
 
 # Hurd programs

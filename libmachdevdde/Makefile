@@ -15,9 +15,9 @@
 # along with the GNU Hurd; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := libmachdev
+dir := libmachdevdde
 makemode := library
-libname = libmachdev
+libname = libmachdevdde
 
 SRCS = deviceUser.c machUser.c net.c ds_routines.c queue.c trivfs_server.c \
        device_replyUser.c deviceServer.c notifyServer.c misc.c
