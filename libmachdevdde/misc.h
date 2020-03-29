@@ -18,18 +18,9 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#ifndef __MISC_H__
+#define __MISC_H__
 
-#include <ddekit/thread.h>
-#include <hurd/machdev.h>
+int linux_to_mach_error (int err);
 
-#include "machdevdde.h"
-
-
-void * machdevdde_server(void *arg)
-{
-  /* This thread calls Linux functions,
-   * so I need to make it known to the Linux environment. */
-  l4dde26_process_from_ddekit (ddekit_thread_myself ());
-
-  return machdev_server(arg);
-}
+#endif

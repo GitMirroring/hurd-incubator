@@ -19,17 +19,15 @@ dir := libmachdevdde
 makemode := library
 libname = libmachdevdde
 
-SRCS = deviceUser.c machUser.c net.c ds_routines.c queue.c trivfs_server.c \
-       device_replyUser.c deviceServer.c notifyServer.c misc.c
+SRCS = device_replyUser.c net.c ds_routines.c queue.c misc.c
 #block.c
-LCLHDRS = dev_hdr.h device_emul.h ds_routines.h vm_param.h \
-	  util.h queue.h io_req.h if_ether.h machdev.h linux-errno.h \
-	  errno-base.h
-installhdrs = machdev.h
-HURDLIBS = ports trivfs bpf ddekit
+LCLHDRS = vm_param.h misc.h \
+	  queue.h if_ether.h if_hdr.h \
+	  mach_glue.h machdevdde.h \
+	  linux-errno.h errno-base.h
+installhdrs = machdevdde.h
+HURDLIBS = machdev bpf ddekit
 LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 
 include ../Makeconf
