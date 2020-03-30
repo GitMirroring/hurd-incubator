@@ -6,17 +6,10 @@
 #include <linux/init.h>  // initcall()
 #include <linux/delay.h> // msleep()
 
-#include <hurd/machdev.h>
-#include <hurd/machdevdde.h>
+#include "machdev.h"
 #include "check_kernel.h"
 
 int using_std = 1;
-
-static void
-start_ds_server (void *arg)
-{
-	machdevdde_server (arg);
-}
 
 int main(int argc, char **argv)
 {
@@ -31,12 +24,10 @@ int main(int argc, char **argv)
 
 	l4dde26_do_initcalls();
 
-	machdevdde_register_net();
-	machdev_device_init();
-	machdev_trivfs_init();
+	machdev_init();
 
-	ddekit_thread_create (start_ds_server, NULL, "ds_server");
-	machdev_trivfs_server();
+	ddekit_thread_create (machdev_run1, NULL, "ds_server");
+	machdev_run2();
 
 	return 0;
 }
