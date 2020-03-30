@@ -27,6 +27,7 @@
 #include <sys/utsname.h>
 #include <sys/procfs.h>
 #include <stddef.h>
+#include <alloca.h>
 
 #define ELF_CLASS	PASTE (ELFCLASS, __ELF_NATIVE_CLASS)
 #define PASTE(a, b)	PASTE_1 (a, b)
@@ -40,6 +41,7 @@
 #endif
 
 #include <mach/thread_status.h>
+#include <mach/vm_param.h>
 #include <assert-backtrace.h>
 
 #ifdef i386_THREAD_STATE
@@ -331,6 +333,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   {
     DEFINE_NOTE (psinfo_t) psinfo;
     DEFINE_NOTE (pstatus_t) pstatus;
+    DEFINE_NOTE (ElfW(auxv_t)) at_entry;
     int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
     char *waits = 0;
     mach_msg_type_number_t num_waits = 0;
@@ -410,6 +413,18 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	    err = proc_get_arg_locations (proc,
 					  &psinfo.data.pr_argv,
 					  &psinfo.data.pr_envp);
+	    if (err == 0)
+	      {
+		/* Write position of executable.  */
+		vm_address_t addr;
+		err = proc_get_entry (proc, &addr);
+		if (err == 0)
+		  {
+		    at_entry.data.a_type = AT_ENTRY;
+		    at_entry.data.a_un.a_val = addr;
+		    err = WRITE_NOTE (NT_AUXV, at_entry);
+		  }
+	      }
 	    mach_port_deallocate (mach_task_self (), proc);
 	  }
 	{

@@ -125,8 +125,7 @@ remove_dead_port_from_dev (mach_port_t dead_port)
 
 /* Add a new virtual interface to the multiplexer. */
 struct vether_device *
-add_vdev (char *name, int size,
-	  struct port_class *class, struct port_bucket *bucket)
+add_vdev (char *name, size_t size)
 {
   error_t err;
   uint32_t hash;
@@ -134,7 +133,7 @@ add_vdev (char *name, int size,
 
   if (size < sizeof (*vdev))
     size = sizeof (*vdev);
-  err = ports_create_port (class, bucket, size, &vdev);
+  err = ports_create_port (vdev_portclass, port_bucket, size, &vdev);
   if (err)
     return NULL;
 
@@ -194,35 +193,12 @@ destroy_vdev (void *port)
   destroy_filters (&vdev->port_list);
 }
 
-/* Test if there are devices existing in the list */
-int
-has_vdev ()
-{
-  return dev_head != NULL;
-}
+static int deliver_msg (struct net_rcv_msg *msg, struct vether_device *vdev);
 
 /* Broadcast the packet to all virtual interfaces
  * except the one the packet is from */
 int
 broadcast_pack (char *data, int datalen, struct vether_device *from_vdev)
-{
-  int internal_deliver_pack (struct vether_device *vdev)
-    {
-      /* Skip current interface.  */
-      if (from_vdev == vdev)
-	return 0;
-      /* Skip interfaces that are down.  */
-      if ((vdev->if_flags & IFF_UP) == 0)
-        return 0;
-      return deliver_pack (data, datalen, vdev);
-    }
-
-  return foreach_dev_do (internal_deliver_pack);
-}
-
-/* Create a message, and deliver it. */
-int
-deliver_pack (char *data, int datalen, struct vether_device *vdev)
 {
   struct net_rcv_msg msg;
   int pack_size;
@@ -244,7 +220,18 @@ deliver_pack (char *data, int datalen, struct vether_device *vdev)
   packet->length = pack_size + sizeof (struct packet_header);
   msg.packet_type.msgt_number = packet->length;
 
-  return deliver_msg (&msg, vdev);
+  int internal_deliver_pack (struct vether_device *vdev)
+    {
+      /* Skip current interface.  */
+      if (from_vdev == vdev)
+	return 0;
+      /* Skip interfaces that are down.  */
+      if ((vdev->if_flags & IFF_UP) == 0)
+        return 0;
+      return deliver_msg (&msg, vdev);
+    }
+
+  return foreach_dev_do (internal_deliver_pack);
 }
 
 /* Broadcast the message to all virtual interfaces. */
@@ -273,7 +260,7 @@ broadcast_msg (struct net_rcv_msg *msg)
  * Deliver the message to all right pfinet servers that
  * connects to the virtual network interface.
  */
-int
+static int
 deliver_msg(struct net_rcv_msg *msg, struct vether_device *vdev)
 {
   mach_msg_return_t err;

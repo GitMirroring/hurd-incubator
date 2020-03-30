@@ -18,6 +18,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <sys/sysmacros.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
@@ -27,7 +28,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      int passive_flags,
 			      int active_flags,
 			      int killtrans_flags,
-			      char *passive,
+			      data_t passive,
 			      size_t passivelen,
 			      fsys_t active)
 {
@@ -159,13 +160,13 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  minor = strtol (arg, 0, 0);
 
 		  err = diskfs_validate_rdev_change (np,
-						       makedev (major, minor));
+						       gnu_dev_makedev (major, minor));
 		  if (err)
 		    {
 		      pthread_mutex_unlock (&np->lock);
 		      return err;
 		    }
-		  np->dn_stat.st_rdev = makedev (major, minor);
+		  np->dn_stat.st_rdev = gnu_dev_makedev (major, minor);
 		}
 
 	      err = diskfs_truncate (np, 0);

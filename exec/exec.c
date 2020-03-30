@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02,04
-   	Free Software Foundation, Inc.
+   Copyright (C) 1992 ,1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
+   2002, 2004, 2010 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -25,6 +25,7 @@
 
 #include "priv.h"
 #include <mach/gnumach.h>
+#include <mach/vm_param.h>
 #include <hurd.h>
 #include <hurd/exec.h>
 #include <sys/stat.h>
@@ -79,22 +80,29 @@ load_section (void *section, struct execdata *u)
   if (! anywhere)
     addr += u->info.elf.loadbase;
   else
+    {
 #if 0
-    switch (elf_machine)
-      {
-      case EM_386:
-      case EM_486:
-	/* On the i386, programs normally load at 0x08000000, and
-	   expect their data segment to be able to grow dynamically
-	   upward from its start near that address.  We need to make
-	   sure that the dynamic linker is not mapped in a conflicting
-	   address.  */
-	/* mask = 0xf8000000UL; */ /* XXX */
-	break;
-      default:
-	break;
-      }
+      /* XXX: gnumach currently does not support high bits set in mask to prevent
+       * loading at high addresses.
+       * Instead, in rtld we prevent mappings there through a huge mapping done by
+       * fmh().
+       */
+      switch (elf_machine)
+	{
+	case EM_386:
+	case EM_486:
+	  /* On the i386, programs normally load at 0x08000000, and
+	     expect their data segment to be able to grow dynamically
+	     upward from its start near that address.  We need to make
+	     sure that the dynamic linker is not mapped in a conflicting
+	     address.  */
+	  /* mask = 0xf8000000UL; */ /* XXX */
+	  break;
+	default:
+	  break;
+	}
 #endif
+    }
   if (anywhere && addr < vm_page_size)
     addr = vm_page_size;
 
@@ -793,6 +801,8 @@ static error_t
 do_exec (file_t file,
 	 task_t oldtask,
 	 int flags,
+	 char *path,
+	 char *abspath,
 	 char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
 	 char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
 	 mach_port_t *dtable, mach_msg_type_number_t dtablesize,
@@ -852,7 +862,7 @@ do_exec (file_t file,
     {
       /* Check for a #! executable file.  */
       check_hashbang (&e,
-		      file, oldtask, flags,
+		      file, oldtask, flags, path,
 		      argv, argvlen, argv_copy,
 		      envp, envplen, envp_copy,
 		      dtable, dtablesize, dtable_copy,
@@ -949,7 +959,7 @@ do_exec (file_t file,
     secure = (flags & EXEC_SECURE);
     defaults = (flags & EXEC_DEFAULTS);
 
-    /* Now record the big blocks of data we shuffle around unchanged.
+    /* Now record the big blocks of data we shuffle around.
        Whatever arrived inline, we must allocate space for so it can
        survive after this RPC returns.  */
 
@@ -960,11 +970,90 @@ do_exec (file_t file,
       goto stdout;
     boot->argv = argv;
     boot->argvlen = argvlen;
-    envp = servercopy (envp, envplen, envp_copy, &e.error);
-    if (e.error)
-      goto stdout;
+
+    if (abspath && abspath[0] == '/')
+      {
+	/* Explicit absolute filename, put its dirname in the LD_ORIGIN_PATH
+	   environment variable for $ORIGIN rpath expansion. */
+	const char *end = strrchr (abspath, '/');
+	size_t pathlen;
+	const char ld_origin_s[] = "\0LD_ORIGIN_PATH=";
+	const char *existing;
+	size_t existing_len = 0;
+	size_t new_envplen;
+	char *new_envp;
+
+	/* Drop trailing slashes.  */
+	while (end > abspath && end[-1] == '/')
+	  end--;
+
+	if (end == abspath)
+	  /* Root, keep explicit heading/trailing slash.   */
+	  end++;
+
+	pathlen = end - abspath;
+
+	if (memcmp (envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2) == 0)
+	  /* Existing variable at the beginning of envp.  */
+	  existing = envp - 1;
+	else
+	  /* Look for the definition.  */
+	  existing = memmem (envp, envplen, ld_origin_s, sizeof (ld_origin_s) - 1);
+
+	if (existing)
+	  {
+	    /* Definition already exists, just replace the content.  */
+	    existing += sizeof (ld_origin_s) - 1;
+	    existing_len = strnlen (existing, envplen - (existing - envp));
+
+	    /* Allocate room for the new content.  */
+	    new_envplen = envplen - existing_len + pathlen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    if (new_envp == MAP_FAILED)
+	      {
+		e.error = errno;
+		goto stdout;
+	      }
+
+	    /* And copy.  */
+	    memcpy (new_envp, envp, existing - envp);
+	    memcpy (new_envp + (existing - envp), abspath, pathlen);
+	    memcpy (new_envp + (existing - envp) + pathlen,
+		    existing + existing_len,
+		    envplen - ((existing - envp) + existing_len));
+	  }
+	else
+	  {
+	    /* No existing definition, prepend one.  */
+	    new_envplen = sizeof (ld_origin_s) - 1 + pathlen + envplen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+
+	    memcpy (new_envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2);
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2, abspath, pathlen);
+	    new_envp [sizeof (ld_origin_s) - 2 + pathlen] = 0;
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2 + pathlen + 1, envp, envplen);
+	  }
+
+	if (! envp_copy)
+	  /* Deallocate original environment */
+	  munmap (envp, envplen);
+
+	envp = new_envp;
+	envplen = new_envplen;
+      }
+    else
+      {
+	/* No explicit abspath, just copy the existing environment */
+	envp = servercopy (envp, envplen, envp_copy, &e.error);
+	if (e.error)
+	  goto stdout;
+      }
+
     boot->envp = envp;
     boot->envplen = envplen;
+
     dtable = servercopy (dtable, dtablesize * sizeof (mach_port_t),
 			 dtable_copy, &e.error);
     if (e.error)
@@ -1196,6 +1285,9 @@ do_exec (file_t file,
     }
 
 
+  /* Leave room for mmaps etc. before PIE binaries.
+   * Could add address randomization here.  */
+  anywhere_start += 128 << 20;
   /* Load the file into the task.  */
   anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
@@ -1233,7 +1325,15 @@ do_exec (file_t file,
       if (e.error)
 	goto out;
 
+      if (abspath)
+	proc_set_exe (boot->portarray[INIT_PORT_PROC], abspath);
+
       set_name (newtask, argv, pid);
+
+      e.error = proc_set_entry (boot->portarray[INIT_PORT_PROC],
+			        e.entry);
+      if (e.error)
+	goto out;
     }
   else
     set_name (newtask, argv, 0);
@@ -1435,13 +1535,14 @@ do_exec (file_t file,
   return e.error;
 }
 
+/* Deprecated.  */
 kern_return_t
 S_exec_exec (struct trivfs_protid *protid,
 	     file_t file,
 	     task_t oldtask,
 	     int flags,
-	     char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
-	     char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+	     data_t argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+	     data_t envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
 	     mach_port_t *dtable, mach_msg_type_number_t dtablesize,
 	     boolean_t dtable_copy,
 	     mach_port_t *portarray, mach_msg_type_number_t nports,
@@ -1451,13 +1552,53 @@ S_exec_exec (struct trivfs_protid *protid,
 	     mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
 	     mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
+  return S_exec_exec_paths (protid,
+				file,
+				oldtask,
+				flags,
+				"",
+				"",
+				argv, argvlen, argv_copy,
+				envp, envplen, envp_copy,
+				dtable, dtablesize,
+				dtable_copy,
+				portarray, nports,
+				portarray_copy,
+				intarray, nints,
+				intarray_copy,
+				deallocnames, ndeallocnames,
+				destroynames, ndestroynames);
+}
+
+kern_return_t
+S_exec_exec_paths (struct trivfs_protid *protid,
+		       file_t file,
+		       task_t oldtask,
+		       int flags,
+		       char *path,
+		       char *abspath,
+		       char *argv, mach_msg_type_number_t argvlen,
+		       boolean_t argv_copy,
+		       char *envp, mach_msg_type_number_t envplen,
+		       boolean_t envp_copy,
+		       mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+		       boolean_t dtable_copy,
+		       mach_port_t *portarray, mach_msg_type_number_t nports,
+		       boolean_t portarray_copy,
+		       int *intarray, mach_msg_type_number_t nints,
+		       boolean_t intarray_copy,
+		       mach_port_t *deallocnames,
+		       mach_msg_type_number_t ndeallocnames,
+		       mach_port_t *destroynames,
+		       mach_msg_type_number_t ndestroynames)
+{
   if (! protid)
     return EOPNOTSUPP;
 
   /* There were no user-specified exec servers,
      or none of them could be found.  */
 
-  return do_exec (file, oldtask, flags,
+  return do_exec (file, oldtask, flags, path, abspath,
 		  argv, argvlen, argv_copy,
 		  envp, envplen, envp_copy,
 		  dtable, dtablesize, dtable_copy,
@@ -1526,8 +1667,8 @@ S_exec_startup_get_info (struct bootinfo *boot,
 			 vm_address_t *phdr_data, vm_size_t *phdr_size,
 			 vm_address_t *stack_base, vm_size_t *stack_size,
 			 int *flags,
-			 char **argvp, mach_msg_type_number_t *argvlen,
-			 char **envpp, mach_msg_type_number_t *envplen,
+			 data_t *argvp, mach_msg_type_number_t *argvlen,
+			 data_t *envpp, mach_msg_type_number_t *envplen,
 			 mach_port_t **dtable,
 			 mach_msg_type_name_t *dtablepoly,
 			 mach_msg_type_number_t *dtablesize,

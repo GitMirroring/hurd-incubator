@@ -94,24 +94,78 @@ static error_t
 dopen (const char *name, device_t *device, int *mod_flags)
 {
   device_t dev_master;
-  error_t err = get_privileged_ports (0, &dev_master);
-  if (! err)
+  error_t err = ENODEV;
+  char *pos;
+  char *master;
+  char *rest;
+
+  /* Parse @master:/dev/hello */
+  if ( (name[0] == '@') && (pos = strchr (name, ':')) )
     {
+      master = strndup (name+1, pos-(name+1));
+      rest = pos+1;
+
       if (*mod_flags & STORE_HARD_READONLY)
-	err = device_open (dev_master, D_READ, (char *)name, device);
+	{
+	  dev_master = file_name_lookup (master, O_READ, 0);
+	  if (dev_master != MACH_PORT_NULL)
+	    {
+	      err = device_open (dev_master, D_READ, rest, device);
+	      if (err)
+		err = ENODEV;
+
+	      mach_port_deallocate (mach_task_self (), dev_master);
+	    }
+	  else
+	    err = ENODEV;
+	}
       else
 	{
-	  err = device_open (dev_master, D_WRITE | D_READ, (char *)name, device);
-	  if (err == ED_READ_ONLY)
+	  dev_master = file_name_lookup (master, O_READ | O_WRITE, 0);
+	  if (dev_master != MACH_PORT_NULL)
 	    {
-	      err = device_open (dev_master, D_READ, (char *)name, device);
-	      if (! err)
-		*mod_flags |= STORE_HARD_READONLY;
+	      err = device_open (dev_master, D_READ | D_WRITE, rest, device);
+	      if (err == ED_READ_ONLY)
+		{
+		  err = device_open (dev_master, D_READ, rest, device);
+		  if (! err)
+		    *mod_flags |= STORE_HARD_READONLY;
+		  else
+		    err = ENODEV;
+		}
+	      else if (! err)
+		*mod_flags &= ~STORE_HARD_READONLY;
+
+	      mach_port_deallocate (mach_task_self (), dev_master);
 	    }
-	  else if (! err)
-	    *mod_flags &= ~STORE_HARD_READONLY;
+	  else
+	    err = ENODEV;
 	}
-      mach_port_deallocate (mach_task_self (), dev_master);
+
+      free (master);
+    }
+
+  if (err)
+    {
+      err = get_privileged_ports (0, &dev_master);
+      if (! err)
+	{
+	  if (*mod_flags & STORE_HARD_READONLY)
+	    err = device_open (dev_master, D_READ, (char *)name, device);
+	  else
+	    {
+	      err = device_open (dev_master, D_WRITE | D_READ, (char *)name, device);
+	      if (err == ED_READ_ONLY)
+		{
+		  err = device_open (dev_master, D_READ, (char *)name, device);
+		  if (! err)
+		    *mod_flags |= STORE_HARD_READONLY;
+		}
+	      else if (! err)
+		*mod_flags &= ~STORE_HARD_READONLY;
+	    }
+	  mach_port_deallocate (mach_task_self (), dev_master);
+	}
     }
   return err;
 }

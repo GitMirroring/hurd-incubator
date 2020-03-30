@@ -53,10 +53,8 @@ S_default_pager_object_create (mach_port_t default_pager,
 			       vm_size_t object_size)
 {
   *memory_object_type = MACH_MSG_TYPE_COPY_SEND;
-  error_t err;
-  err = allowed (default_pager, O_EXEC)
+  return allowed (default_pager, O_EXEC)
     ?: default_pager_object_create (real_defpager, memory_object, object_size);
-  return err;
 }
 
 kern_return_t
@@ -170,7 +168,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t replytype,
-		  char **data,
+		  data_t *data,
 		  mach_msg_type_number_t *datalen,
 		  loff_t offs,
 		  mach_msg_type_number_t amt)
@@ -183,7 +181,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t replytype,
-		   char *data, mach_msg_type_number_t datalen,
+		   data_t data, mach_msg_type_number_t datalen,
 		   loff_t offs, mach_msg_type_number_t *amt)
 {
   if (!cred)

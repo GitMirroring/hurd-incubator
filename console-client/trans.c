@@ -186,14 +186,10 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   if (! err)
     {
       if (mtime)
-	np->nn_stat.st_mtim = *mtime;
-      else
-        flags |= TOUCH_MTIME;
+        np->nn_stat.st_mtim = *mtime;
       
       if (atime)
-	np->nn_stat.st_atim = *atime;
-      else
-        flags |= TOUCH_ATIME;
+        np->nn_stat.st_atim = *atime;
       
       fshelp_touch (&np->nn_stat, flags, console_maptime);
     }
@@ -579,7 +575,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 
 error_t
 netfs_S_io_read (struct protid *user,
-		 char **data,
+		 data_t *data,
 		 mach_msg_type_number_t *datalen,
 		 off_t offset,
 		 mach_msg_type_number_t amount)
@@ -598,7 +594,7 @@ netfs_S_io_read (struct protid *user,
 
 error_t
 netfs_S_io_write (struct protid *user,
-		  char *data,
+		  data_t data,
 		  mach_msg_type_number_t datalen,
 		  off_t offset,
 		  mach_msg_type_number_t *amount)

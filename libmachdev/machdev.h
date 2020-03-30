@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 2010 Free Software Foundation, Inc.
    Written by Zheng Da.
 
@@ -18,16 +18,23 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* This file declares interfaces used by driver programs. */
+/* This file declares interfaces used by driver translators.  */
 
 #ifndef __MACHDEV_H__
 #define __MACHDEV_H__
 
-void * ds_server(void *);
-void mach_device_init(void);
-void register_net(void);
-void register_block(void);
-void trivfs_server(void);
-int trivfs_init(void);
+#include <mach.h>
+#include "machdev-device_emul.h"
+#include "machdev-dev_hdr.h"
+
+void machdev_register (struct machdev_device_emulation_ops *ops);
+
+void machdev_device_init(void);
+void * machdev_server(void *);
+error_t machdev_create_device_port (size_t size, void *result);
+
+int machdev_trivfs_init(void);
+void machdev_trivfs_server(void);
+boolean_t machdev_is_master_device (mach_port_t port);
 
 #endif

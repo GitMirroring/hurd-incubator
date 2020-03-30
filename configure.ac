@@ -162,7 +162,23 @@ else
   VERSIONING=no
 fi
 AC_SUBST(VERSIONING)
+# Check if libc contains these functions.
+AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 
+# Compatibility with glibc < 2.28
+AC_CHECK_FUNCS(file_futimens)
+AC_DEFINE([UTIME_NOW],[-1])
+AC_DEFINE([UTIME_OMIT],[-2])
+
+AC_ARG_WITH([libcrypt],
+  [AS_HELP_STRING([--without-libcrypt], [disable libcrypt])], , [with_libcrypt=yes])
+
+AS_IF([test "x$with_libcrypt" != xno], [
+  AC_CHECK_LIB([crypt], [crypt],
+	       [HAVE_LIBCRYPT=1
+		AC_DEFINE([HAVE_LIBCRYPT], [1], [Use libcrypt])])
+])
+AC_SUBST([HAVE_LIBCRYPT])
 
 # From glibc HEAD, 2007-11-07.
 AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl
@@ -356,6 +372,10 @@ AS_IF([test "x$with_libdaemon" != xno], [
 AC_SUBST([libdaemon_LIBS])
 AC_SUBST([libdaemon_CFLAGS])
 
+
+AC_CHECK_MEMBERS([struct thread_sched_info.last_processor],,,
+ [#include <mach/thread_info.h>])
+
 PKG_CHECK_MODULES([libblkid], [blkid],
   [AC_DEFINE([HAVE_BLKID], [1], [Use libblkid])],
   [true])
@@ -364,6 +384,16 @@ AC_SUBST([libblkid_CFLAGS])
 
 AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
 AC_SUBST([HAVE_LIBGCRYPT])
+
+PKG_CHECK_MODULES([liblwip], [lwip], [HAVE_LIBLWIP=yes], [HAVE_LIBLWIP=no])
+AC_SUBST([HAVE_LIBLWIP])
+AC_SUBST([liblwip_CFLAGS])
+AC_SUBST([liblwip_LIBS])
+
+PKG_CHECK_MODULES([libpciaccess], [pciaccess], [HAVE_LIBPCIACCESS=yes], [HAVE_LIBPCIACCESS=no])
+AC_SUBST([HAVE_LIBPCIACCESS])
+AC_SUBST([libpciaccess_CFLAGS])
+AC_SUBST([libpciaccess_LIBS])
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT

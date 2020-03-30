@@ -1,6 +1,7 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-     2002, 2008, 2013, 2014 Free Software Foundation, Inc.
+
+   Copyright (C) 1992-2002, 2008, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,8 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -275,6 +275,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (!err)
 		{
 		  char *end = strchr (retry_name, '\0');
+		  char *translator_path = strdupa (relpath);
+		  char *complete_path;
+
 		  if (mustbedir)
 		    *end++ = '/'; /* Trailing slash.  */
 		  else if (!lastcomp) {
@@ -282,45 +285,40 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		      *end++ = '/';
 		    strcpy (end, nextname);
 		  }
+
+		  if (nextname != NULL)
+		    {
+		      /* This was not the last path component.
+			 NEXTNAME points to the next component, locate
+			 the end of the current component and use it
+			 to trim TRANSLATOR_PATH.  */
+		      end = nextname;
+		      while (*end != 0)
+			end--;
+		      translator_path[end - filename_start] = '\0';
+		    }
+
+		  /* Trim trailing slashes.  */
+		  end = &translator_path[strlen (translator_path) - 1];
+		  while (*end == '/' && end >= translator_path)
+		    *end = '\0', end--;
+
+		  if (dircred->po->path == NULL
+		      || !strcmp (dircred->po->path,"."))
+		    /* dircred is the root directory.  */
+		    complete_path = translator_path;
+		  else
+		    asprintf (&complete_path, "%s/%s", dircred->po->path,
+			      translator_path);
+
+		  err = fshelp_set_active_translator (&newpi->pi,
+						      complete_path,
+						      &np->transbox);
+		  if (complete_path != translator_path)
+		    free(complete_path);
+		  if (err)
+		    goto out;
 		}
-
-	      {
-		char *translator_path = strdupa (relpath);
-		char *end;
-		char *complete_path;
-		if (nextname != NULL)
-		  {
-		    /* This was not the last path component.
-		       NEXTNAME points to the next component, locate
-		       the end of the current component and use it
-		       to trim TRANSLATOR_PATH.  */
-		    end = nextname;
-		    while (*end != 0)
-		      end--;
-		    translator_path[end - filename_start] = '\0';
-		  }
-
-		/* Trim trailing slashes.  */
-		end = &translator_path[strlen (translator_path) - 1];
-		while (*end == '/' && end >= translator_path)
-		  *end = '\0', end--;
-
-		if (dircred->po->path == NULL
-		    || !strcmp (dircred->po->path,"."))
-		  /* dircred is the root directory.  */
-		  complete_path = translator_path;
-		else
-		  asprintf (&complete_path, "%s/%s", dircred->po->path,
-			    translator_path);
-
-		err = fshelp_set_active_translator (&newpi->pi,
-						    complete_path,
-						    &np->transbox);
-		if (complete_path != translator_path)
-		  free(complete_path);
-		if (err)
-		  goto out;
-	      }
 
 	      goto out;
 	    }
@@ -460,11 +458,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (!newnode)
     /* Check permissions on existing nodes, but not new ones. */
     {
-      if (((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
+      if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
 	    type == S_IFIFO)
 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
-	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
 	err = EACCES;
+
+      if (!err && type == S_IFLNK && (flags & (O_WRITE|O_EXEC)))
+	err = ELOOP;
 
       if (!err && (flags & O_READ))
 	err = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
@@ -499,12 +499,28 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (! err)
     {
       newpo = 0;
+      mach_port_t rendezvous = MACH_PORT_NULL;
+      struct flock64 lock =
+        {
+         l_start: 0,
+         l_len: 0,
+         l_whence: SEEK_SET
+       };
+
       if (flags & O_EXLOCK)
-	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
-				     &np->lock, LOCK_EX);
+        {
+         lock.l_type = F_WRLCK;
+         err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				   &newpi->po->lock_status, flags, 0, 0,
+				   F_SETLK64, &lock, rendezvous);
+       }
       else if (flags & O_SHLOCK)
-	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
-				     &np->lock, LOCK_SH);
+        {
+         lock.l_type = F_RDLCK;
+         err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				   &newpi->po->lock_status, flags, 0, 0,
+				   F_SETLK64, &lock, rendezvous);
+       }
     }
 
   if (! err)
