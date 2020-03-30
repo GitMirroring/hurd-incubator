@@ -15,19 +15,19 @@
 # along with the GNU Hurd; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := libmachdev
+dir := libmachdevdde
 makemode := library
-libname = libmachdev
+libname = libmachdevdde
 
-SRCS = deviceUser.c machUser.c ds_routines.c trivfs_server.c \
-       device_replyUser.c deviceServer.c notifyServer.c
-
-LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h
-installhdrs = machdev.h machdev-device_emul.h machdev-dev_hdr.h
-HURDLIBS = ports trivfs
+SRCS = device_replyUser.c net.c ds_routines.c queue.c misc.c
+#block.c
+LCLHDRS = vm_param.h misc.h \
+	  queue.h if_ether.h if_hdr.h \
+	  mach_glue.h machdevdde.h \
+	  linux-errno.h errno-base.h
+installhdrs = machdevdde.h
+HURDLIBS = machdev bpf ddekit
 LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 
 include ../Makeconf

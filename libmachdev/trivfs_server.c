@@ -1,6 +1,28 @@
+/*
+   Copyright (C) 2009 Free Software Foundation, Inc.
+   Written by Zheng Da.
+
+   This file is part of the GNU Hurd.
+
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+/* This manages the master ports obtained when opening the libmachdev-based
+   translator node. */
+
 #include <stdio.h>
 #include <fcntl.h>
-#include <pciaccess.h>
 #include <error.h>
 #include <hurd/ports.h>
 #include <hurd/trivfs.h>
@@ -66,13 +88,13 @@ do_mach_notify_dead_name (struct port_info *pi,
 }
 
 boolean_t
-is_master_device (mach_port_t port)
+machdev_is_master_device (mach_port_t port)
 {
   struct port_info *pi = ports_lookup_port (port_bucket, port,
 					    trivfs_protid_class);
   if (pi == NULL)
     return FALSE;
-  
+
   ports_port_deref (pi);
   return TRUE;
 }
@@ -92,7 +114,7 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
   return err;
 }
 
-int trivfs_init()
+int machdev_trivfs_init()
 {
   port_bucket = ports_create_bucket ();
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
@@ -120,7 +142,6 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
       return EBUSY;
     }
 
-  pci_system_cleanup ();
   exit (0);
 }
 
@@ -145,7 +166,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *stat)
 {
 }
 
-void trivfs_server()
+void machdev_trivfs_server()
 {
   mach_port_t bootstrap;
   struct trivfs_control *fsys;

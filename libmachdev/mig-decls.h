@@ -21,23 +21,24 @@
 #define __LIBMACHDEV_MIG_DECLS_H__
 
 #include <hurd/ports.h>
-#include "dev_hdr.h"
+#include "machdev-dev_hdr.h"
+#include "mach_device.h"
 
-extern struct port_bucket *device_bucket;
-extern struct port_class *dev_class;
+extern struct port_bucket *machdev_device_bucket;
+extern struct port_class *machdev_device_class;
 
 /* Called by server stub functions.  */
 
 static inline struct mach_device * __attribute__ ((unused))
 begin_using_device_port (mach_port_t port)
 {
-  return ports_lookup_port (device_bucket, port, dev_class);
+  return ports_lookup_port (machdev_device_bucket, port, machdev_device_class);
 }
 
 static inline struct mach_device * __attribute__ ((unused))
 begin_using_device_payload (unsigned long payload)
 {
-  return ports_lookup_payload (device_bucket, payload, dev_class);
+  return ports_lookup_payload (machdev_device_bucket, payload, machdev_device_class);
 }
 
 static inline void __attribute__ ((unused))

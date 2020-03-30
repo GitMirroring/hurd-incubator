@@ -18,23 +18,53 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* This file declares interfaces used by driver translators.  */
-
-#ifndef __MACHDEV_H__
-#define __MACHDEV_H__
-
 #include <mach.h>
-#include "machdev-device_emul.h"
-#include "machdev-dev_hdr.h"
+#include <device/device.h>
 
-void machdev_register (struct machdev_device_emulation_ops *ops);
+#include <ddekit/printf.h>
 
-void machdev_device_init(void);
-void * machdev_server(void *);
-error_t machdev_create_device_port (size_t size, void *result);
+#include "linux-errno.h"
 
-int machdev_trivfs_init(void);
-void machdev_trivfs_server(void);
-boolean_t machdev_is_master_device (mach_port_t port);
+int
+linux_to_mach_error (int err)
+{
+  switch (err)
+    {
+    case 0:
+      return D_SUCCESS;
 
-#endif
+    case -EPERM:
+      return D_INVALID_OPERATION;
+
+    case -EIO:
+      return D_IO_ERROR;
+
+    case -ENXIO:
+      return D_NO_SUCH_DEVICE;
+
+    case -EACCES:
+      return D_INVALID_OPERATION;
+
+    case -EFAULT:
+      return D_INVALID_SIZE;
+
+    case -EBUSY:
+      return D_ALREADY_OPEN;
+
+    case -EINVAL:
+      return D_INVALID_SIZE;
+
+    case -EROFS:
+      return D_READ_ONLY;
+
+    case -EWOULDBLOCK:
+      return D_WOULD_BLOCK;
+
+    case -ENOMEM:
+      return D_NO_MEMORY;
+
+    default:
+      ddekit_printf ("linux_to_mach_error: unknown code %d\n", err);
+      return D_IO_ERROR;
+    }
+}
