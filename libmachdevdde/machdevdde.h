@@ -23,6 +23,7 @@
 #ifndef __MACHDEVDDE_H__
 #define __MACHDEVDDE_H__
 
+void machdevdde_register_net(void);
 void * machdevdde_server(void *arg);
 
 #endif
