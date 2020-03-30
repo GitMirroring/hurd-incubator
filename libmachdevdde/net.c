@@ -654,7 +654,7 @@ static struct machdev_device_emulation_ops linux_net_emulation_ops =
   NULL
 };
 
-void register_net()
+void machdevdde_register_net()
 {
   machdev_register (&linux_net_emulation_ops);
 }

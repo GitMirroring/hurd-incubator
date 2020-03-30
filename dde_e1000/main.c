@@ -7,6 +7,7 @@
 #include <linux/delay.h> // msleep()
 
 #include <hurd/machdev.h>
+#include <hurd/machdevdde.h>
 
 int using_std = 1;
 
@@ -23,13 +24,13 @@ int main(int argc, char **argv)
 
 	l4dde26_do_initcalls();
 
-	register_net();
-	mach_device_init();
-	trivfs_init();
+	machdevdde_register_net();
+	machdev_device_init();
+	machdev_trivfs_init();
 
-	pthread_create (&thread, NULL, ds_server, NULL);
+	pthread_create (&thread, NULL, machdevdde_server, NULL);
 	pthread_detach (thread);
-	trivfs_server();
+	machdev_trivfs_server();
 
 	return 0;
 }
