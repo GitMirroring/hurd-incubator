@@ -4,7 +4,7 @@ SYSTEM = x86-l4v2
 
 BUILDDIR       ?= ..
 
-libmachdev_path := -L$(BUILDDIR)/libmachdev -lmachdev
+libmachdevdde_path := -L$(BUILDDIR)/libmachdevdde -lmachdevdde
 libddekit_path := -L$(BUILDDIR)/libddekit -lddekit
 libslab_path := -L$(BUILDDIR)/libhurd-slab -lhurd-slab
 libbpf_path := -L$(BUILDDIR)/libbpf -lbpf
