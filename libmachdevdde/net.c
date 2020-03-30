@@ -62,20 +62,19 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <error.h>
-
-#include "mach_U.h"
+#include <stdio.h>
 
 #include <mach.h>
+#include <hurd/machdev.h>
 #include <hurd.h>
+#include <hurd/ports.h>
 
 #define MACH_INCLUDE
 
-#include "ds_routines.h"
 #include "vm_param.h"
 #include "device_reply_U.h"
-#include "dev_hdr.h"
 #include "if_ether.h"
-#include "util.h"
+#include "misc.h"
 #include "mach_glue.h"
 #include "if_hdr.h"
 
@@ -85,7 +84,7 @@
 struct net_data
 {
   struct port_info port;	/* device port */
-  struct emul_device device;	/* generic device structure */
+  struct machdev_emul_device device;	/* generic device structure */
   struct ifnet ifnet;		/* Mach ifnet structure (needed for filters) */
   struct net_device *dev;	/* Linux network device structure */
   struct net_data *next;
@@ -102,7 +101,7 @@ static struct net_data *nd_head;
 
 /* Forward declarations.  */
 
-extern struct device_emulation_ops linux_net_emulation_ops;
+static struct machdev_device_emulation_ops linux_net_emulation_ops;
 
 static mach_msg_type_t header_type = 
 {
@@ -305,10 +304,10 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
     {
       char *name;
 
-      err = create_device_port (sizeof (*nd), &nd);
+      err = machdev_create_device_port (sizeof (*nd), &nd);
       if (err)
 	{
-	  fprintf (stderr, "after create_device_port: cannot create a port\n");
+	  fprintf (stderr, "after machdev_create_device_port: cannot create a port\n");
 	  goto out;
 	}
 	
@@ -634,7 +633,7 @@ static void linux_net_emulation_init ()
   l4dde26_register_rx_callback(netif_rx_handle);
 }
 
-struct device_emulation_ops linux_net_emulation_ops =
+static struct machdev_device_emulation_ops linux_net_emulation_ops =
 {
   linux_net_emulation_init,
   NULL,
@@ -657,6 +656,5 @@ struct device_emulation_ops linux_net_emulation_ops =
 
 void register_net()
 {
-	extern void reg_dev_emul (struct device_emulation_ops *ops);
-	reg_dev_emul (&linux_net_emulation_ops);
+  machdev_register (&linux_net_emulation_ops);
 }

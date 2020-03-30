@@ -1,5 +1,5 @@
 /*
- * Mach device emulation definitions (i386at version).
+ * Mach device emulation definitions.
  *
  * Copyright (c) 1996 The University of Utah and
  * the Computer Systems Laboratory at the University of Utah (CSL).
@@ -23,13 +23,17 @@
  *      Author: Shantanu Goel, University of Utah CSL
  */
 
-#ifndef _I386AT_DEVICE_EMUL_H_
-#define _I386AT_DEVICE_EMUL_H_
+#ifndef _MACHDEV_DEVICE_EMUL_H_
+#define _MACHDEV_DEVICE_EMUL_H_
 
 #include <mach.h>
+#include <mach/notify.h>
+#include <device/device_types.h>
+#include <device/net_status.h>
+#include <errno.h>
 
 /* Each emulation layer provides these operations.  */
-struct device_emulation_ops
+struct machdev_device_emulation_ops
 {
   void (*init) (void);
   void (*reference) (void *);
@@ -62,4 +66,4 @@ struct device_emulation_ops
 			      recnum_t, io_buf_vec_t *, vm_size_t);
 };
 
-#endif /* _I386AT_DEVICE_EMUL_H_ */
+#endif /* _MACHDEV_DEVICE_EMUL_H_ */

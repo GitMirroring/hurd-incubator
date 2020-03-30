@@ -53,35 +53,35 @@
  *      Author: Shantanu Goel, University of Utah CSL
  */
 
+/*
+ * This is is providing the same multiplexing layer as in the GNU Mach kernel,
+ * which also handles the MIG details.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <error.h>
+#include <assert.h>
 
 #include <hurd.h>
 #include <mach.h>
 
-#include <ddekit/thread.h>
-
-#include "vm_param.h"
 #include "device_S.h"
 #include "notify_S.h"
-#include "io_req.h"
-#include "dev_hdr.h"
-#include "util.h"
-#include "queue.h"
-#include "mach_glue.h"
+#include "machdev-dev_hdr.h"
+#include "machdev.h"
+#include "mach_device.h"
 
-struct port_bucket *device_bucket;
-struct port_class *dev_class;
+struct port_bucket *machdev_device_bucket;
+struct port_class *machdev_device_class;
 
-#define NUM_EMULATION num_emul
 #define MAX_NUM_EMULATION 32
 
 /* List of emulations.  */
-static struct device_emulation_ops *emulation_list[MAX_NUM_EMULATION];
-static int num_emul;
+static struct machdev_device_emulation_ops *emulation_list[MAX_NUM_EMULATION];
+static int num_emul = 0;
 
-boolean_t is_master_device (mach_port_t port);
+boolean_t machdev_is_master_device (mach_port_t port);
 
 /*
  * What follows is the interface for the native Mach devices.
@@ -90,25 +90,22 @@ boolean_t is_master_device (mach_port_t port);
 /* Implementation of device interface */
 io_return_t
 ds_device_open (mach_port_t open_port, mach_port_t reply_port,
-		mach_msg_type_name_t reply_port_type, dev_mode_t mode,
-		char *name, device_t *devp, mach_msg_type_name_t *devicePoly)
+                mach_msg_type_name_t reply_port_type, dev_mode_t mode,
+                char *name, device_t *devp, mach_msg_type_name_t *devicePoly)
 {
   int i;
-  io_return_t err = D_NO_SUCH_DEVICE;
+  io_return_t err;
 
   /* Open must be called on the master device port.  */
-  if (!is_master_device (open_port))
+  if (!machdev_is_master_device (open_port))
     return D_INVALID_OPERATION;
 
   /* There must be a reply port.  */
   if (! MACH_PORT_VALID (reply_port))
-    {
-      fprintf (stderr, "ds_* invalid reply port\n");
-      return MIG_NO_REPLY;
-    }
+    return MIG_NO_REPLY;
 
   /* Call each emulation's open routine to find the device.  */
-  for (i = 0; i < NUM_EMULATION; i++)
+  for (i = 0; i < num_emul; i++)
     {
       err = (*emulation_list[i]->open) (reply_port, reply_port_type,
 					mode, name, devp, devicePoly);
@@ -122,15 +119,13 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
 io_return_t
 ds_device_close (struct mach_device *device)
 {
-  io_return_t ret;
-
-  if (device == NULL)
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
-  ret = (device->dev.emul_ops->close
-	 ? (*device->dev.emul_ops->close) (device->dev.emul_data)
-	 : D_SUCCESS);
-  return ret;
+  return (device->dev.emul_ops->close
+	  ? (*device->dev.emul_ops->close) (device->dev.emul_data)
+	  : D_SUCCESS);
 }
 
 io_return_t
@@ -139,21 +134,19 @@ ds_device_write (struct mach_device *device, mach_port_t reply_port,
 		 recnum_t recnum, io_buf_ptr_t data, unsigned int count,
 		 int *bytes_written)
 {
-  io_return_t ret;
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
+    return D_NO_SUCH_DEVICE;
 
   if (data == 0)
     return D_INVALID_SIZE;
 
-  if (device == NULL)
-    return D_NO_SUCH_DEVICE;
-
   if (! device->dev.emul_ops->write)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->write) (device->dev.emul_data, reply_port,
-					reply_port_type, mode, recnum,
-					data, count, bytes_written);
-  return ret;
+  return (*device->dev.emul_ops->write) (device->dev.emul_data, reply_port,
+					 reply_port_type, mode, recnum,
+					 data, count, bytes_written);
 }
 
 io_return_t
@@ -163,22 +156,20 @@ ds_device_write_inband (struct mach_device *device, mach_port_t reply_port,
 			io_buf_ptr_inband_t data, unsigned count,
 			int *bytes_written)
 {
-  io_return_t ret;
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
+    return D_NO_SUCH_DEVICE;
 
   if (data == 0)
     return D_INVALID_SIZE;
 
-  if (device == NULL)
-    return D_NO_SUCH_DEVICE;
-
   if (! device->dev.emul_ops->write_inband)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->write_inband) (device->dev.emul_data,
-					       reply_port, reply_port_type,
-					       mode, recnum,
-					       data, count, bytes_written);
-  return ret;
+  return (*device->dev.emul_ops->write_inband) (device->dev.emul_data,
+					        reply_port, reply_port_type,
+					        mode, recnum,
+					        data, count, bytes_written);
 }
 
 io_return_t
@@ -187,18 +178,17 @@ ds_device_read (struct mach_device *device, mach_port_t reply_port,
 		recnum_t recnum, int count, io_buf_ptr_t *data,
 		unsigned *bytes_read)
 {
-  io_return_t ret;
+  /* Refuse if device is dead or not completely open.  */
 
-  if (device == NULL)
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
   if (! device->dev.emul_ops->read)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->read) (device->dev.emul_data, reply_port,
-				       reply_port_type, mode, recnum,
-				       count, data, bytes_read);
-  return ret;
+  return (*device->dev.emul_ops->read) (device->dev.emul_data, reply_port,
+				        reply_port_type, mode, recnum,
+				        count, data, bytes_read);
 }
 
 io_return_t
@@ -207,36 +197,33 @@ ds_device_read_inband (struct mach_device *device, mach_port_t reply_port,
 		       recnum_t recnum, int count, char *data,
 		       unsigned *bytes_read)
 {
-  io_return_t ret;
+  /* Refuse if device is dead or not completely open.  */
 
-  if (device == NULL)
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
   if (! device->dev.emul_ops->read_inband)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->read_inband) (device->dev.emul_data,
-					      reply_port,
-					      reply_port_type, mode, recnum,
-					      count, data, bytes_read);
-  return ret;
+  return (*device->dev.emul_ops->read_inband) (device->dev.emul_data,
+					       reply_port,
+					       reply_port_type, mode, recnum,
+					       count, data, bytes_read);
 }
 
 io_return_t
 ds_device_set_status (struct mach_device *device, dev_flavor_t flavor,
 		      dev_status_t status, mach_msg_type_number_t status_count)
 {
-  io_return_t ret;
-
-  if (device == NULL)
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
   if (! device->dev.emul_ops->set_status)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->set_status) (device->dev.emul_data, flavor,
-					     status, status_count);
-  return ret;
+  return (*device->dev.emul_ops->set_status) (device->dev.emul_data, flavor,
+					      status, status_count);
 }
 
 io_return_t
@@ -244,35 +231,31 @@ ds_device_get_status (struct mach_device *device, dev_flavor_t flavor,
                       dev_status_t status,
 		      mach_msg_type_number_t *status_count)
 {
-  io_return_t ret;
-
-  if (device == NULL)
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
   if (! device->dev.emul_ops->get_status)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->get_status) (device->dev.emul_data, flavor,
-					     status, status_count);
-  return ret;
+  return (*device->dev.emul_ops->get_status) (device->dev.emul_data, flavor,
+					      status, status_count);
 }
 
 io_return_t
 ds_device_set_filter (struct mach_device *device, mach_port_t receive_port,
                       int priority, filter_t *filter, unsigned filter_count)
 {
-  io_return_t ret;
-
-  if (device == NULL)
+  /* Refuse if device is dead or not completely open.  */
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
   if (! device->dev.emul_ops->set_filter)
     return D_INVALID_OPERATION;
 
-  ret = (*device->dev.emul_ops->set_filter) (device->dev.emul_data,
-					     receive_port,
-					     priority, filter, filter_count);
-  return ret;
+  return (*device->dev.emul_ops->set_filter) (device->dev.emul_data,
+					      receive_port,
+					      priority, filter, filter_count);
 }
 
 io_return_t
@@ -280,30 +263,36 @@ ds_device_map (struct mach_device *device, vm_prot_t prot, vm_offset_t offset,
 	       vm_size_t size, mach_port_t *pager, boolean_t unmap)
 {
   /* Refuse if device is dead or not completely open.  */
-  if (device == NULL)
+  if (device == MACH_DEVICE_NULL)
     return D_NO_SUCH_DEVICE;
 
-  return D_INVALID_OPERATION;
+  if (! device->dev.emul_ops->map)
+    return D_INVALID_OPERATION;
+
+  return (*device->dev.emul_ops->map) (device->dev.emul_data, prot,
+				       offset, size, pager, unmap);
+
 }
 
 error_t
-create_device_port (size_t size, void *result)
+machdev_create_device_port (size_t size, void *result)
 {
-  return ports_create_port (dev_class, device_bucket,
+  return ports_create_port (machdev_device_class, machdev_device_bucket,
 			    size, result);
 }
 
-void mach_device_init()
+void machdev_device_init()
 {
-	int i;
+  int i;
 
-	device_bucket = ports_create_bucket ();
-	dev_class = ports_create_class (0, 0);
+  machdev_device_bucket = ports_create_bucket ();
+  machdev_device_class = ports_create_class (0, 0);
 
-	for (i = 0; i < NUM_EMULATION; i++) {
-		if (emulation_list[i]->init)
-			emulation_list[i]->init();
-	}
+  for (i = 0; i < num_emul; i++)
+    {
+      if (emulation_list[i]->init)
+	emulation_list[i]->init();
+    }
 }
 
 static int
@@ -320,21 +309,18 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
     return FALSE;
 }
 
-void reg_dev_emul (struct device_emulation_ops *ops)
+void machdev_register (struct machdev_device_emulation_ops *ops)
 {
+  assert(num_emul < MAX_NUM_EMULATION-1);
   emulation_list[num_emul++] = ops;
 }
 
-void * ds_server(void *arg)
+void * machdev_server(void *arg)
 {
-  /* This thread calls Linux functions,
-   * so I need to make it known to the Linux environment. */
-  l4dde26_process_from_ddekit (ddekit_thread_myself ());
-
   /* Launch.  */
   do
     {
-      ports_manage_port_operations_one_thread (device_bucket, demuxer, 0);
+      ports_manage_port_operations_one_thread (machdev_device_bucket, demuxer, 0);
     } while (1);
 
   return NULL;

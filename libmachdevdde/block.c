@@ -26,9 +26,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include "mach_U.h"
-
 #include <mach.h>
+#include <hurd/machdev.h>
 #include <hurd.h>
 
 #define MACH_INCLUDE
@@ -38,8 +37,7 @@
 #include "ds_routines.h"
 #include "vm_param.h"
 #include "device_reply_U.h"
-#include "dev_hdr.h"
-#include "util.h"
+#include "misc.h"
 #include "mach_glue.h"
 
 /* for submit_bio(). But it might not be very proper to keep
@@ -65,7 +63,7 @@ dev_to_port (void *nd)
 	  : MACH_PORT_NULL);
 }
 
-static struct device_emulation_ops linux_block_emulation_ops;
+static struct machdev_device_emulation_ops linux_block_emulation_ops;
 
 #define DISK_NAME_LEN 32
 
@@ -133,10 +131,10 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   if (dev_name == NULL)
     return D_NO_SUCH_DEVICE;
 
-  err = create_device_port (sizeof (*bd), &bd);
+  err = machdev_create_device_port (sizeof (*bd), &bd);
   if (err)
     {
-      ddekit_printf ("after create_device_port: cannot create a port\n");
+      ddekit_printf ("after machdev_create_device_port: cannot create a port\n");
       goto out;
     }
   bd->dev = open_block_dev (dev_name, slice, mode);
@@ -286,7 +284,7 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
   return D_SUCCESS;
 }
 
-static struct device_emulation_ops linux_block_emulation_ops =
+static struct machdev_device_emulation_ops linux_block_emulation_ops =
 {
   NULL,
   NULL,
@@ -309,6 +307,5 @@ static struct device_emulation_ops linux_block_emulation_ops =
 
 void register_block()
 {
-	extern void reg_dev_emul (struct device_emulation_ops *ops);
-	reg_dev_emul (&linux_block_emulation_ops);
+  machdev_register (&linux_block_emulation_ops);
 }

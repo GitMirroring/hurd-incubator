@@ -18,23 +18,18 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* This file declares interfaces used by driver translators.  */
 
-#ifndef __MACHDEV_H__
-#define __MACHDEV_H__
+#include <ddekit/thread.h>
+#include <hurd/machdev.h>
 
-#include <mach.h>
-#include "machdev-device_emul.h"
-#include "machdev-dev_hdr.h"
+#include "machdevdde.h"
 
-void machdev_register (struct machdev_device_emulation_ops *ops);
 
-void machdev_device_init(void);
-void * machdev_server(void *);
-error_t machdev_create_device_port (size_t size, void *result);
+void * machdevdde_server(void *arg)
+{
+  /* This thread calls Linux functions,
+   * so I need to make it known to the Linux environment. */
+  l4dde26_process_from_ddekit (ddekit_thread_myself ());
 
-int machdev_trivfs_init(void);
-void machdev_trivfs_server(void);
-boolean_t machdev_is_master_device (mach_port_t port);
-
-#endif
+  return machdev_server(arg);
+}

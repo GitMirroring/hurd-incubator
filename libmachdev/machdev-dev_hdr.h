@@ -1,25 +1,25 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
@@ -53,81 +53,23 @@
  *      Author: Shantanu Goel, University of Utah CSL
  */
 
-#ifndef	_DEVICE_DEV_HDR_H_
-#define	_DEVICE_DEV_HDR_H_
+#ifndef	_MACHDEV_DEVICE_DEV_HDR_H_
+#define	_MACHDEV_DEVICE_DEV_HDR_H_
 
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
-#include <pthread.h>
 
-#include "device_emul.h"
-
-/*
- * Operations list for major device types.
- */
-struct dev_ops {
-	char *    	d_name;		/* name for major device */
-	int		(*d_open)();	/* open device */
-	int		(*d_close)();	/* close device */
-	int		(*d_read)();	/* read */
-	int		(*d_write)();	/* write */
-	int		(*d_getstat)();	/* get status/control */
-	int		(*d_setstat)();	/* set status/control */
-	vm_offset_t	(*d_mmap)();	/* map memory */
-	int		(*d_async_in)();/* asynchronous input setup */
-	int		(*d_reset)();	/* reset device */
-	int		(*d_port_death)();
-					/* clean up reply ports */
-	int		d_subdev;	/* number of sub-devices per
-					   unit */
-	int		(*d_dev_info)(); /* driver info for kernel */
-};
-typedef struct dev_ops *dev_ops_t;
+#include "machdev-device_emul.h"
 
 /* This structure is associated with each open device port.
  * The port representing the device points to this structure.  */
-struct emul_device
+struct machdev_emul_device
 {
-    struct device_emulation_ops *emul_ops;
+    struct machdev_device_emulation_ops *emul_ops;
     void *emul_data;
 };
 
-typedef struct emul_device *emul_device_t;
+typedef struct machdev_emul_device *machdev_emul_device_t;
 
-#define DEVICE_NULL     ((device_t) 0)
-
-/*
- * Generic device header.  May be allocated with the device,
- * or built when the device is opened.
- */
-struct mach_device {
-	struct port_info port;
-	struct emul_device	dev;		/* the real device structure */
-};
-typedef	struct mach_device *mach_device_t;
-#define	MACH_DEVICE_NULL ((mach_device_t)0)
-
-/*
- * To find and remove device entries
- */
-mach_device_t	device_lookup(char *);	/* by name */
-
-/*
- * To find and remove port-to-device mappings
- */
-void		dev_port_enter(mach_device_t);
-void		dev_port_remove(mach_device_t);
-
-/*
- * To call a routine on each device
- */
-boolean_t	dev_map(boolean_t (*)(), mach_port_t);
-
-/*
- * To lock and unlock state and open-count
- */
-#define	device_lock(device)	pthread_mutex_lock(&(device)->lock)
-#define	device_unlock(device)	pthread_mutex_unlock(&(device)->lock)
-
-#endif	/* _DEVICE_DEV_HDR_H_ */
+#endif	/* _MACHDEV_DEVICE_DEV_HDR_H_ */
