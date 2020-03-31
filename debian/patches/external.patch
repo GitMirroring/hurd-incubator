@@ -4,9 +4,9 @@ Index: hurd-debian/Makefile
 ===================================================================
 --- hurd-debian.orig/Makefile
 +++ hurd-debian/Makefile
-@@ -32,6 +32,14 @@ lib-subdirs = libshouldbeinlibc libihash
- 	      libhurd-slab \
+@@ -33,6 +33,14 @@ lib-subdirs = libshouldbeinlibc libihash
  	      libbpf \
+ 	      libmachdev \
  
 +ifneq ($(HAVE_LIBPCIACCESS),no)
 +lib-subdirs += libmachdevdde libddekit
@@ -23,7 +23,7 @@ Index: hurd-debian/Makeconf
 ===================================================================
 --- hurd-debian.orig/Makeconf
 +++ hurd-debian/Makeconf
-@@ -577,7 +577,7 @@ vpath %.defs $(top_srcdir)/hurd
+@@ -578,7 +578,7 @@ vpath %.defs $(top_srcdir)/hurd
  # These we want to find in the libc include directory...
  mach_defs_names = bootstrap exc mach mach4 \
  	mach_host mach_port mach_timer_reply memory_object \
