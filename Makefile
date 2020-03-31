@@ -116,7 +116,7 @@ BLACKLIST = \
 	    missing lro_* \
 	    $(wildcard $(SRC)/enic/*) \
 	    missing mca_* \
-	    $(SRC)/ibmlana.c \
+	    $(SRC)/ibmlana.c $(SRC)/smc-mca.c \
 	    missing spi_sync spi_register_driver  \
 	    $(SRC)/ks8851.c \
 	    $(SRC)/ks8842.c \
