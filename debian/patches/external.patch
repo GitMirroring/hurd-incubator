@@ -9,7 +9,7 @@ Index: hurd-debian/Makefile
  	      libbpf \
  
 +ifneq ($(HAVE_LIBPCIACCESS),no)
-+lib-subdirs += libmachdev libddekit
++lib-subdirs += libmachdevdde libddekit
 +endif
 +
 +ifeq ($(HAVE_PCAP),yes)
