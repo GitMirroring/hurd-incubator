@@ -7,7 +7,7 @@ hurd (1:0.9.git20200330-2) UNRELEASED; urgency=medium
 hurd (1:0.9.git20200330-1) unstable; urgency=medium
 
   * New upstream snapshot.
-    - control: Break old netdde.
+    - control: Break old version of netdde.
     - patches/external.patch: Build libmachdevdde.
 
  -- Samuel Thibault <sthibault@debian.org>  Tue, 31 Mar 2020 00:24:30 +0000
