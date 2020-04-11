@@ -54,7 +54,7 @@ export YACC=:
 export MIG=:
   endif
 endif
-CONFIGURE_ARGS += prefix=/ libdir=/lib/$(DEB_HOST_MULTIARCH) libexecdir=/lib/hurd datarootdir=/usr/share sysconfdir=/etc localstatedir=/var
+CONFIGURE_ARGS += prefix=/ includedir=/usr/include libdir=/lib/$(DEB_HOST_MULTIARCH) libexecdir=/lib/hurd datarootdir=/usr/share sysconfdir=/etc localstatedir=/var
 CONFIGURE_ARGS_deb =
 CONFIGURE_ARGS_udeb = libdir=/lib --without-libdaemon --without-libbz2
 SUID_PROGRAMS = /bin/ids /bin/login /bin/ps-hurd /usr/bin/w-hurd
