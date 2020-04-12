@@ -6,6 +6,7 @@ hurd (1:0.9.git20200330-2) UNRELEASED; urgency=medium
     to avoid sys/procfs.h conflict with libc linux headers. Also move ddekit
     headers there. Ideally we will move all other hurd headers too, but that
     will need glibc >= 2.30-5.
+  * debian/hurd-headers-dev.install.in: Likewise.
 
  -- Samuel Thibault <sthibault@debian.org>  Tue, 31 Mar 2020 20:41:42 +0000
 

@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+usr/include/sys usr/include/@DEB_HOST_MULTIARCH@
+usr/include/*.h usr/include
+usr/include/hurd usr/include
