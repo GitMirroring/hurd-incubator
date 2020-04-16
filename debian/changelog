@@ -1,4 +1,4 @@
-hurd (1:0.9.git20200416-1) UNRELEASED; urgency=medium
+hurd (1:0.9.git20200416-1) unstable; urgency=medium
 
   * New upstream snapshot.
     - control: Add librumpdisk-dev build-depend.
@@ -12,7 +12,7 @@ hurd (1:0.9.git20200416-1) UNRELEASED; urgency=medium
   * debian/hurd-headers-dev.install.in: Likewise.
   * debian/control,rules: Drop stage2 and rename stage3 to stage2.
 
- -- Samuel Thibault <sthibault@debian.org>  Tue, 31 Mar 2020 20:41:42 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Thu, 16 Apr 2020 19:22:44 +0000
 
 hurd (1:0.9.git20200330-1) unstable; urgency=medium
 
