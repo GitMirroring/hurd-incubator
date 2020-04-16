@@ -27,7 +27,7 @@ DEB_DESTDIR_PROF = $(CURDIR)/debian/tmp-prof
 
 TRANSLATORS_PROF = auth exec ext2fs pci-arbiter pfinet lwip pflocal proc procfs term
 
-ifeq (,$(filter stage1 stage2 stage3,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
 CONFIGURE_ARGS = --disable-profile --enable-static-progs='ext2fs,iso9660fs'
 else
 CONFIGURE_ARGS = \
@@ -40,7 +40,7 @@ CONFIGURE_ARGS = \
 # a working glibc causing a circular dependency.
 # TODO: rather disable the corresponding features in configure.ac
 export ac_cv_lib_pciaccess_pci_system_init=no
-  ifneq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
+  ifneq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 export ac_cv_search_clnt_create=no
 export ac_cv_func_file_exec_file_name=no
 export ac_cv_func_exec_exec_file_name=no
@@ -78,16 +78,13 @@ override_dh_auto_configure:
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-prof -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell DEB_CFLAGS_APPEND=-pg dpkg-buildflags --export=configure)
 endif
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-udeb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_udeb) $(shell dpkg-buildflags --export=configure)
 endif
 
 override_dh_auto_build:
-ifneq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
+ifneq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 	:
-  ifneq (,$(filter stage2,$(DEB_BUILD_PROFILES)))
-	$(MAKE) -C build-deb/libihash libihash.a
-  endif
 else
   ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_build -Bbuild-udeb
@@ -100,7 +97,7 @@ ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	      done
 endif
 	cd build-deb/doc && make && makeinfo --html --split=chapter ../../doc/hurd.texi
-  ifeq (,$(filter stage3,$(DEB_BUILD_PROFILES)))
+  ifeq (,$(filter stage2,$(DEB_BUILD_PROFILES)))
 	$(MAKE) -C libdde-linux26 BUILDDIR=$(CURDIR)/build-deb LDFLAGS= CC=$(CC)
   endif
 endif
@@ -110,7 +107,7 @@ override_dh_auto_clean:
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean -Bbuild-prof
 endif
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean -Bbuild-udeb
 endif
 	$(MAKE) -C libdde-linux26 cleanall
@@ -120,11 +117,8 @@ endif
 	rm -f $(INSTALL_generated)
 
 override_dh_auto_install:
-ifneq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
+ifneq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 	$(MAKE) -Cbuild-deb DESTDIR=$(DEB_DESTDIR) install-headers no_deps=t
-  ifneq (,$(filter stage2,$(DEB_BUILD_PROFILES)))
-	$(MAKE) -Cbuild-deb/libihash libdir=$(DEB_DESTDIR)/lib/$(DEB_HOST_MULTIARCH) $(DEB_DESTDIR)/lib/$(DEB_HOST_MULTIARCH)/libihash.a
-  endif
 else
 	dh_auto_install -Bbuild-deb --destdir=$(DEB_DESTDIR)
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
@@ -136,7 +130,7 @@ endif
 ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_install -Bbuild-udeb --destdir=$(DEB_DESTDIR_UDEB)
 endif
-ifeq (,$(filter stage3,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage2,$(DEB_BUILD_PROFILES)))
 	$(MAKE) -C libdde-linux26 INSTALLDIR=$(CURDIR)/debian/tmp/usr/share/libdde_linux26/build/include install
 endif
 
@@ -151,7 +145,7 @@ endif
 	mv debian/tmp/bin/uptime debian/tmp/usr/bin/uptime-hurd
 	mv debian/tmp/bin/vmstat debian/tmp/usr/bin/vmstat-hurd
 	mv debian/tmp/bin/w debian/tmp/usr/bin/w-hurd
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	mkdir -p debian/tmp-udeb/usr/bin
 	mv debian/tmp-udeb/bin/ps debian/tmp-udeb/bin/ps-hurd
 	mv debian/tmp-udeb/bin/uptime debian/tmp-udeb/usr/bin/uptime-hurd
@@ -170,14 +164,14 @@ endif
 endif
 
 override_dh_install: $(INSTALL_generated)
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_install $(addprefix -p,$(filter %-udeb,$(shell dh_listpackages))) --sourcedir=debian/tmp-udeb
 endif
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	dh_install -phurd-prof --sourcedir=debian/tmp-prof
 endif
 	dh_install --remaining-packages --list-missing --sourcedir=debian/tmp
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	mkdir -p debian/hurd-udeb/usr/share/lintian/overrides
 	install -p -m644 debian/hurd-udeb.lintian-overrides debian/hurd-udeb/usr/share/lintian/overrides/hurd-udeb
 endif
@@ -190,19 +184,19 @@ override_dh_installchangelogs:
 	dh_installchangelogs -XChangeLog
 
 override_dh_strip:
-ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 	dh_strip -phurd-libs0.3 -phurd --ddeb-migration='hurd-dbg (<< 1:0.7.git20160114-2~)'
 endif
 	dh_strip -Nhurd-prof --remaining-packages
 
 override_dh_fixperms-arch:
 	dh_fixperms -a
-ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 	chmod u+s $(patsubst %,$(CURDIR)/debian/hurd%,$(SUID_PROGRAMS))
 endif
 
 override_dh_makeshlibs:
-ifeq (,$(filter stage1 stage2 stage3 noudeb,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_makeshlibs -phurd-libs0.3 --add-udeb=hurd-libs0.3-udeb
 endif
 	dh_makeshlibs --remaining-packages -Xusr/lib/hurd/
