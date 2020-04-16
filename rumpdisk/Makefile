@@ -1,5 +1,5 @@
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,2005,2010,2012 Free Software
-#   Foundation, Inc.
+#
+#   Copyright (C) 2019 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -15,24 +15,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := libcons
-makemode := library
+RUMPPATH=/usr/lib
+RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata
+RUMPEXTRA=rumpdev_scsipi
 
-libname = libcons
-SRCS= demuxer.c init-init.c init-loop.c opts-version.c priv.c \
-      dir-changed.c file-changed.c opts-std-startup.c cons-lookup.c \
-      cons-switch.c vcons-remove.c vcons-add.c vcons-open.c \
-      vcons-close.c vcons-destroy.c vcons-refresh.c vcons-scrollback.c \
-      vcons-input.c vcons-move-mouse.c vcons-event.c
-installhdrs = cons.h
+dir := rumpdisk
+makemode := server
 
-fs_notify-MIGSFLAGS = -imacros $(srcdir)/mutations.h
-MIGSTUBS = fs_notifyServer.o
-OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
-
-HURDLIBS = ports
-LDLIBS += -lpthread
-
-MIGCOMSFLAGS = -prefix cons_
+SRCS = main.c block-rump.c
+LCLHDRS = block-rump.h ioccom-rump.h
+target = rumpdisk
+OBJS = $(SRCS:.c=.o)
+HURDLIBS = machdev ports trivfs shouldbeinlibc iohelp ihash fshelp
+LDLIBS += -lpthread -lpciaccess -ldl
+LDLIBS += -Wl,--whole-archive $(RUMPLIBS:%=$(RUMPPATH)/lib%_pic.a) -Wl,--no-whole-archive $(RUMPEXTRA:%=$(RUMPPATH)/lib%_pic.a)
 
 include ../Makeconf
