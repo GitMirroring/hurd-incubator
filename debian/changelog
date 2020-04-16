@@ -1,9 +1,9 @@
 hurd (1:0.9.git20200416-1) unstable; urgency=medium
 
   * New upstream snapshot.
+    - Fixes build with gcc-10 (Closes: Bug#955447).
     - control: Add librumpdisk-dev build-depend.
     - hurd-udeb.install.in: Add /hurd/rumpdisk.
-  * patches/no-common: Fix build with gcc-10 (Closes: Bug#955447).
   * debian/rules: Pass includedir=/usr/include.
   * debian/hurd-dev.install.in: Install sys/ headers in multiarch directory,
     to avoid sys/procfs.h conflict with libc linux headers. Also move ddekit
