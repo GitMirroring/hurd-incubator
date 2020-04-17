@@ -46,7 +46,7 @@ Description: GNU Hurd (libraries)
 Package: hurd
 Essential: yes
 Pre-Depends: hurd-libs0.3
-Depends: ${misc:Depends}, lsb-base (>= 3.0-6), hurd-libs0.3 (= ${binary:Version}), sysv-rc <!stage3> | openrc <!stage3>, ${shlibs:Depends}, xkb-data <!stage3>
+Depends: ${misc:Depends}, lsb-base (>= 3.0-6), hurd-libs0.3 (= ${binary:Version}), sysv-rc <!stage2> | openrc <!stage2>, ${shlibs:Depends}, xkb-data <!stage2>
 Breaks: gnumach-image-1-486 (<< 2:1.8+git20170102-1~),
 	gnumach-image-1-xen-486 (<< 2:1.8+git20170102-1~),
 	gnumach-image-1.8-486 (<< 2:1.8+git20170102-1~),
@@ -56,7 +56,7 @@ Breaks: gnumach-image-1-486 (<< 2:1.8+git20170102-1~),
 	libc0.3 (<< 2.24-9~), netdde (<< 0.0.20121127-2)
 Built-Using: ${built-using}
 Suggests: hurd-doc
-Recommends: bf-utf-source, netdde (>= 0.0.20120518~) <!stage3>
+Recommends: bf-utf-source, netdde (>= 0.0.20120518~) <!stage2>
 Provides: makedev, login, console-driver-xkb
 Replaces: makedev, login (<< 1:4.0.14-4), random-egd, console-driver-xkb, initscripts (<< 2.95-4A)
 Conflicts: makedev, login (<< 1:4.0.14-4), console-driver-xkb
@@ -69,7 +69,7 @@ Description: GNU Hurd
 Package: hurd-prof
 Priority: optional
 Pre-Depends: hurd-libs0.3
-Depends: ${misc:Depends}, hurd-libs0.3 (= ${binary:Version}), ${shlibs:Depends}, xkb-data <!stage3>
+Depends: ${misc:Depends}, hurd-libs0.3 (= ${binary:Version}), ${shlibs:Depends}, xkb-data <!stage2>
 Breaks: gnumach (<< 2:1.3.99.dfsg.cvs20070526-1), libc0.3 (<< 2.19-15~), netdde (<< 0.0.20121127-2)
 Built-Using: ${built-using}
 Suggests: hurd-doc
@@ -85,8 +85,8 @@ Priority: standard
 Section: libdevel
 Architecture: hurd-any
 Depends: ${misc:Depends}, ${shlibs:Depends}, ${perl:Depends},
- libc0.3-dev (>= 2.13-31~) <!stage1>, hurd (= ${binary:Version}) <!stage3>
-Provides: hurd-headers-dev, libihash-dev, libdde-linux26-dev <!stage3>
+ libc0.3-dev (>= 2.13-31~) <!stage1>, hurd (= ${binary:Version}) <!stage2>
+Provides: hurd-headers-dev, libihash-dev, libdde-linux26-dev <!stage2>
 Replaces: hurd (<< 20130226-2~), hurd-headers-dev, libihash-dev
 Breaks: hurd (<< 20130226-2~), hurd-headers-dev, libihash-dev
 Build-Profiles: <!stage1>

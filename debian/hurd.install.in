@@ -68,4 +68,4 @@ usr/bin/fakeroot-hurd
 usr/bin/uptime-hurd
 usr/bin/vmstat-hurd
 usr/bin/w-hurd
-<!stage3> usr/share/X11/xkb
+<!stage2> usr/share/X11/xkb
