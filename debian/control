@@ -95,17 +95,16 @@ Build-Profiles: <!stage1>
 Description: GNU Hurd (development files)
  This package includes the header files and the static libraries.
 
-# Fix for #838392, dropped for now, depends on #818618 and #913965
-#Package: hurd-headers-dev
-#Priority: standard
-#Section: libdevel
-#Architecture: hurd-any
-#Depends: ${misc:Depends}, ${shlibs:Depends}
-#Build-Profiles: <stage1>
-#Description: GNU Hurd (development files)
-# This package includes the header files and the static libraries.
-# .
-# This package is only used for bootstrap, it contains headers needed for libc
+Package: hurd-headers-dev
+Priority: standard
+Section: libdevel
+Architecture: hurd-any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Build-Profiles: <stage1>
+Description: GNU Hurd (development files)
+ This package includes the header files and the static libraries.
+ .
+ This package is only used for bootstrap, it contains headers needed for libc
 
 Package: hurd-doc
 Priority: optional
