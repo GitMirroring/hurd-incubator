@@ -1,7 +1,8 @@
 hurd (1:0.9.git20200416-2) UNRELEASED; urgency=medium
 
   * hurd-dev.install, hurd.install: fix renaming stage3 to stage2.
-  * control: Fix more stage3 renaming to stage2.
+  * control: Fix more stage3 renaming to stage2. Add missing hurd-libs0.3 ->
+    hurd-dev dependency.
 
  -- Samuel Thibault <sthibault@debian.org>  Fri, 17 Apr 2020 08:44:23 +0000
 
