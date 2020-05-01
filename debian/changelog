@@ -2,6 +2,8 @@ hurd (1:0.9.git20200416-3) UNRELEASED; urgency=medium
 
   * rules: Pass --build and --host to configure so it always looks for
     <triplet>-mig.
+  * hurd-dev.install: Do not install netdde headers in stage2
+    (Closes: Bug#959227).
 
  -- Samuel Thibault <sthibault@debian.org>  Sun, 19 Apr 2020 19:09:32 +0000
 

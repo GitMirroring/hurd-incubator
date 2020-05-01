@@ -10,6 +10,6 @@ bin/timertest
 usr/include/sys usr/include/@DEB_HOST_MULTIARCH@
 usr/include/*.h usr/include
 usr/include/hurd usr/include
-usr/include/ddekit usr/include/@DEB_HOST_MULTIARCH@
+<!stage2> usr/include/ddekit usr/include/@DEB_HOST_MULTIARCH@
 lib/@DEB_HOST_MULTIARCH@/*.a
 lib/@DEB_HOST_MULTIARCH@/*.so
