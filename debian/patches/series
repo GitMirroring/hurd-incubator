@@ -27,3 +27,5 @@ libports-iterate-refcount.patch
 io-write-crash.patch
 getty-noclear
 build-rump
+pathconf
+rlock
