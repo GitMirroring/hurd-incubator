@@ -12,7 +12,8 @@ hurd (1:0.9.git20200416-2) unstable; urgency=medium
   * hurd-dev.install, hurd.install: fix renaming stage3 to stage2.
   * control: Fix more stage3 renaming to stage2. Add missing hurd-libs0.3 ->
     hurd-dev dependency.
-  * control: Try to re-enable hurd-headers-dev package declaration.
+  * control: Try to re-enable hurd-headers-dev package declaration
+    (Closes: #838392).
 
  -- Samuel Thibault <sthibault@debian.org>  Sat, 18 Apr 2020 19:59:35 +0000
 
