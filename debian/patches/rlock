@@ -1,0 +1,113 @@
+commit 9e3b662812cebe8113a144c705eddbbd3855f54b
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Jun 1 18:35:28 2020 +0200
+
+    libdiskfs: Drop spurious mutex acquisition
+    
+    diskfs_make_peropen does not need node to be locked. Worse, it could try to
+    lock it.
+    
+    * libdiskfs/file-reparent.c (diskfs_S_file_reparent): Do not lock node
+    around diskfs_make_peropen.
+
+diff --git a/libdiskfs/file-reparent.c b/libdiskfs/file-reparent.c
+index da6a51d2..bb617d72 100644
+--- a/libdiskfs/file-reparent.c
++++ b/libdiskfs/file-reparent.c
+@@ -37,7 +37,6 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
+   
+   node = cred->po->np;
+ 
+-  pthread_mutex_lock (&node->lock);
+   err = diskfs_make_peropen (node, cred->po->openstat, cred->po, &new_po);
+   if (! err)
+     {
+@@ -45,7 +44,6 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
+       if (err)
+ 	diskfs_release_peropen (new_po);
+     }
+-  pthread_mutex_unlock (&node->lock);
+ 
+   if (! err)
+     {
+commit 356d52e1852c7bec071cb142352ce7b87eaac2f4
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Jun 1 18:37:10 2020 +0200
+
+    libdiskfs: Add missing node lock around fshelp_rlock_drop_peropen call
+    
+    fshelp_rlock_drop_peropen actually needs the node to be locked for
+    proper waiting atomicity.
+
+diff --git a/libdiskfs/peropen-rele.c b/libdiskfs/peropen-rele.c
+index ee447677..028b5d71 100644
+--- a/libdiskfs/peropen-rele.c
++++ b/libdiskfs/peropen-rele.c
+@@ -32,11 +32,10 @@ diskfs_release_peropen (struct peropen *po)
+ 
+   if (po->shadow_root_parent)
+     mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
++
++  pthread_mutex_lock (&po->np->lock);
+   fshelp_rlock_drop_peropen (&po->lock_status);
+-  if (fshelp_rlock_peropen_status(&po->lock_status) != LOCK_UN)
+-    diskfs_nput (po->np);
+-  else
+-    diskfs_nrele (po->np);
++  diskfs_nput (po->np);
+   fshelp_rlock_po_fini (&po->lock_status);
+ 
+   free (po->path);
+diff --git a/libfshelp/fshelp.h b/libfshelp/fshelp.h
+index 91bbfe50..94f7f597 100644
+--- a/libfshelp/fshelp.h
++++ b/libfshelp/fshelp.h
+@@ -295,7 +295,9 @@ error_t fshelp_rlock_po_init (struct rlock_peropen *po)
+ 
+ #endif /* Use extern inlines.  */
+ 
+-/* Release all of the locks held by a given peropen.  */
++/* Release all of the locks held by a given peropen.
++   The mutex held during fshelp_rlock_tweak calls should be also held
++   whenver this is called. */
+ error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
+ 
+ /* Drop the peropen identifier */
+commit a61cba8579e4e6a0e452040a3241f0607c6dcbfc
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Jun 1 18:40:16 2020 +0200
+
+    libfshelp: destroy condition variable before freeing it
+    
+    To make sure that threads have really woken up.
+    
+    Spotted by Richard Braun.
+    
+    * libfshelp/rlock-drop-peropen.c (fshelp_rlock_drop_peropen): Call
+    pthread_cond_destroy before freeing the condition variable.
+    * libfshelp/rlock-tweak.c (fshelp_rlock_tweak): Likewise.
+
+diff --git a/libfshelp/rlock-drop-peropen.c b/libfshelp/rlock-drop-peropen.c
+index 91383d2f..86453dd7 100644
+--- a/libfshelp/rlock-drop-peropen.c
++++ b/libfshelp/rlock-drop-peropen.c
+@@ -39,6 +39,7 @@ fshelp_rlock_drop_peropen (struct rlock_peropen *po)
+ 	}
+ 
+       list_unlink (node, l);
++      pthread_cond_destroy(&l->wait);
+ 
+       t = l->po.next;
+       free (l);
+diff --git a/libfshelp/rlock-tweak.c b/libfshelp/rlock-tweak.c
+index b0f4b9f5..8be88993 100644
+--- a/libfshelp/rlock-tweak.c
++++ b/libfshelp/rlock-tweak.c
+@@ -70,6 +70,7 @@ fshelp_rlock_tweak (struct rlock_box *box, pthread_mutex_t *mutex,
+       if (wake_waiters && l->waiting)
+ 	pthread_cond_broadcast (&l->wait);
+ 
++      pthread_cond_destroy(&l->wait);
+       free (l);
+     }
+ 
