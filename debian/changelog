@@ -1,6 +1,7 @@
 hurd (1:0.9.git20200416-5) UNRELEASED; urgency=medium
 
   * control: Build-depend on mig-for-host instead of mig.
+  * patches/xattr: Update to upstream Hurd-reserved xattr index for "gnu.*".
 
  -- Samuel Thibault <sthibault@debian.org>  Thu, 18 Jun 2020 22:39:38 +0000
 

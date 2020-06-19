@@ -1,0 +1,39 @@
+commit a04c7bf83172faa7cb080fbe3b6c04a8415ca645
+Author: Jan (janneke) Nieuwenhuizen <janneke@gnu.org>
+Date:   Thu May 14 00:47:31 2020 +0200
+
+    ext2fs: Update to upstream Hurd-reserved xattr index for "gnu.*".
+    
+    See
+        https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=3980bd3b406addb327d858aebd19e229ea340b9a
+    
+    This supports setting (and reading) of passive trasnlators from
+    GNU/Linux, e.g.
+    
+        dd if=/dev/zero of=file bs=1k count=1000
+        losetup /dev/loop0 file
+        mke2fs -t ext2 -o hurd -O ext_attr /dev/loop0
+        mount -t ext2 -o x-xattr-translator-records /dev/loop0 /mnt
+        mkdir -p /mnt/servers/socket
+        touch /mnt/servers/socket/1
+        setfattr --name=gnu.translator --value='"/hurd/pflocal\0"' /mnt/servers/socket/1
+        getfattr --name=gnu.translator /mnt/servers/socket/1
+        # file: 1
+        gnu.translator="/hurd/pflocal"
+    
+    * ext2fs/xattr.c (xattr_prefixes): For "gnu.*", use index for
+    the Hurd (10).
+
+diff --git a/ext2fs/xattr.c b/ext2fs/xattr.c
+index f6ea0f39..ff84a3b9 100644
+--- a/ext2fs/xattr.c
++++ b/ext2fs/xattr.c
+@@ -39,7 +39,7 @@ xattr_prefixes[] =
+   {
+   1, "user.", sizeof "user." - 1},
+   {
+-  7, "gnu.", sizeof "gnu." - 1},
++  10, "gnu.", sizeof "gnu." - 1},
+   {
+   0, NULL, 0}
+ };
