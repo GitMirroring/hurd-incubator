@@ -30,3 +30,4 @@ build-rump
 pathconf
 rlock
 xattr
+SO_RCV+SNDBUF
