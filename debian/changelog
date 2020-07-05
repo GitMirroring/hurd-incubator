@@ -1,9 +1,9 @@
-hurd (1:0.9.git20200416-6) UNRELEASED; urgency=medium
+hurd (1:0.9.git20200416-6) unstable; urgency=medium
 
   * patches/SO_RCV+SNDBUF: Add support for {get,set}sockopt(SO_{RECV,SND}BUF).
   * patches/send_crash: Fix crash on send/recv due to bogus ref counting.
 
- -- Samuel Thibault <sthibault@debian.org>  Fri, 26 Jun 2020 23:16:22 +0000
+ -- Samuel Thibault <sthibault@debian.org>  Sun, 05 Jul 2020 17:11:32 +0000
 
 hurd (1:0.9.git20200416-5) unstable; urgency=medium
 
