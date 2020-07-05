@@ -1,6 +1,7 @@
 hurd (1:0.9.git20200416-6) UNRELEASED; urgency=medium
 
   * patches/SO_RCV+SNDBUF: Add support for {get,set}sockopt(SO_{RECV,SND}BUF).
+  * patches/send_crash: Fix crash on send/recv due to bogus ref counting.
 
  -- Samuel Thibault <sthibault@debian.org>  Fri, 26 Jun 2020 23:16:22 +0000
 
