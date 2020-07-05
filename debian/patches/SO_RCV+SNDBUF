@@ -29,359 +29,18 @@ Date:   Sat Jun 27 01:12:14 2020 +0200
     * pflocal/sock.h (PFLOCAL_WRITE_LIMIT_MAX): New macro.
     * pflocal/socket.c (S_socket_setopt): Handle SO_RCVBUF and SO_SNDBUF cases.
 
-diff --git a/libpipe/pipe.c b/libpipe/pipe.c
-index 1d4f5cc0..8ffc56e9 100644
---- a/libpipe/pipe.c
-+++ b/libpipe/pipe.c
-@@ -200,6 +200,24 @@ void _pipe_no_writers (struct pipe *pipe)
-       pthread_mutex_unlock (&pipe->lock);
-     }
- }
-+
-+/* Take any actions necessary when PIPE's writer can proceed.
-+   PIPE should be locked. */
-+void _pipe_wake_writers (struct pipe *pipe)
-+{
-+  pthread_cond_broadcast (&pipe->pending_writes);
-+  pthread_mutex_unlock (&pipe->lock);
-+
-+  pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-+  /* Only wakeup selects if there's still writing space available.  */
-+  if (pipe_readable (pipe, 1) < pipe->write_limit)
-+    {
-+      pthread_cond_broadcast (&pipe->pending_write_selects);
-+      pipe_select_cond_broadcast (pipe);
-+      /* We leave PIPE locked here, assuming the caller will soon unlock
-+	 it and allow others access.  */
-+    }
-+}
- 
- /* Return when either RPIPE is available for reading (if SELECT_READ is set
-    in *SELECT_TYPE), or WPIPE is available for writing (if select_write is
-@@ -474,18 +492,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
-       timestamp (&pipe->read_time);
- 
-       /* And wakeup anyone that might be interested in it.  */
--      pthread_cond_broadcast (&pipe->pending_writes);
--      pthread_mutex_unlock (&pipe->lock);
--
--      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
--      /* Only wakeup selects if there's still writing space available.  */
--      if (pipe_readable (pipe, 1) < pipe->write_limit)
--	{
--	  pthread_cond_broadcast (&pipe->pending_write_selects);
--	  pipe_select_cond_broadcast (pipe);
--	  /* We leave PIPE locked here, assuming the caller will soon unlock
--	     it and allow others access.  */
--	}
-+      _pipe_wake_writers (pipe);
-     }
- 
-   return err;
-diff --git a/libpipe/pipe.h b/libpipe/pipe.h
-index 040204d5..eda38d24 100644
---- a/libpipe/pipe.h
-+++ b/libpipe/pipe.h
-@@ -263,6 +263,10 @@ void _pipe_no_readers (struct pipe *pipe);
-    should be locked.  */
- void _pipe_no_writers (struct pipe *pipe);
- 
-+/* Take any actions necessary when PIPE's writer can proceed.
-+   PIPE should be locked. */
-+void _pipe_wake_writers (struct pipe *pipe);
-+
- extern void pipe_acquire_reader (struct pipe *pipe);
- 
- extern void pipe_acquire_writer (struct pipe *pipe);
-diff --git a/pflocal/sock.h b/pflocal/sock.h
-index 011b91a3..dca16755 100644
---- a/pflocal/sock.h
-+++ b/pflocal/sock.h
-@@ -187,4 +187,7 @@ error_t sock_global_shutdown ();
- extern struct port_class *sock_user_port_class;
- extern struct port_class *addr_port_class;
- 
-+/* Maximum allowed size for libpipe buffers */
-+#define PFLOCAL_WRITE_LIMIT_MAX (1024*1024)
-+
- #endif /* __SOCK_H__ */
-diff --git a/pflocal/socket.c b/pflocal/socket.c
-index 7a856bec..65503bc0 100644
---- a/pflocal/socket.c
-+++ b/pflocal/socket.c
-@@ -525,18 +525,98 @@ S_socket_setopt (struct sock_user *user,
- 		 int level, int opt, data_t value, size_t value_len)
- {
-   int ret = 0;
-+  struct pipe *pipe;
-+  struct sock *sock;
- 
-   if (!user)
-     return EOPNOTSUPP;
- 
--  pthread_mutex_lock (&user->sock->lock);
-+  sock = user->sock;
-+
-+  pthread_mutex_lock (&sock->lock);
-   switch (level)
-     {
-+    case SOL_SOCKET:
-+      switch (opt)
-+	{
-+	case SO_RCVBUF:
-+	  {
-+	    int new, old;
-+
-+	    if (value_len < sizeof (int))
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    new = *(int *)value;
-+	    if (new <= 0)
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
-+	      new = PFLOCAL_WRITE_LIMIT_MAX;
-+
-+	    pipe = sock->read_pipe;
-+	    if (!pipe)
-+	      {
-+		ret = EPIPE;
-+		break;
-+	      }
-+
-+	    pthread_mutex_lock (&pipe->lock);
-+	    old = pipe->write_limit;
-+	    pipe->write_limit = new;
-+	    if (new > old)
-+	      _pipe_wake_writers (pipe);
-+	    pthread_mutex_unlock (&pipe->lock);
-+	    break;
-+	  }
-+
-+	case SO_SNDBUF:
-+	  {
-+	    int new, old;
-+
-+	    if (value_len < sizeof (int))
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    new = *(int *)value;
-+	    if (new <= 0)
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
-+	      new = PFLOCAL_WRITE_LIMIT_MAX;
-+
-+	    pipe = sock->read_pipe;
-+	    if (!pipe)
-+	      {
-+		ret = EPIPE;
-+		break;
-+	      }
-+
-+	    pthread_mutex_lock (&pipe->lock);
-+	    old = pipe->write_limit;
-+	    pipe->write_limit = new;
-+	    if (new > old)
-+	      _pipe_wake_writers (pipe);
-+	    pthread_mutex_unlock (&pipe->lock);
-+	    break;
-+	  }
-+
-+	default:
-+	  ret = ENOPROTOOPT;
-+	  break;
-+	}
-+      break;
-     default:
-       ret = ENOPROTOOPT;
-       break;
-     }
--  pthread_mutex_unlock (&user->sock->lock);
-+  pthread_mutex_unlock (&sock->lock);
- 
-   return ret;
- }
+commit 414f6c35a62a7e72f40c39089a9952913a7eeb90
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sun Jul 5 02:32:44 2020 +0200
 
+    pflocal: return ENOTCONN on get/setpot(SO_SNDBUF) on unconnected socket
+    
+    EPIPE would raise SIGPIPE, which applications do not expect to happen on
+    a mere get/setsockopt.
+    
+    * pflocal/socket.c (S_socket_getopt, S_socket_setopt): Return ENOTCONN
+    instead of EPIPE.
 
-Index: hurd-debian/pflocal/socket.c
-===================================================================
---- hurd-debian.orig/pflocal/socket.c
-+++ hurd-debian/pflocal/socket.c
-@@ -434,11 +434,15 @@ S_socket_getopt (struct sock_user *user,
- 		 data_t *value, size_t *value_len)
- {
-   int ret = 0;
-+  struct pipe *pipe;
-+  struct sock *sock;
- 
-   if (!user)
-     return EOPNOTSUPP;
- 
--  pthread_mutex_lock (&user->sock->lock);
-+  sock = user->sock;
-+
-+  pthread_mutex_lock (&sock->lock);
-   switch (level)
-     {
-     case SOL_SOCKET:
-@@ -450,7 +454,37 @@ S_socket_getopt (struct sock_user *user,
- 	      ret = EINVAL;
- 	      break;
- 	    }
--	  *(int *)*value = user->sock->pipe_class->sock_type;
-+	  *(int *)*value = sock->pipe_class->sock_type;
-+	  *value_len = sizeof (int);
-+	  break;
-+	case SO_RCVBUF:
-+	  if (*value_len < sizeof (int))
-+	    {
-+	      ret = EINVAL;
-+	      break;
-+	    }
-+	  pipe = sock->read_pipe;
-+	  if (!pipe)
-+	    {
-+	      ret = EPIPE;
-+	      break;
-+	    }
-+	  *(int *)*value = pipe->write_limit;
-+	  *value_len = sizeof (int);
-+	  break;
-+	case SO_SNDBUF:
-+	  if (*value_len < sizeof (int))
-+	    {
-+	      ret = EINVAL;
-+	      break;
-+	    }
-+	  pipe = sock->write_pipe;
-+	  if (!pipe)
-+	    {
-+	      ret = EPIPE;
-+	      break;
-+	    }
-+	  *(int *)*value = pipe->write_limit;
- 	  *value_len = sizeof (int);
- 	  break;
- 	case SO_ERROR:
-@@ -481,7 +515,7 @@ S_socket_getopt (struct sock_user *user,
-       ret = ENOPROTOOPT;
-       break;
-     }
--  pthread_mutex_unlock (&user->sock->lock);
-+  pthread_mutex_unlock (&sock->lock);
- 
-   return ret;
- }
-@@ -491,18 +525,98 @@ S_socket_setopt (struct sock_user *user,
- 		 int level, int opt, data_t value, size_t value_len)
- {
-   int ret = 0;
-+  struct pipe *pipe;
-+  struct sock *sock;
- 
-   if (!user)
-     return EOPNOTSUPP;
- 
--  pthread_mutex_lock (&user->sock->lock);
-+  sock = user->sock;
-+
-+  pthread_mutex_lock (&sock->lock);
-   switch (level)
-     {
-+    case SOL_SOCKET:
-+      switch (opt)
-+	{
-+	case SO_RCVBUF:
-+	  {
-+	    int new, old;
-+
-+	    if (value_len < sizeof (int))
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    new = *(int *)value;
-+	    if (new <= 0)
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
-+	      new = PFLOCAL_WRITE_LIMIT_MAX;
-+
-+	    pipe = sock->read_pipe;
-+	    if (!pipe)
-+	      {
-+		ret = EPIPE;
-+		break;
-+	      }
-+
-+	    pthread_mutex_lock (&pipe->lock);
-+	    old = pipe->write_limit;
-+	    pipe->write_limit = new;
-+	    if (new > old)
-+	      _pipe_wake_writers (pipe);
-+	    pthread_mutex_unlock (&pipe->lock);
-+	    break;
-+	  }
-+
-+	case SO_SNDBUF:
-+	  {
-+	    int new, old;
-+
-+	    if (value_len < sizeof (int))
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    new = *(int *)value;
-+	    if (new <= 0)
-+	      {
-+		ret = EINVAL;
-+		break;
-+	      }
-+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
-+	      new = PFLOCAL_WRITE_LIMIT_MAX;
-+
-+	    pipe = sock->read_pipe;
-+	    if (!pipe)
-+	      {
-+		ret = EPIPE;
-+		break;
-+	      }
-+
-+	    pthread_mutex_lock (&pipe->lock);
-+	    old = pipe->write_limit;
-+	    pipe->write_limit = new;
-+	    if (new > old)
-+	      _pipe_wake_writers (pipe);
-+	    pthread_mutex_unlock (&pipe->lock);
-+	    break;
-+	  }
-+
-+	default:
-+	  ret = ENOPROTOOPT;
-+	  break;
-+	}
-+      break;
-     default:
-       ret = ENOPROTOOPT;
-       break;
-     }
--  pthread_mutex_unlock (&user->sock->lock);
-+  pthread_mutex_unlock (&sock->lock);
- 
-   return ret;
- }
 Index: hurd-debian/libpipe/pipe.c
 ===================================================================
 --- hurd-debian.orig/libpipe/pipe.c
@@ -458,3 +117,173 @@ Index: hurd-debian/pflocal/sock.h
 +#define PFLOCAL_WRITE_LIMIT_MAX (1024*1024)
 +
  #endif /* __SOCK_H__ */
+Index: hurd-debian/pflocal/socket.c
+===================================================================
+--- hurd-debian.orig/pflocal/socket.c
++++ hurd-debian/pflocal/socket.c
+@@ -434,11 +434,15 @@ S_socket_getopt (struct sock_user *user,
+ 		 data_t *value, size_t *value_len)
+ {
+   int ret = 0;
++  struct pipe *pipe;
++  struct sock *sock;
+ 
+   if (!user)
+     return EOPNOTSUPP;
+ 
+-  pthread_mutex_lock (&user->sock->lock);
++  sock = user->sock;
++
++  pthread_mutex_lock (&sock->lock);
+   switch (level)
+     {
+     case SOL_SOCKET:
+@@ -450,7 +454,37 @@ S_socket_getopt (struct sock_user *user,
+ 	      ret = EINVAL;
+ 	      break;
+ 	    }
+-	  *(int *)*value = user->sock->pipe_class->sock_type;
++	  *(int *)*value = sock->pipe_class->sock_type;
++	  *value_len = sizeof (int);
++	  break;
++	case SO_RCVBUF:
++	  if (*value_len < sizeof (int))
++	    {
++	      ret = EINVAL;
++	      break;
++	    }
++	  pipe = sock->read_pipe;
++	  if (!pipe)
++	    {
++	      ret = ENOTCONN;
++	      break;
++	    }
++	  *(int *)*value = pipe->write_limit;
++	  *value_len = sizeof (int);
++	  break;
++	case SO_SNDBUF:
++	  if (*value_len < sizeof (int))
++	    {
++	      ret = EINVAL;
++	      break;
++	    }
++	  pipe = sock->write_pipe;
++	  if (!pipe)
++	    {
++	      ret = ENOTCONN;
++	      break;
++	    }
++	  *(int *)*value = pipe->write_limit;
+ 	  *value_len = sizeof (int);
+ 	  break;
+ 	case SO_ERROR:
+@@ -481,7 +515,7 @@ S_socket_getopt (struct sock_user *user,
+       ret = ENOPROTOOPT;
+       break;
+     }
+-  pthread_mutex_unlock (&user->sock->lock);
++  pthread_mutex_unlock (&sock->lock);
+ 
+   return ret;
+ }
+@@ -491,18 +525,98 @@ S_socket_setopt (struct sock_user *user,
+ 		 int level, int opt, data_t value, size_t value_len)
+ {
+   int ret = 0;
++  struct pipe *pipe;
++  struct sock *sock;
+ 
+   if (!user)
+     return EOPNOTSUPP;
+ 
+-  pthread_mutex_lock (&user->sock->lock);
++  sock = user->sock;
++
++  pthread_mutex_lock (&sock->lock);
+   switch (level)
+     {
++    case SOL_SOCKET:
++      switch (opt)
++	{
++	case SO_RCVBUF:
++	  {
++	    int new, old;
++
++	    if (value_len < sizeof (int))
++	      {
++		ret = EINVAL;
++		break;
++	      }
++	    new = *(int *)value;
++	    if (new <= 0)
++	      {
++		ret = EINVAL;
++		break;
++	      }
++	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
++	      new = PFLOCAL_WRITE_LIMIT_MAX;
++
++	    pipe = sock->read_pipe;
++	    if (!pipe)
++	      {
++		ret = ENOTCONN;
++		break;
++	      }
++
++	    pthread_mutex_lock (&pipe->lock);
++	    old = pipe->write_limit;
++	    pipe->write_limit = new;
++	    if (new > old)
++	      _pipe_wake_writers (pipe);
++	    pthread_mutex_unlock (&pipe->lock);
++	    break;
++	  }
++
++	case SO_SNDBUF:
++	  {
++	    int new, old;
++
++	    if (value_len < sizeof (int))
++	      {
++		ret = EINVAL;
++		break;
++	      }
++	    new = *(int *)value;
++	    if (new <= 0)
++	      {
++		ret = EINVAL;
++		break;
++	      }
++	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
++	      new = PFLOCAL_WRITE_LIMIT_MAX;
++
++	    pipe = sock->write_pipe;
++	    if (!pipe)
++	      {
++		ret = ENOTCONN;
++		break;
++	      }
++
++	    pthread_mutex_lock (&pipe->lock);
++	    old = pipe->write_limit;
++	    pipe->write_limit = new;
++	    if (new > old)
++	      _pipe_wake_writers (pipe);
++	    pthread_mutex_unlock (&pipe->lock);
++	    break;
++	  }
++
++	default:
++	  ret = ENOPROTOOPT;
++	  break;
++	}
++      break;
+     default:
+       ret = ENOPROTOOPT;
+       break;
+     }
+-  pthread_mutex_unlock (&user->sock->lock);
++  pthread_mutex_unlock (&sock->lock);
+ 
+   return ret;
+ }
