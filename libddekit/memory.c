@@ -17,7 +17,7 @@
 #include <string.h>
 #include <sys/mman.h>
 
-#include "mach_U.h"
+#include <mach/gnumach.h>
 #include <hurd/slab.h>
 #include <mach_init.h>
 
@@ -215,12 +215,13 @@ void ddekit_large_free(void *objp)
 void *ddekit_large_malloc(int size)
 {
   error_t err;
-  vm_address_t vstart, pstart;
+  vm_address_t vstart;
+  rpc_phys_addr_t pstart;
   extern mach_port_t priv_host;
 
   /* Allocate memory.  */
   err = vm_allocate_contiguous (priv_host, mach_task_self (),
-			   &vstart, &pstart, size);
+			   &vstart, &pstart, size, 0, 0x100000000, 0);
   if (err)
     {
       error (0, err, "vm_allocate_contiguous");

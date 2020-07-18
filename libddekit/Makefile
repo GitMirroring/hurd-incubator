@@ -37,8 +37,7 @@ LCLHDRS = $(installhdrs)	\
 	  dde.h		\
 	  config.h list.h util.h
 
-MIGSTUBS = experimentalUser.o
-OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
+OBJS = $(sort $(SRCS:.c=.o))
 
 HURDLIBS = ports shouldbeinlibc hurd-slab
 LDLIBS += -lpthread

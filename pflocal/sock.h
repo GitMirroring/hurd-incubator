@@ -52,6 +52,9 @@ struct sock
      another socket.  */
   struct pipe *read_pipe, *write_pipe;
 
+  /* The write limit that this side would like write_pipe to support.  */
+  size_t req_write_limit;
+
   /* FLAGS from SOCK_*, below.  */
   unsigned flags;
 
@@ -186,5 +189,8 @@ error_t sock_global_shutdown ();
 /* Mostly here for use by mig-decls.h.  */
 extern struct port_class *sock_user_port_class;
 extern struct port_class *addr_port_class;
+
+/* Maximum allowed size for libpipe buffers */
+#define PFLOCAL_WRITE_LIMIT_MAX (1024*1024)
 
 #endif /* __SOCK_H__ */
