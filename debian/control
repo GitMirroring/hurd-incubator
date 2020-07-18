@@ -5,7 +5,7 @@ Maintainer: GNU Hurd Maintainers <debian-hurd@lists.debian.org>
 Standards-Version: 4.4.0
 Build-Depends:
  mig-for-host (>= 1.4-3~) <!stage1 !stage2>,
- gnumach-dev (>= 2:1.8+git20170102-1~) <!stage1>,
+ gnumach-dev (>= 2:1.8+git20200710-1~) <!stage1>,
  libc0.3-dev (>= 2.17-94~) <!stage1>, texinfo,
  debhelper (>= 9.20160114), dpkg-dev (>= 1.17.14), dh-exec (>= 0.17),
  autoconf, dh-autoreconf,

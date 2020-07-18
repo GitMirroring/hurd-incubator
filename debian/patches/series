@@ -26,9 +26,3 @@ netdde_log.patch
 libports-iterate-refcount.patch
 io-write-crash.patch
 getty-noclear
-build-rump
-pathconf
-rlock
-xattr
-SO_RCV+SNDBUF
-send_crash

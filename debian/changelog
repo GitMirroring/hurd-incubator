@@ -1,3 +1,17 @@
+hurd (1:0.9.git20200718-1) unstable; urgency=medium
+
+  * New upstream snapshot.
+    - patches/build-rump: Upstreamed.
+    - patches/pathconf: Upstreamed.
+    - patches/rlock: Upstreamed.
+    - patches/xattr: Upstreamed.
+    - patches/SO_RCV+SNDBUF: Upstreamed.
+    - patches/send_crash: Upstreamed.
+    - control: Build-depend on gnumach-dev with upstream user-level drivers
+      RPCs.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sat, 18 Jul 2020 19:48:11 +0000
+
 hurd (1:0.9.git20200416-6) unstable; urgency=medium
 
   * patches/SO_RCV+SNDBUF: Add support for {get,set}sockopt(SO_{RECV,SND}BUF).
