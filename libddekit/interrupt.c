@@ -13,28 +13,20 @@
 #include <mach.h>
 #include <hurd.h>
 
+#include <device/notify.h>
+#include <device/device.h>
+
 #include "ddekit/interrupt.h"
 #include "ddekit/semaphore.h"
 #include "ddekit/printf.h"
 #include "ddekit/memory.h"
 #include "ddekit/condvar.h"
 
-#include "device_U.h"
-
 #define DEBUG_INTERRUPTS  0
 
 #define MAX_INTERRUPTS   32
 
 #define BLOCK_IRQ         0
-
-#define MACH_INTR_NOTIFY 100
-
-typedef struct
-{
-  mach_msg_header_t intr_header;
-  mach_msg_type_t   intr_type;
-  int		    line;
-} mach_intr_notification_t;
 
 /*
  * Internal type for interrupt loop parameters
@@ -46,6 +38,7 @@ struct intloop_params
 	void(*thread_init)(void *);  /* thread initialization */
 	void(*handler)(void *);      /* IRQ handler function */
 	void             *priv;      /* private token */ 
+	mach_port_t       irqport;   /* delivery port for notifications */
 	ddekit_sem_t     *started;
 
 	int               start_err;
@@ -61,8 +54,9 @@ static struct
 	thread_t         mach_thread;
 } ddekit_irq_ctrl[MAX_INTERRUPTS];
 
-static mach_port_t master_device;
 static mach_port_t master_host;
+static mach_port_t master_device;
+static device_t irq_dev;
 
 /**
  * Interrupt service loop
@@ -82,6 +76,7 @@ static void intloop(void *arg)
 	  error (2, ret, "mach_port_allocate");
 
 	my_index = params->irq;
+	params->irqport = delivery_port;
 	ddekit_irq_ctrl[my_index].mach_thread = mach_thread_self ();
 	ret = thread_get_assignment (mach_thread_self (), &pset);
 	if (ret)
@@ -95,10 +90,10 @@ static void intloop(void *arg)
 		error (0, ret, "thread_priority");
 
 	// TODO the flags for shared irq should be indicated by params->shared.
-	// Be careful. For now, we must use shared irq.
+	// Flags needs to be 0 for new irq interface for now.
 	// Otherwise, the interrupt handler cannot be installed in the kernel.
-	ret = device_intr_register (master_device, params->irq,
-				  0, 0x04000000, delivery_port,
+	ret = device_intr_register (irq_dev, my_index,
+				  0, delivery_port,
 				  MACH_MSG_TYPE_MAKE_SEND);
 	ddekit_printf ("device_intr_register returns %d\n", ret);
 	if (ret) {
@@ -106,10 +101,9 @@ static void intloop(void *arg)
 		/* XXX does omega0 error code have any meaning to DDEKit users? */
 		params->start_err = ret;
 		ddekit_sem_up(params->started);
-		ddekit_printf ("cannot install irq %d\n", params->irq);
+		ddekit_printf ("cannot install irq %d\n", my_index);
 		return;
 	}
-	device_intr_enable (master_device, params->irq, TRUE);
 
 #if 0
 	/* 
@@ -129,16 +123,16 @@ static void intloop(void *arg)
 	ddekit_sem_up(params->started);
 
 	int irq_server (mach_msg_header_t *inp, mach_msg_header_t *outp) {
-		mach_intr_notification_t *intr_header = (mach_intr_notification_t *) inp;
+		device_intr_notification_t *intr_header = (device_intr_notification_t *) inp;
 
 		((mig_reply_header_t *) outp)->RetCode = MIG_NO_REPLY;
-		if (inp->msgh_id != MACH_INTR_NOTIFY)
+		if (inp->msgh_id != DEVICE_INTR_NOTIFY)
 			return 0;
 
 		/* It's an interrupt not for us. It shouldn't happen. */
-		if (intr_header->line != params->irq) {
+		if (intr_header->id != params->irq) {
 			ddekit_printf ("We get interrupt %d, %d is expected",
-				       intr_header->line, params->irq);
+				       intr_header->id, params->irq);
 			return 1;
 		}
 
@@ -150,9 +144,9 @@ static void intloop(void *arg)
 			// TODO if it's edged-triggered irq, the interrupt will be lost.
 		}
 		params->handler(params->priv);
-		/* If the irq has been disabled by the linux device,
-		 * we don't need to reenable the real one. */
-		device_intr_enable (master_device, my_index, TRUE);
+
+		/* Acknowledge the interrupt */
+		device_intr_ack (irq_dev, params->irqport, MACH_MSG_TYPE_MAKE_SEND);
 
 		if (ddekit_irq_ctrl[my_index].thread_exit) {
 			ddekit_lock_unlock (&ddekit_irq_ctrl[my_index].irqlock);
@@ -203,6 +197,7 @@ ddekit_thread_t *ddekit_interrupt_attach(int irq, int shared,
 	params->priv        = priv;
 	params->started     = ddekit_sem_init(0);
 	params->start_err   = 0;
+	params->irqport     = MACH_PORT_NULL;
 	params->shared      = shared;
 
 	/* construct name */
@@ -279,10 +274,13 @@ void ddekit_interrupt_enable(int irq)
 
 void interrupt_init ()
 {
-	
 	error_t err;
 
 	err = get_privileged_ports (&master_host, &master_device);
 	if (err)
 		error (1, err, "get_privileged_ports");
+
+	err = device_open (master_device, D_READ, "irq", &irq_dev);
+	if (err)
+		error (2, err, "device_open irq");
 }
