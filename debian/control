@@ -6,7 +6,7 @@ Standards-Version: 4.5.0
 Build-Depends:
  mig-for-host (>= 1.4-3~) <!stage1 !stage2>,
  gnumach-dev (>= 2:1.8+git20200710-1~) <!stage1>,
- libc0.3-dev (>= 2.17-94~) <!stage1>, texinfo,
+ libc0.3-dev (>= 2.31-2~) <!stage1>, texinfo,
  debhelper (>= 9.20160114), dpkg-dev (>= 1.17.14), dh-exec (>= 0.17),
  autoconf, dh-autoreconf,
  gawk, flex, bison,

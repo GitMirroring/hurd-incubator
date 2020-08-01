@@ -1,6 +1,8 @@
 hurd (1:0.9.git20200718-2) UNRELEASED; urgency=medium
 
   * control: Bump Standards-Version to 4.5.0 (no change)
+  * control: Build-depend on libc0.3-dev with upstream user-level drivers
+    RPCs.
 
  -- Samuel Thibault <sthibault@debian.org>  Fri, 31 Jul 2020 22:59:04 +0200
 
