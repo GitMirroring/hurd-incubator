@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include <netinet/in.h>
 #include <sys/socket.h>
