@@ -72,9 +72,11 @@ else
 endif
 
 %:
-	dh $@ -Bbuild-deb --with autoreconf --parallel
+	dh $@ -Bbuild-deb
 
-override_dh_auto_configure:
+# Avoid re-running configure each time. See Bug#966707
+override_dh_auto_configure: debian/configure-stamp
+debian/configure-stamp:
 	dh_auto_configure -Bbuild-deb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell dpkg-buildflags --export=configure)
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-prof -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell DEB_CFLAGS_APPEND=-pg dpkg-buildflags --export=configure)
@@ -82,6 +84,7 @@ endif
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-udeb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_udeb) $(shell dpkg-buildflags --export=configure)
 endif
+	touch $@
 
 override_dh_auto_build:
 ifneq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
@@ -171,7 +174,7 @@ endif
 ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
 	dh_install -phurd-prof --sourcedir=debian/tmp-prof
 endif
-	dh_install --remaining-packages --list-missing --sourcedir=debian/tmp
+	dh_install --remaining-packages --sourcedir=debian/tmp
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	mkdir -p debian/hurd-udeb/usr/share/lintian/overrides
 	install -p -m644 debian/hurd-udeb.lintian-overrides debian/hurd-udeb/usr/share/lintian/overrides/hurd-udeb
@@ -183,6 +186,9 @@ override_dh_installinit:
 
 override_dh_installchangelogs:
 	dh_installchangelogs -XChangeLog
+
+override_dh_missing:
+	dh_missing --list-missing
 
 override_dh_strip:
 ifeq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
@@ -209,6 +215,7 @@ override_dh_clean:
 	dh_clean
 	rm -rf debian/tmp-udeb
 	rm -rf debian/tmp-prof
+	rm -f debian/configure-stamp
 
 debian/%.install: debian/%.install.in
 	cat $^ | sed -e 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' > $@
