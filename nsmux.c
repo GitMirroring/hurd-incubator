@@ -35,6 +35,8 @@
 #include <fcntl.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
+#include <assert.h>
+#include <sys/sysmacros.h>
 /*---------------------------------------------------------------------------*/
 #include "debug.h"
 #include "options.h"
@@ -1109,8 +1111,8 @@ error_t
 		if (asprintf (argz, "%s%c%d%c%d",
 			      (S_ISCHR (np->nn_translated)
 			       ? _HURD_CHRDEV : _HURD_BLKDEV),
-			      0, major (np->nn_stat.st_rdev),
-			      0, minor (np->nn_stat.st_rdev)) < 0)
+			      0, gnu_dev_major (np->nn_stat.st_rdev),
+			      0, gnu_dev_minor (np->nn_stat.st_rdev)) < 0)
 		  return ENOMEM;
 		*argz_len = strlen (*argz) + 1;
 		*argz_len += strlen (*argz + *argz_len) + 1;

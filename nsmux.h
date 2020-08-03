@@ -64,8 +64,8 @@ extern mach_port_t underlying_node;
 extern io_statbuf_t underlying_node_stat;
 /*---------------------------------------------------------------------------*/
 /*The translator callbacks required by netfs_S_dir_lookup*/
-fshelp_fetch_root_callback1_t _netfs_translator_callback1;
-fshelp_fetch_root_callback2_t _netfs_translator_callback2;
+extern fshelp_fetch_root_callback1_t _netfs_translator_callback1;
+extern fshelp_fetch_root_callback2_t _netfs_translator_callback2;
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/

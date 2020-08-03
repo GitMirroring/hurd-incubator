@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <argz.h>
 #include <hurd/fsys.h>
+#include <assert.h>
 /*---------------------------------------------------------------------------*/
 #include "debug.h"
 #include "node.h"
