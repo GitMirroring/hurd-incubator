@@ -255,6 +255,7 @@ tarfs_get_args (char **argz, unsigned *argz_len)
       break;
     case COMPRESS_BZIP2:
       err = argz_add (argz, argz_len, "--bzip2");
+      break;
   }
 
   if (err)
