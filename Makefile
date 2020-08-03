@@ -1,9 +1,9 @@
 CC=gcc
-CFLAGS=-O0 -g3 -Wall  
-LDFLAGS=  -L/lib -L/local/samba/lib/ -I/local/samba/include/   -lnsl -lnetfs -lfshelp -liohelp -lpthread -lports -lihash -ldl -lshouldbeinlibc -lsmbclient
+CFLAGS=-O0 -g3 -Wall $(shell pkg-config --cflags smbclient)
+LDLIBS=  $(shell pkg-config --libs smbclient)   -lnsl -lnetfs -lfshelp -liohelp -lpthread -lports -lihash -ldl -lshouldbeinlibc
 
 smbfs: clean smb.o smbfs.o smbnetfs.o
-	$(CC) $(LDFLAGS) smb.o smbfs.o smbnetfs.o -osmbfs
+	$(CC) smb.o smbfs.o smbnetfs.o -osmbfs $(LDLIBS)
 
 smb.o:
 	$(CC)  $(CFLAGS) smb.c  -I/local/samba/include/ -c  
