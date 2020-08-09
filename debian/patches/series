@@ -17,7 +17,6 @@ exec_filename_use.patch
 mount.patch
 MAKEDEV-apm.patch
 term-for-tcl.patch
-newRPC.patch
 cross-link.patch
 procfs-compatible
 crash-logging.patch
