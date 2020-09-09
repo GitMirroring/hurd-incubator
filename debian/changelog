@@ -8,6 +8,8 @@ hurd (1:0.9.git20200718-2) UNRELEASED; urgency=medium
   * rules: Use a stamp file to avoid multiple configures.
   * patches/pipe_write_partial: Enforce write_limit for large writes.
   * patches/newRPC.patch: Remove, now useless.
+  * control: Rename noprof profile to pkg.hurd.noprof (Closes: Bug#969956)
+  * rules: Update conditions accordingly.
 
  -- Samuel Thibault <sthibault@debian.org>  Fri, 31 Jul 2020 22:59:04 +0200
 

@@ -74,7 +74,7 @@ Built-Using: ${built-using}
 Suggests: hurd-doc
 Recommends: bf-utf-source
 Architecture: hurd-any
-Build-Profiles: <!stage1 !noprof>
+Build-Profiles: <!stage1 !pkg.hurd.noprof>
 Description: GNU Hurd
  This is the GNU Hurd package. It contains essential system software and
  libraries, with gprof profiling enabled.

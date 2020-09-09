@@ -78,7 +78,7 @@ endif
 override_dh_auto_configure: debian/configure-stamp
 debian/configure-stamp:
 	dh_auto_configure -Bbuild-deb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell dpkg-buildflags --export=configure)
-ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-prof -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell DEB_CFLAGS_APPEND=-pg dpkg-buildflags --export=configure)
 endif
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
@@ -94,7 +94,7 @@ else
 	dh_auto_build -Bbuild-udeb
   endif
 	dh_auto_build -Bbuild-deb
-ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_build -Bbuild-prof
 	for i in $(TRANSLATORS_PROF) ; do \
 		$(MAKE) -C build-prof/$$i $$i.static ; \
@@ -108,7 +108,7 @@ endif
 
 override_dh_auto_clean:
 	dh_auto_clean -Bbuild-deb
-ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
 	dh_auto_clean -Bbuild-prof
 endif
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
@@ -125,7 +125,7 @@ ifneq (,$(filter stage1,$(DEB_BUILD_PROFILES)))
 	$(MAKE) -Cbuild-deb DESTDIR=$(DEB_DESTDIR) install-headers no_deps=t
 else
 	dh_auto_install -Bbuild-deb --destdir=$(DEB_DESTDIR)
-ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
 	install -d $(DEB_DESTDIR_PROF)/hurd
 	for i in $(TRANSLATORS_PROF) ; do \
 		install -m 755 build-prof/$$i/$$i.static $(DEB_DESTDIR_PROF)/hurd/$$i.prof ; \
@@ -171,7 +171,7 @@ override_dh_install: $(INSTALL_generated)
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_install $(addprefix -p,$(filter %-udeb,$(shell dh_listpackages))) --sourcedir=debian/tmp-udeb
 endif
-ifeq (,$(filter noprof,$(DEB_BUILD_PROFILES)))
+ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
 	dh_install -phurd-prof --sourcedir=debian/tmp-prof
 endif
 	dh_install --remaining-packages --sourcedir=debian/tmp
