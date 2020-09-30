@@ -69,8 +69,8 @@ packet comes at the wrong time.
 --- dde/e1000/e1000_main.c
 +++ dde/e1000/e1000_main.c
 @@ -3759,6 +3759,21 @@ static irqreturn_t e1000_intr(int irq, void *data)
- 	if (unlikely(test_bit(__E1000_DOWN, &adapter->flags)))
- 		return IRQ_HANDLED;
+ 	if (unlikely((!icr) || test_bit(__E1000_DOWN, &adapter->flags)))
+ 		return IRQ_NONE;  /* Not our interrupt */
  
 +	if (unlikely(icr & E1000_ICR_RXO)) {
 +		/* Receive Overrun */
