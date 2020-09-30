@@ -2,6 +2,7 @@ hurd (1:0.9.git20200930-1) unstable; urgency=medium
 
   * New upstream snapshot.
     - patches/pipe_write_partial: Upstreamed.
+    - control: Break old netdde with old libmachdev API.
   * control: Bump Standards-Version to 4.5.0 (no change)
   * control: Build-depend on libc0.3-dev with upstream user-level drivers
     RPCs.
