@@ -25,4 +25,3 @@ netdde_log.patch
 libports-iterate-refcount.patch
 io-write-crash.patch
 getty-noclear
-pipe_write_partial
