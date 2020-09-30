@@ -1,9 +1,5 @@
 /*
-   Copyright (C) 2001, 2014-2019 Free Software Foundation
-
-   Written by Neal H Walfield <neal@cs.uml.edu>
-
-   This file is part of the GNU Hurd.
+   Copyright (C) 2020 Free Software Foundation, Inc.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -16,10 +12,20 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with the GNU Hurd; see the file COPYING.  If not, write to
+   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#define FSHELP_EXTERN_INLINE
+#ifndef _MACHDEV_TRIVFS_SERVER_H
+#define _MACHDEV_TRIVFS_SERVER_H
 
-#include "fshelp.h"
-#include "rlock.h"
+#include <hurd/ports.h>
+#include <hurd/trivfs.h>
+#include <hurd.h>
+
+extern struct port_bucket *port_bucket;
+extern struct port_class *trivfs_protid_class;
+extern struct port_class *trivfs_cntl_class;
+extern struct port_class *machdev_shutdown_notify_class;
+
+#endif /* _MACHDEV_TRIVFS_SERVER_H */
 

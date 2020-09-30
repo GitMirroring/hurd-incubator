@@ -19,13 +19,13 @@ dir := libmachdev
 makemode := library
 libname = libmachdev
 
-SRCS = deviceUser.c machUser.c ds_routines.c trivfs_server.c \
-       device_replyUser.c deviceServer.c notifyServer.c
+SRCS = ds_routines.c trivfs_server.c startup_notifyServer.c \
+       deviceServer.c notifyServer.c mach_i386Server.c
 
-LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h
+LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h trivfs_server.h
 installhdrs = machdev.h machdev-device_emul.h machdev-dev_hdr.h
 HURDLIBS = ports trivfs
-LDLIBS += -lpthread
+LDLIBS += -lpthread -lmachuser
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
