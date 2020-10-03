@@ -1,0 +1,28 @@
+commit fcb3204dcd433c3fbda3a0cca45cab935aacdb4a
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Oct 3 22:59:52 2020 +0200
+
+    libdiskfs: Make relatime also update atime when equal to mtime/ctime
+    
+    Some tests (such as glibc's tst-atime) require it for instance.
+    
+    * libdiskfs/node-times.c (atime_should_update): Also return 1 when atime
+    is equal to mtime or ctime.
+
+diff --git a/libdiskfs/node-times.c b/libdiskfs/node-times.c
+index 05f558be..60eabc0f 100644
+--- a/libdiskfs/node-times.c
++++ b/libdiskfs/node-times.c
+@@ -40,10 +40,10 @@ atime_should_update (struct node *np)
+   if (_diskfs_relatime)
+     {
+       /* Update atime if mtime is younger than atime. */
+-      if (np->dn_stat.st_mtim.tv_sec > np->dn_stat.st_atim.tv_sec)
++      if (np->dn_stat.st_mtim.tv_sec >= np->dn_stat.st_atim.tv_sec)
+         return 1;
+       /* Update atime if ctime is younger than atime. */
+-      if (np->dn_stat.st_ctim.tv_sec > np->dn_stat.st_atim.tv_sec)
++      if (np->dn_stat.st_ctim.tv_sec >= np->dn_stat.st_atim.tv_sec)
+         return 1;
+       /* Update atime if current atime is more than 24 hours old. */
+       maptime_read (diskfs_mtime, &t);
