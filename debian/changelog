@@ -1,6 +1,7 @@
 hurd (1:0.9.git20200930-2) unstable; urgency=medium
 
   * patches/atime-equal: Fix relatime support.
+  * patches/atime-default: Enable relatime by default.
 
  -- Samuel Thibault <sthibault@debian.org>  Sat, 10 Oct 2020 20:42:12 +0000
 

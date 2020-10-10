@@ -1,0 +1,39 @@
+commit cf99ce09b4b2487d557860b794dbd1b57a9f035b
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Sat Oct 10 22:57:40 2020 +0200
+
+    libdiskfs: enable relatime by default
+    
+    Like Linux does, to avoid writing inodes when just reading files already in
+    the cache.
+    
+    * libdiskfs/init-init.c (_diskfs_relatime): Set to 1.
+    * libdiskfs/opts-std-runtime.c (set_opts): Always _diskfs_relatime from
+    h->relatime.
+
+diff --git a/libdiskfs/init-init.c b/libdiskfs/init-init.c
+index 1c432401..f9b12f6f 100644
+--- a/libdiskfs/init-init.c
++++ b/libdiskfs/init-init.c
+@@ -38,7 +38,7 @@ mach_port_t diskfs_fsys_identity;
+ 
+ int _diskfs_nosuid, _diskfs_noexec;
+ int _diskfs_noatime;
+-int _diskfs_relatime;
++int _diskfs_relatime = 1;
+ 
+ struct hurd_port _diskfs_exec_portcell;
+ 
+diff --git a/libdiskfs/opts-std-runtime.c b/libdiskfs/opts-std-runtime.c
+index 48acbaaf..1e69a1c4 100644
+--- a/libdiskfs/opts-std-runtime.c
++++ b/libdiskfs/opts-std-runtime.c
+@@ -80,7 +80,7 @@ set_opts (struct parse_hook *h)
+     _diskfs_noexec = h->noexec;
+   if (h->noatime != -1)
+     _diskfs_noatime = h->noatime;
+-  else if (h->relatime != -1)
++  if (h->relatime != -1)
+     _diskfs_relatime = h->relatime;
+   if (h->noinheritdirgroup != -1)
+     _diskfs_no_inherit_dir_group = h->noinheritdirgroup;
