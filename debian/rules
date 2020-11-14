@@ -29,7 +29,7 @@ TRANSLATORS_PROF = auth exec ext2fs pci-arbiter pfinet lwip pflocal proc procfs 
 
 CONFIGURE_ARGS = --build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE)
 ifeq (,$(filter stage1 stage2,$(DEB_BUILD_PROFILES)))
-CONFIGURE_ARGS += --disable-profile --enable-static-progs='ext2fs,iso9660fs'
+CONFIGURE_ARGS += --disable-profile --enable-static-progs='ext2fs,iso9660fs,rumpdisk'
 else
 CONFIGURE_ARGS += \
 		 --disable-ncursesw \
