@@ -8,7 +8,7 @@ void machdev_init(void)
 {
 	machdevdde_register_net();
 	machdev_device_init();
-	machdev_trivfs_init(MACH_PORT_NULL, NULL, &bootstrap);
+	machdev_trivfs_init(MACH_PORT_NULL, "netdde", NULL, &bootstrap);
 }
 
 void machdev_run1 (void *arg)
