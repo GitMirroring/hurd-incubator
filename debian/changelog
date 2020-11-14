@@ -5,6 +5,8 @@ hurd (1:0.9.git20201114-1) unstable; urgency=medium
     - patches/atime-default: Upstreamed.
     - control: Break old netdde with old libmachdev API.
   * rules: Build static version of rumpdisk.
+  * patches/cthreads.patch: Add stub cthreads.h for fixing glibc header
+    inclusion.
 
  -- Samuel Thibault <sthibault@debian.org>  Sat, 14 Nov 2020 22:44:08 +0000
 

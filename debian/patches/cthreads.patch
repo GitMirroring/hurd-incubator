@@ -1,0 +1,45 @@
+Index: hurd-debian/libthreads/cthreads.h
+===================================================================
+--- /dev/null
++++ hurd-debian/libthreads/cthreads.h
+@@ -0,0 +1,12 @@
++#ifndef	CTHREADS_
++#define	CTHREADS_ 1
++
++struct mutex {
++  int __held;
++  int __lock;
++  const char *__name;
++  void *__head, *__tail;
++  void *__holder;
++};
++
++#endif	/* not defined(_CTHREADS_) */
+Index: hurd-debian/libthreads/Makefile
+===================================================================
+--- /dev/null
++++ hurd-debian/libthreads/Makefile
+@@ -0,0 +1,10 @@
++dir := libthreads
++makemode := misc
++installhdrs = cthreads.h
++
++include ../Makeconf
++
++install-headers install: $(installhdrs:%=$(DESTDIR)$(includedir)/%)
++$(DESTDIR)$(includedir)/%: $(srcdir)/%
++	@$(MKINSTALLDIRS) $(@D)
++	$(INSTALL_DATA) $< $@
+Index: hurd-debian/Makefile
+===================================================================
+--- hurd-debian.orig/Makefile
++++ hurd-debian/Makefile
+@@ -26,7 +26,7 @@ include ./Makeconf
+ ## Subdirectories of this directory should all be mentioned here
+ 
+ # Hurd libraries
+-lib-subdirs = libshouldbeinlibc libihash libiohelp libports \
++lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
+ 	      libpager libfshelp libdiskfs libtrivfs libps \
+ 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
+ 	      libhurd-slab \
