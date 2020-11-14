@@ -1,3 +1,10 @@
+hurd (1:0.9.git20201114-1) UNRELEASED; urgency=medium
+
+  * New upstream snapshot.
+    - control: Break old netdde with old libmachdev API.
+
+ -- Samuel Thibault <sthibault@debian.org>  Sat, 14 Nov 2020 22:10:33 +0000
+
 hurd (1:0.9.git20200930-2) unstable; urgency=medium
 
   * patches/atime-equal: Fix relatime support.

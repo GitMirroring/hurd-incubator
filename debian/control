@@ -35,7 +35,7 @@ Package: hurd-libs0.3
 Section: libs
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Breaks: netdde (<< 0.0.20200330-5~)
+Breaks: netdde (<< 0.0.20200330-6~)
 Architecture: hurd-any
 Build-Profiles: <!stage1>
 Multi-Arch: same
