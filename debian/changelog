@@ -1,6 +1,8 @@
 hurd (1:0.9.git20201114-1) UNRELEASED; urgency=medium
 
   * New upstream snapshot.
+    - patches/atime-equal: Upstreamed.
+    - patches/atime-default: Upstreamed.
     - control: Break old netdde with old libmachdev API.
 
  -- Samuel Thibault <sthibault@debian.org>  Sat, 14 Nov 2020 22:10:33 +0000

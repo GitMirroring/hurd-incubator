@@ -639,8 +639,8 @@ Index: hurd-debian/configure.ac
 --- hurd-debian.orig/configure.ac
 +++ hurd-debian/configure.ac
 @@ -163,6 +163,7 @@ else
- fi
- AC_SUBST(VERSIONING)
+     hurd_cv_libio=no))
+ 
  # Check if libc contains these functions.
 +AC_CHECK_FUNCS(file_exec_file_name exec_exec_file_name)
  AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
