@@ -1,3 +1,5 @@
+We can remove it with glibc 2.33
+
 Index: hurd-debian/libthreads/cthreads.h
 ===================================================================
 --- /dev/null
