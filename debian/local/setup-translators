@@ -139,6 +139,10 @@ md hdXs1Y 012345 0123456
 md sdX 012345
 md sdXsY 012345 123456789
 md sdXs1Y 012345 0123456
+md rumpdisk
+md wdX 012345
+md wdXsY 012345 123456789
+md wdXs1Y 012345 0123456
 md cdX 01
 md netdde
 md ethX 0123
