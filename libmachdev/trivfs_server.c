@@ -32,6 +32,7 @@
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <hurd.h>
+#include <mach/i386/mach_i386.h>
 #include <device/device.h> /* mach console */
 
 #include "libdiskfs/diskfs.h"
@@ -64,10 +65,10 @@ struct trivfs_control *control;
 /* Are we providing bootstrap translator? */
 static boolean_t bootstrapped;
 
-/* Our underlying node for bootstrap */
+/* Our underlying node in the FS for bootstrap */
 static mach_port_t underlying;
 
-/* Our control port */
+/* The FS control port */
 static mach_port_t control_port;
 
 /* Our device path for injecting bootstrapped translator onto */
@@ -346,7 +347,7 @@ trivfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
     {
       *dev_master = right;
       *fstask = mach_task_self ();
-      *hp_type = *dm_type = MACH_MSG_TYPE_COPY_SEND;
+      *hp_type = *dm_type = MACH_MSG_TYPE_MOVE_SEND;
       *task_type = MACH_MSG_TYPE_COPY_SEND;
     }
   return err;
