@@ -1,3 +1,9 @@
+hurd (1:0.9.git20201116-2) UNRELEASED; urgency=medium
+
+  * patches/dev-cons.patch: Fix accessing /dev/cons nodes.
+
+ -- Samuel Thibault <sthibault@debian.org>  Wed, 18 Nov 2020 00:11:17 +0000
+
 hurd (1:0.9.git20201116-1) unstable; urgency=medium
 
   * New upstream snapshot.
