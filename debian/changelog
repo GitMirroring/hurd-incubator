@@ -1,3 +1,10 @@
+hurd (1:0.9.git20201116-3) UNRELEASED; urgency=medium
+
+  * rules: Fix MAKEDEV in hurd-udeb: we do not have bash there, but using
+    busybox-sh should be fine.
+
+ -- Samuel Thibault <sthibault@debian.org>  Thu, 19 Nov 2020 13:53:00 +0000
+
 hurd (1:0.9.git20201116-2) unstable; urgency=medium
 
   * patches/dev-cons.patch: Fix accessing /dev/cons nodes.

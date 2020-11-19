@@ -179,6 +179,9 @@ ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	mkdir -p debian/hurd-udeb/usr/share/lintian/overrides
 	install -p -m644 debian/hurd-udeb.lintian-overrides debian/hurd-udeb/usr/share/lintian/overrides/hurd-udeb
 endif
+ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
+	sed -i -e '1s/bash/sh/' debian/hurd-udeb/sbin/MAKEDEV
+endif
 
 override_dh_installinit:
 	dh_installinit -phurd --name=hurd-console
