@@ -59,6 +59,7 @@ hurd/procfs
 hurd/proxy-defpager
 hurd/random
 hurd/rumpdisk
+hurd/rumpdisk.static
 hurd/shutdown
 hurd/storeio
 hurd/streamio
