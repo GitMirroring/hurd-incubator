@@ -135,7 +135,7 @@ Index: hurd-debian/trans/crash.c
 +           pcs,
 +           how_msg);
 +  if (argz != argz_buf)
-+    vm_deallocate (mach_task_self (), argz, argz_len);
++    vm_deallocate (mach_task_self (), (vm_address_t) argz, argz_len);
 +  free (pcs);
 +  if (! msg)
 +    return ENOMEM;
