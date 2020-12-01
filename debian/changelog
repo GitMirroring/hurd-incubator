@@ -1,6 +1,7 @@
 hurd (1:0.9.git20201127-2) unstable; urgency=medium
 
   * patches/cthreads.patch: Also restore struct condition.
+  * patches/git-const_string_t.diff: Add const_string_t type.
 
  -- Samuel Thibault <sthibault@debian.org>  Tue, 01 Dec 2020 10:09:20 +0000
 

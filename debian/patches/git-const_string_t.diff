@@ -1,0 +1,36 @@
+commit 1451665d5b2e1c375af55aad70849bf5642bfa60
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Nov 30 23:53:39 2020 +0100
+
+    hurd_types: Add const_string_t type
+    
+    This will allow to relieve constraints in callers, e.g. dir_lookup("") would
+    otherwise produce a warning with gcc-11 since char[1024] would mean that
+    dir_lookup would read all 1024 characters while it is not.
+    
+    * hurd/hurd_types.h (const_string_t): New type.
+
+diff --git a/hurd/hurd_types.h b/hurd/hurd_types.h
+index 288dcc2f..f0521191 100644
+--- a/hurd/hurd_types.h
++++ b/hurd/hurd_types.h
+@@ -61,6 +61,7 @@ typedef mach_port_t shutdown_t;
+ typedef char *data_t;
+ typedef const char *const_data_t;
+ typedef char string_t [1024];
++typedef const char *const_string_t;
+ typedef int *intarray_t;
+ typedef const int *const_intarray_t;
+ typedef int *fd_mask_t;
+diff --git a/libports/complete-deallocate.c b/libports/complete-deallocate.c
+index 5c548a37..fccd59e4 100644
+--- a/libports/complete-deallocate.c
++++ b/libports/complete-deallocate.c
+@@ -38,6 +38,7 @@ _ports_complete_deallocate (struct port_info *pi)
+           /* A reference was reacquired through a hash table lookup.
+              It's fine, we didn't touch anything yet. */
+           /* XXX: This really shouldn't happen.  */
++	  /* XXX: this did happen... */
+           assert_backtrace (! "reacquired reference w/o send rights");
+           pthread_rwlock_unlock (&_ports_htable_lock);
+           return;
