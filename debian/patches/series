@@ -27,3 +27,4 @@ io-write-crash.patch
 getty-noclear
 cthreads.patch
 git-const_string_t.diff
+git-continued.diff
