@@ -1,0 +1,20 @@
+commit 0be6b58c20ede4d09451a543d17dc09f7f05e71b (HEAD -> master, origin/master, origin/HEAD)
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Dec 28 23:26:30 2020 +0100
+
+    proc: Fix WIFCONTINUED
+    
+    * proc/wait.c (S_proc_mark_cont): Set p_status to __W_CONTINUED.
+
+Index: hurd-debian/proc/wait.c
+===================================================================
+--- hurd-debian.orig/proc/wait.c
++++ hurd-debian/proc/wait.c
+@@ -327,6 +327,7 @@ S_proc_mark_cont (struct proc *p)
+ 
+   p->p_stopped = 0;
+   p->p_continued = 1;
++  p->p_status = __W_CONTINUED;
+   p->p_waited = 0;
+ 
+   if (p->p_parent->p_waiting)

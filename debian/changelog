@@ -1,6 +1,7 @@
 hurd (1:0.9.git20201127-4) UNRELEASED; urgency=medium
 
-  * debian/patches/git-continued.diff: Add proper support for waitid.
+  * debian/patches/git-continued.diff, git-status-continued.diff,
+  git-wnowait.diff: Add proper support for waitid.
 
  -- Samuel Thibault <sthibault@debian.org>  Thu, 03 Dec 2020 20:00:25 +0000
 
