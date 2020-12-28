@@ -10,6 +10,12 @@ Date:   Sun Dec 27 00:58:17 2020 +0100
 
     Add proc_waitid
 
+commit fd9a72c13f16177af489cc20a7f595beec155370
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Mon Dec 28 21:53:25 2020 +0100
+
+    Bump interface version
+    
 Index: hurd-debian/proc/proc.h
 ===================================================================
 --- hurd-debian.orig/proc/proc.h
@@ -176,3 +182,13 @@ Index: hurd-debian/proc/wait.c
    return 0;
  }
  
+diff --git a/hurd/version.h b/hurd/version.h
+index 9b85b5a5..dcf6039a 100644
+--- a/hurd/version.h
++++ b/hurd/version.h
+@@ -3,4 +3,4 @@
+    and will only ever be increased.  This will be bumped whenever either
+    the RPC interfaces or the library APIs change.  */
+ 
+-#define HURD_INTERFACE_VERSION	20020609
++#define HURD_INTERFACE_VERSION	20201227
