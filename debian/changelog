@@ -6,6 +6,7 @@ hurd (1:0.9.git20201127-4) unstable; urgency=medium
   * hurd.lintian-overrides: Update overrides.
   * hurd-libs0.3.lintian-overrides: Add override.
   * rules: Use DEB_CFLAGS_MAINT_APPEND instead of DEB_CFLAGS_APPEND.
+  * patches/libddekit_pic.diff: Fix PIC objects in libmachdevdde.
 
  -- Samuel Thibault <sthibault@debian.org>  Mon, 28 Dec 2020 22:33:39 +0000
 

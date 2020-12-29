@@ -1,0 +1,12 @@
+We need to link in PIC-enabled objects to build .so files such as libmachdevdde.so
+
+diff --git a/libddekit/Makefile b/libddekit/Makefile
+index efbaf90cf..88a0c8909 100644
+--- a/libddekit/Makefile
++++ b/libddekit/Makefile
+@@ -49,4 +49,4 @@ include ../Makeconf
+ LIBS += -lpciaccess
+ 
+ $(libname).so.$(hurd-version):
+-	echo "INPUT ( $(libname).a )" > $@
++	echo "INPUT ( $(libname)_pic.a )" > $@
