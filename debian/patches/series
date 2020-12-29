@@ -30,4 +30,5 @@ git-const_string_t.diff
 git-continued.diff
 git-wnowait.diff
 git-status-continued.diff
-libddekit_pic.diff
+git-libddekit_pic.diff
+git-wnowait-def.diff

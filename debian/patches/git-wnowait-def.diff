@@ -1,0 +1,23 @@
+commit abc2970530191da4c960bcfb8a9c3296c8fb6ea5
+Author: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Date:   Tue Dec 29 03:00:50 2020 +0100
+
+    proc: Fix building with old glibc
+    
+    * proc/wait.c (WNOWAIT): Define if not already defined.
+
+diff --git a/proc/wait.c b/proc/wait.c
+index 7968a4f9..4551d289 100644
+--- a/proc/wait.c
++++ b/proc/wait.c
+@@ -39,6 +39,10 @@
+ #define WCONTINUED 4
+ #endif
+ 
++#ifndef WNOWAIT
++#define WNOWAIT 8
++#endif
++
+ #ifndef WEXITED
+ #define WEXITED 16
+ #endif
