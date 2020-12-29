@@ -79,7 +79,7 @@ override_dh_auto_configure: debian/configure-stamp
 debian/configure-stamp:
 	dh_auto_configure -Bbuild-deb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell dpkg-buildflags --export=configure)
 ifeq (,$(filter pkg.hurd.noprof,$(DEB_BUILD_PROFILES)))
-	dh_auto_configure -Bbuild-prof -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell DEB_CFLAGS_APPEND=-pg dpkg-buildflags --export=configure)
+	dh_auto_configure -Bbuild-prof -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_deb) $(shell DEB_CFLAGS_MAINT_APPEND=-pg dpkg-buildflags --export=configure)
 endif
 ifeq (,$(filter stage1 stage2 noudeb,$(DEB_BUILD_PROFILES)))
 	dh_auto_configure -Bbuild-udeb -- $(CONFIGURE_ARGS) $(CONFIGURE_ARGS_udeb) $(shell dpkg-buildflags --export=configure)
