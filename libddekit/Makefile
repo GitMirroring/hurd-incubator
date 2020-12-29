@@ -49,4 +49,4 @@ include ../Makeconf
 LIBS += -lpciaccess
 
 $(libname).so.$(hurd-version):
-	echo "INPUT ( $(libname).a )" > $@
+	echo "INPUT ( $(libname)_pic.a )" > $@
