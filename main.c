@@ -29,5 +29,8 @@ int main(int argc, char **argv)
 	ddekit_thread_create (machdev_run1, NULL, "ds_server");
 	machdev_run2();
 
+	/* Let the other threads do their job */
+	pthread_exit(NULL);
+
 	return 0;
 }
