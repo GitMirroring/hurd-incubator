@@ -78,7 +78,7 @@ int log_init ()
 		output = stderr;
 	}
 	else {
-		char template[] = "/var/log/dde_log.XXXXXX";
+		char template[] = "/var/run/dde_log.XXXXXX";
 		int ret = mkstemp (template);
 		if (ret < 0) {
 			error (0, errno, "mkstemp");
