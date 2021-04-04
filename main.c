@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 
 	l4dde26_do_initcalls();
 
-	machdev_init();
+	machdev_init(argc, argv);
 
 	ddekit_thread_create (machdev_run1, NULL, "ds_server");
 	machdev_run2();
