@@ -297,7 +297,7 @@ do_mach_notify_dead_name (struct port_info *pi,
 kern_return_t
 ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 		mach_msg_type_name_t reply_portPoly,
-		dev_mode_t mode, dev_name_t name, mach_port_t *device, 
+		dev_mode_t mode, const_dev_name_t name, mach_port_t *device,
 		mach_msg_type_name_t *devicetype)
 {
   kern_return_t err;
@@ -406,7 +406,7 @@ ds_device_write (struct proxy_user *user, mach_port_t reply_port,
 kern_return_t
 ds_device_write_inband (struct proxy_user *user, mach_port_t reply_port,
 			mach_msg_type_name_t reply_type, dev_mode_t mode,
-			recnum_t recnum, io_buf_ptr_inband_t data,
+			recnum_t recnum, const_io_buf_ptr_inband_t data,
 			size_t datalen, int *bytes_written)
 {
   kern_return_t ret;
