@@ -4,7 +4,7 @@
 /* List of sk_buffs waiting to be freed.  */
 static struct sk_buff_head skb_done_list;
 
-struct net_device *search_netdev (char *name)
+struct net_device *search_netdev (const char *name)
 {
 	struct net_device *dev;
 	struct net_device *found = NULL;

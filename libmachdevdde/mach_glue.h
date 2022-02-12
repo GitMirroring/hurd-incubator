@@ -24,7 +24,7 @@ int dev_change_flags (struct net_device *dev, short flags);
 int linux_pkg_xmit (char *pkg_data, int len, void *del_data,
 		    int (*del_func) (struct sk_buff *, void *),
 		    struct net_device *dev);
-struct net_device *search_netdev (char *name);
+struct net_device *search_netdev (const char *name);
 void kfree_skb (struct sk_buff *skb);
 int dev_open(struct net_device *dev);
 void *l4dde26_register_rx_callback(void *cb);
