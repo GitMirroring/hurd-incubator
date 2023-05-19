@@ -1,8 +1,6 @@
 #include "local.h"
 
-#include <linux/kexec.h>
-
-note_buf_t *crash_notes = NULL;
+void *crash_notes = NULL;
 
 void touch_nmi_watchdog(void)
 {
