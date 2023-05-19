@@ -61,8 +61,15 @@
 #define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
 
 #ifndef __ASSEMBLY__
-void clear_page(void *page);
-void copy_page(void *to, void *from);
+static inline void clear_page(void *page)
+{
+	memset(page, 0, PAGE_SIZE);
+}
+
+static inline void copy_page(void *to, void *from)
+{
+	memcpy(to, from, PAGE_SIZE);
+}
 
 /* duplicated to the one in bootmem.h */
 extern unsigned long max_pfn;
