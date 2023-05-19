@@ -9,7 +9,7 @@
    should be just put into a single section and referenced directly
    from %gs */
 
-#ifdef CONFIG_SMP
+#if 0 //def CONFIG_SMP
 #include <asm/pda.h>
 
 #define __per_cpu_offset(cpu) (cpu_pda(cpu)->data_offset)

@@ -24,10 +24,14 @@ struct task_struct *get_current(void);
 
 struct task_struct;
 
+#ifndef DDE_LINUX
 static __always_inline struct task_struct *get_current(void)
 {
 	return read_pda(pcurrent);
 }
+#else
+struct task_struct *get_current(void);
+#endif
 
 #else /* __ASSEMBLY__ */
 
