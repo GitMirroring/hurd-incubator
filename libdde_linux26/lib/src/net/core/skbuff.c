@@ -60,6 +60,7 @@
 #include <net/dst.h>
 #include <net/sock.h>
 #include <net/checksum.h>
+#include <net/ip6_checksum.h>
 #ifndef DDE_LINUX
 #include <net/xfrm.h>
 #endif /* DDE_LINUX */
