@@ -10,7 +10,7 @@ endif
 
 SYSTEMS = x86-l4v2
 
-ifeq ($(ARCH), x86)
+ifneq (,$(filter $(ARCH),x86 amd64))
 ARCH_DIR = arch/i386
 endif
 
@@ -22,7 +22,7 @@ PRIVATE_INCDIR += $(CONTRIB)/drivers/pci $(PKGDIR)/linux26/lib/src/arch/l4 \
                   $(CONTRIB)/$(ARCH_DIR)/pci $(CONTRIB)/drivers/base/ \
                   $(CONTRIB)/lib $(PKGDIR_OBJ) $(CONTRIB)/net/core
 
-ifeq ($(ARCH), x86)
+ifneq (,$(filter $(ARCH),x86 amd64))
 SRC_S_libdde_linux26_net_ip.a += $(ARCH_DIR)/lib/checksum.S
 endif
 

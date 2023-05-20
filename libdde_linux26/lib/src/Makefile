@@ -27,7 +27,7 @@ ifeq ($(CONFIG_DDE26_CHAR),y)
 TARGET += libdde_linux26_char.a
 endif
 
-ifeq ($(ARCH), x86)
+ifneq (,$(filter $(ARCH),x86 amd64))
 ARCH_DIR = arch/x86
 endif
 
@@ -64,6 +64,16 @@ SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/pci-dma.c
 SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/pci-nommu.c
 SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/setup.c
 SRC_S_libdde_linux26_net.a += $(ARCH_DIR)/lib/checksum_32.S
+endif
+
+ifeq ($(ARCH), amd64)
+SRC_S_libdde_linux26.o.a += $(ARCH_DIR)/lib/semaphore_64.S
+SRC_S_libdde_linux26.o.a += $(ARCH_DIR)/lib/delay.o
+SRC_C_libdde_linux26.o.a += lib/rwsem.c
+SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/pci-dma.c
+SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/pci-nommu.c
+SRC_C_libdde_linux26.o.a += $(ARCH_DIR)/kernel/setup.c
+SRC_C_libdde_linux26_net.a += $(ARCH_DIR)/lib/checksum.c
 endif
 
 ifeq ($(ARCH), arm)

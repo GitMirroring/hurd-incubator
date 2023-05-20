@@ -79,7 +79,11 @@ endif
 LDFLAGS += -Wl,-gc-sections
 #endif
 #endif
+ifeq ($(ARCH), x86)
 LDFLAGS += -Wl,-Tdefault.ld
+else
+LDFLAGS += -Wl,-Tdefault-64.ld
+endif
 
 #include $(L4DIR)/mk/install.inc
 

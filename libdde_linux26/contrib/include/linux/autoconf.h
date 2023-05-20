@@ -467,7 +467,13 @@
 #define CONFIG_TMPFS 1
 #define CONFIG_QUOTA 1
 #define CONFIG_ASK_IP_FIB_HASH 1
+#ifdef __x86_64__
+#define CONFIG_X86_64 1
+#define CONFIG_64BIT 1
+#else
 #define CONFIG_X86_32 1
+#else
+#endif
 #define CONFIG_PCI_MMCONFIG 1
 #define CONFIG_SCHED_HRTICK 1
 #define CONFIG_GENERIC_TIME 1

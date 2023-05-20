@@ -32,7 +32,7 @@ ifeq ($(origin _L4DIR_MK_MAKECONF),undefined)
 _L4DIR_MK_MAKECONF=y
 
 SYSTEMS = x86-l4v2
-ARCH = x86
+ARCH ?= x86
 
 # the default target is all
 all::

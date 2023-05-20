@@ -5,7 +5,7 @@ KBUILD_DEFINES = -D"KBUILD_STR(s)=\#s" \
 
 # for some reasons, Linux 2.6 does not include autoconf.h in the implementation
 # files but does so on the command line
-ifeq ($(ARCH), x86)
+ifneq (,$(filter $(ARCH),x86 amd64))
 KBUILD_CPPFLAGS = -include linux/autoconf.h
 endif
 
@@ -35,7 +35,7 @@ MODE_USE_C = y
 L4_MULTITHREADED = y
 
 # arch-specific stuff
-ifeq ($(ARCH), x86)
+ifneq (,$(filter $(ARCH),x86 amd64))
 MY_DDE_INCDIR += $(OBJ_BASE)/include/linux-headers/asm/mach-default
 endif
 
