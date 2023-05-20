@@ -472,7 +472,6 @@
 #define CONFIG_64BIT 1
 #else
 #define CONFIG_X86_32 1
-#else
 #endif
 #define CONFIG_PCI_MMCONFIG 1
 #define CONFIG_SCHED_HRTICK 1
