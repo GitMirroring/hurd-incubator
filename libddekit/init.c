@@ -13,10 +13,10 @@ mach_port_t priv_host;
 
 void ddekit_init(void)
 {
-	extern void linux_kmem_init ();
-	extern int log_init ();
-	extern void interrupt_init ();
-	extern int pgtab_init ();
+	extern void linux_kmem_init (void);
+	extern int log_init (void);
+	extern void interrupt_init (void);
+	extern int pgtab_init (void);
 	error_t err;
 
 	err = get_privileged_ports (&priv_host, NULL);

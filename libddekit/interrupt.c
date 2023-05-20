@@ -272,7 +272,7 @@ void ddekit_interrupt_enable(int irq)
 	}
 }
 
-void interrupt_init ()
+void interrupt_init (void)
 {
 	error_t err;
 

@@ -119,7 +119,7 @@ int ddekit_release_mem(ddekit_addr_t start, ddekit_addr_t count) {
 	return 0;
 }
 
-long ddekit_random ()
+long ddekit_random (void)
 {
 	return random ();
 }

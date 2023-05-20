@@ -146,7 +146,7 @@ static int
 pre_kfree_skb (struct sk_buff *skb, void *data)
 {
   struct skb_reply *reply = data;
-  extern void wakeup_io_done_thread ();
+  extern void wakeup_io_done_thread (void);
 
   /* Queue sk_buff on done list if there is a
      page list attached or we need to send a reply.
@@ -270,8 +270,7 @@ dev_to_port (void *nd)
 /*    
  * Initialize send and receive queues on an interface.
  */   
-void if_init_queues(ifp)
-     register struct ifnet *ifp;
+void if_init_queues(struct ifnet *ifp)
 {     
 //  IFQ_INIT(&ifp->if_snd);
   queue_init(&ifp->port_list.if_rcv_port_list);
@@ -429,11 +428,7 @@ device_write (void *d, mach_port_t reply_port,
  * Other network operations
  */
 static io_return_t
-net_getstat(ifp, flavor, status, count)
-	struct ifnet	*ifp;
-	dev_flavor_t	flavor;
-	dev_status_t	status;		/* pointer to OUT array */
-	natural_t	*count;		/* OUT */
+net_getstat(struct ifnet *ifp, dev_flavor_t flavor, dev_status_t status /* pointer to OUT array */, natural_t *count /* OUT */)
 {
 #define ETHERMTU 1500
 	switch (flavor) {
@@ -627,7 +622,7 @@ device_set_filter (void *d, mach_port_t port, int priority,
 }
 
 /* Do any initialization required for network devices.  */
-static void linux_net_emulation_init ()
+static void linux_net_emulation_init (void)
 {
   skb_done_head_init();
   l4dde26_register_rx_callback(netif_rx_handle);
@@ -654,7 +649,7 @@ static struct machdev_device_emulation_ops linux_net_emulation_ops =
   NULL
 };
 
-void machdevdde_register_net()
+void machdevdde_register_net(void)
 {
   machdev_register (&linux_net_emulation_ops);
 }

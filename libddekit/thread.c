@@ -39,7 +39,7 @@ struct ddekit_sem
 
 static __thread struct ddekit_thread *thread_self;
 
-static void _thread_cleanup ()
+static void _thread_cleanup (void)
 {
 	ddekit_condvar_deinit (thread_self->private->sleep_cond);
 	ddekit_simple_free (thread_self->private);
@@ -144,7 +144,7 @@ void *ddekit_thread_get_data(ddekit_thread_t *thread) {
 	return thread->user;
 }
 
-void *ddekit_thread_get_my_data() {
+void *ddekit_thread_get_my_data(void) {
 	return ddekit_thread_get_data(ddekit_thread_myself());
 }
 
@@ -196,7 +196,7 @@ void  ddekit_thread_wakeup(ddekit_thread_t *td) {
 	ddekit_condvar_signal (td->private->sleep_cond);
 }
 
-void  ddekit_thread_exit() {
+void  ddekit_thread_exit(void) {
 	_thread_cleanup ();
 	pthread_exit (NULL);
 }
@@ -215,7 +215,7 @@ void ddekit_yield(void)
 	swtch_pri (0);
 }
 
-void ddekit_init_threads() {
+void ddekit_init_threads(void) {
 	ddekit_thread_setup_myself ("main");
 }
 

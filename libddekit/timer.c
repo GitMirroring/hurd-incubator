@@ -53,7 +53,7 @@ static void dump_list(char *msg)
 #endif
 }
 
-unsigned long fetch_jiffies ()
+unsigned long fetch_jiffies (void)
 {
   struct timeval tv;
   long long j;
@@ -311,7 +311,7 @@ static void ddekit_timer_thread(void *arg)
 	// TODO how is the thread terminated?
 }
 
-ddekit_thread_t *ddekit_get_timer_thread()
+ddekit_thread_t *ddekit_get_timer_thread(void)
 {
 	return timer_thread_ddekit;
 }

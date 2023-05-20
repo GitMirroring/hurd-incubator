@@ -9,7 +9,7 @@
 struct sk_buff;
 struct net_device;
 void skb_done_queue(struct sk_buff *skb);
-struct sk_buff *skb_done_dequeue();
+struct sk_buff *skb_done_dequeue(void);
 void *skb_reply(struct sk_buff *skb);
 
 int netdev_flags(struct net_device *dev);
@@ -28,7 +28,7 @@ struct net_device *search_netdev (const char *name);
 void kfree_skb (struct sk_buff *skb);
 int dev_open(struct net_device *dev);
 void *l4dde26_register_rx_callback(void *cb);
-void skb_done_head_init();
+void skb_done_head_init(void);
 
 /* block device */
 struct block_device;

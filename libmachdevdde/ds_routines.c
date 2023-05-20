@@ -23,6 +23,7 @@
 #include <hurd/machdev.h>
 
 #include "machdevdde.h"
+#include "mach_glue.h"
 
 
 void * machdevdde_server(void *arg)

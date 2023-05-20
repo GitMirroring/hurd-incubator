@@ -13,7 +13,7 @@ struct ddekit_condvar {
 	pthread_cond_t cond;
 };
 
-ddekit_condvar_t *ddekit_condvar_init() {
+ddekit_condvar_t *ddekit_condvar_init(void) {
 	ddekit_condvar_t *cvp;
 
 	cvp = ddekit_simple_malloc (sizeof (*cvp));

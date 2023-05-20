@@ -14,7 +14,7 @@ typedef void (*crt0_hook)(void);
 static crt0_hook __L4DDE_CTOR_BEG__[1] SECTION(".mark_beg_l4dde_ctors")	= BEG;
 static crt0_hook __l4DDE_CTOR_END__[1] SECTION(".mark_end_l4dde_ctors")	= END;
 
-void ddekit_do_initcalls() {
+void ddekit_do_initcalls(void) {
     crt0_hook *list = __L4DDE_CTOR_BEG__;
 
     list++;

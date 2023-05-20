@@ -205,7 +205,7 @@ void ddekit_pgtab_set_region_with_size(void *virt, ddekit_addr_t phys, int size,
 	pthread_mutex_unlock (&lock);
 }
 
-int pgtab_init ()
+int pgtab_init (void)
 {
 	capability = INIT_SIZE;
 	regions = malloc (sizeof (struct entry) * capability);

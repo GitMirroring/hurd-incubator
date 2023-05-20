@@ -72,7 +72,7 @@ int ddekit_vprintf(const char *fmt, va_list va)
 	return ret;
 }
 
-int log_init ()
+int log_init (void)
 {
 	if (using_std) {
 		output = stderr;
@@ -95,7 +95,7 @@ int log_init ()
 	return 0;
 }
 
-void dump_stack()
+void dump_stack(void)
 {
 #define NUM_TRACES 16
 	void *trace[NUM_TRACES];
