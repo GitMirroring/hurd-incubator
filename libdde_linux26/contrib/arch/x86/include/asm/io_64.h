@@ -203,19 +203,21 @@ extern void __iomem *fix_ioremap(unsigned idx, unsigned long phys);
 #define virt_to_bus virt_to_phys
 #define bus_to_virt phys_to_virt
 
+#include <string.h>
+
 void __memcpy_fromio(void *, unsigned long, unsigned);
 void __memcpy_toio(unsigned long, const void *, unsigned);
 
 static inline void memcpy_fromio(void *to, const volatile void __iomem *from,
 				 unsigned len)
 {
-	__memcpy(to, (unsigned long)from, len);
+	memcpy(to, (void*) from, len);
 }
 
 static inline void memcpy_toio(volatile void __iomem *to, const void *from,
 			       unsigned len)
 {
-	__memcpy((unsigned long)to, from, len);
+	memcpy((void*) to, from, len);
 }
 
 static inline void

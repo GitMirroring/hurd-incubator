@@ -61,6 +61,8 @@
 #define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
 
 #ifndef __ASSEMBLY__
+#include <string.h>
+
 static inline void clear_page(void *page)
 {
 	memset(page, 0, PAGE_SIZE);
