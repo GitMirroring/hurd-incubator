@@ -18,22 +18,22 @@ install::
 
 clean cleanall scrub::
 	$(VERBOSE)set -e; $(foreach d,$(TARGET), test -f $d/broken || \
-	    if [ -f $d/Makefile ] ; then PWD=$(PWD)/$d $(MAKE) -C $d $@ $(MKFLAGS) $(MKFLAGS_$(d)); fi; )
+	    if [ -f $d/Makefile ] ; then PWD=$(PWD)/$d $(MAKE) -C $d $@ $(MKFLAGS) ARCH=$(ARCH) $(MKFLAGS_$(d)); fi; )
 
 install oldconfig txtconfig relink::
 	$(VERBOSE)set -e; $(foreach d,$(TARGET), test -f $d/broken -o -f $d/obsolete || \
-	    if [ -f $d/Makefile ] ; then PWD=$(PWD)/$d $(MAKE) -C $d $@ $(MKFLAGS) $(MKFLAGS_$(d)); fi; )
+	    if [ -f $d/Makefile ] ; then PWD=$(PWD)/$d $(MAKE) -C $d $@ $(MKFLAGS) ARCH=$(ARCH) $(MKFLAGS_$(d)); fi; )
 
 # first the subdir-targets (this is were "all" will be build, e.g. in lib
 # or server.
 $(filter-out ptest,$(SUBDIR_TARGET)):
 	$(VERBOSE)test -f $@/broken -o -f $@/obsolete ||		\
-	    if [ -f $@/Makefile ] ; then PWD=$(PWD)/$@ $(MAKE) -C $@ $(MKFLAGS) ; fi
+	    if [ -f $@/Makefile ] ; then PWD=$(PWD)/$@ $(MAKE) -C $@ $(MKFLAGS) ARCH=$(ARCH) ; fi
 # Second, the rules for going down into sub-pkgs with "lib" and "server"
 # targets. Going down into sub-pkgs.
 	$(if $(SUBDIRS),$(if $(filter $@,idl include lib server examples doc),\
 		$(VERBOSE)set -e; for s in $(SUBDIRS); do \
-			PWD=$(PWD)/$$s $(MAKE) -C $$s $@ $(MKFLAGS); done ))
+			PWD=$(PWD)/$$s $(MAKE) -C $$s $@ $(MKFLAGS) ARCH=$(ARCH); done ))
 
 idl include lib server examples doc:
 
@@ -44,7 +44,7 @@ TEST_DEPENDS ?= server
 # to be able to specify additional dependencies, we make it a :: target
 ptest:: $(TEST_DEPENDS) 
 	$(VERBOSE)test -f $@/broken -o -f $@/obsolete || \
-	  if [ -f $@/Makefile ] ; then PWD=$(PWD)/$@ $(MAKE) -C $@ $(MKFLAGS) ; fi
+	  if [ -f $@/Makefile ] ; then PWD=$(PWD)/$@ $(MAKE) -C $@ $(MKFLAGS) ARCH=$(ARCH) ; fi
 
 install-symlinks:
 	$(warning target install-symlinks is obsolete. Use 'include' instead (warning only))

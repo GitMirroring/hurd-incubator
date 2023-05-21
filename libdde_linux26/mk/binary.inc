@@ -121,7 +121,7 @@ install relink scrub:: $(foreach arch,$(TARGET_SYSTEMS),\
                                           $(OBJ_DIR)/OBJ-$(arch)/$(BID_OBJ_Makefile))
 	$(if $(TARGET_SYSTEMS),  $(VERBOSE)set -e ; \
 	    for d in $(TARGET_SYSTEMS) ; do \
-	    	PWD=$OBJ-$$d $(MAKE) -C $(OBJ_DIR)/OBJ-$$d -f $(BID_OBJ_Makefile) \
+	    	PWD=$OBJ-$$d $(MAKE) -C $(OBJ_DIR)/OBJ-$$d -f $(BID_OBJ_Makefile) ARCH=$(ARCH) \
 			$@ ; done )
 
 .PHONY: pre-obj
@@ -130,12 +130,12 @@ pre-obj::
 all:: $(foreach arch,$(TARGET_SYSTEMS), $(OBJ_DIR)/OBJ-$(arch))
 .PHONY: $(foreach arch,$(TARGET_SYSTEMS), $(OBJ_DIR)/OBJ-$(arch))
 $(foreach arch,$(TARGET_SYSTEMS), $(OBJ_DIR)/OBJ-$(arch)):%:%/$(BID_OBJ_Makefile) pre-obj
-	$(VERBOSE)PWD=$@ $(MAKE) $(PL_j) -C $@ -f $(BID_OBJ_Makefile)
+	$(VERBOSE)PWD=$@ $(MAKE) $(PL_j) -C $@ -f $(BID_OBJ_Makefile) ARCH=$(ARCH)
 
 clean disasm::
 	$(if $(wildcard $(OBJ_DIR)/OBJ-*), $(VERBOSE)set -e ; \
 	    for d in $(wildcard $(OBJ_DIR)/OBJ-*) ; do \
-	        PWD=$$d $(MAKE) -C $$d -f $(BID_OBJ_Makefile) $@; \
+	        PWD=$$d $(MAKE) -C $$d -f $(BID_OBJ_Makefile) ARCH=$(ARCH) $@; \
 	    done, @true)
 
 cleanall::
