@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <error.h>
 
 #include <hurd.h>
 #include <mach.h>

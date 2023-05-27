@@ -1,8 +1,6 @@
 #include <dde26.h> /* l4dde26_*() */
 #include <dde26_net.h> /* l4dde26 networking */
 
-#include <pthread.h>
-
 #include <linux/netdevice.h> /* struct sk_buff */
 #include <linux/pci.h> /* pci_unregister_driver() */
 #include <linux/init.h>  // initcall()
