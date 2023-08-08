@@ -226,6 +226,7 @@ netif_rx_handle (char *data, int len, struct net_device *dev)
   struct ether_header *eh;
   struct packet_header *ph;
   struct net_data *nd;
+  size_t align = sizeof (uintptr_t);
 
   nd = search_nd(dev);
   assert (nd);
@@ -236,7 +237,7 @@ netif_rx_handle (char *data, int len, struct net_device *dev)
     (((mach_msg_size_t) (sizeof (struct net_rcv_msg)
 			 - sizeof net_msg.sent
 			 + sizeof (struct packet_header)
-			 - NET_RCV_MAX + pack_size)) + 3) & ~3;
+			 - NET_RCV_MAX + pack_size)) + align-1) & ~(align-1);
 
   /* Copy packet into message buffer.  */
   eh = (struct ether_header *) (net_msg.header);
