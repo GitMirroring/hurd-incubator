@@ -105,23 +105,23 @@ static struct machdev_device_emulation_ops linux_net_emulation_ops;
 
 static mach_msg_type_t header_type = 
 {
-  MACH_MSG_TYPE_BYTE,
-  8,
-  NET_HDW_HDR_MAX,
-  TRUE,
-  FALSE,
-  FALSE,
-  0
+  .msgt_name = MACH_MSG_TYPE_BYTE,
+  .msgt_size = 8,
+  .msgt_number = NET_HDW_HDR_MAX,
+  .msgt_inline = TRUE,
+  .msgt_longform = FALSE,
+  .msgt_deallocate = FALSE,
+  .msgt_unused = 0
 };
 
 static mach_msg_type_t packet_type = 
 {
-  MACH_MSG_TYPE_BYTE,	/* name */
-  8,			/* size */
-  0,			/* number */
-  TRUE,			/* inline */
-  FALSE,			/* longform */
-  FALSE			/* deallocate */
+  .msgt_name = MACH_MSG_TYPE_BYTE,
+  .msgt_size = 8,
+  .msgt_number = 0,
+  .msgt_inline = TRUE,
+  .msgt_longform = FALSE,
+  .msgt_deallocate = FALSE
 };
 
 static struct net_data *search_nd (struct net_device *dev)
