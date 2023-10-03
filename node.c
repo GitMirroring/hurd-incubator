@@ -729,8 +729,8 @@ error_t node_unlink_file (node_t * dir, char *name)
   of the translator opened as `flags.`*/
 error_t 
   node_set_translator
-  (struct protid * diruser, node_t * np, char * trans, int flags,
-   char * filename, mach_port_t * port)
+  (struct protid * diruser, node_t * np, const char * trans, int flags,
+   const char * filename, mach_port_t * port)
 {
   error_t err;
   mach_port_t p;

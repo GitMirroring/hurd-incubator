@@ -107,7 +107,7 @@ void lnode_ref_remove (lnode_t * node);
 /*---------------------------------------------------------------------------*/
 /*Creates a new lnode with `name`; the new node is locked and contains
   a single reference*/
-error_t lnode_create (char *name, lnode_t ** node);
+error_t lnode_create (const char *name, lnode_t ** node);
 /*---------------------------------------------------------------------------*/
 /*Destroys the given lnode*/
 void lnode_destroy (lnode_t * node);
@@ -119,7 +119,7 @@ error_t lnode_path_construct (lnode_t * node, char **path);
 /*---------------------------------------------------------------------------*/
 /*Gets a light node by its name, locks it and increments its refcount*/
 error_t lnode_get (lnode_t * dir,	/*search here */
-		   char *name,	        /*search for this name */
+		   const char *name,	        /*search for this name */
 		   lnode_t ** node	/*put the result here */
 		   );
 /*---------------------------------------------------------------------------*/
