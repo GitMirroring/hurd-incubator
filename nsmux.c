@@ -77,7 +77,7 @@ FILE *nsmux_dbg;
 error_t
   netfs_attempt_create_file
   (struct iouser *user,
-   struct node *dir, char *name, mode_t mode, struct node **node)
+   struct node *dir, const char *name, mode_t mode, struct node **node)
 {
   LOG_MSG ("netfs_attempt_create_file");
 
@@ -458,7 +458,7 @@ error_t
 /*Looks up `name` under `dir` for `user`*/
 error_t
   netfs_attempt_lookup
-  (struct iouser * user, struct node * dir, char *name, struct node ** node)
+  (struct iouser * user, struct node * dir, const char *name, struct node ** node)
 {
   LOG_MSG ("netfs_attempt_lookup");
 
@@ -476,7 +476,7 @@ error_t
   create a proxy node and return it in `node`.*/
 error_t
   netfs_attempt_lookup_improved
-  (struct iouser * user, struct node * dir, char *name, int flags,
+  (struct iouser * user, struct node * dir, const char *name, int flags,
    int lastcomp, node_t ** node, file_t * file, int proxy)
 {
   LOG_MSG ("netfs_attempt_lookup_improved: '%s'", name);
@@ -590,7 +590,7 @@ error_t
   }				/*finalize */
 
   /*Performs a usual lookup */
-  error_t lookup (char *name,	/*lookup this */
+  error_t lookup (const char *name,	/*lookup this */
 		  int flags,	/*lookup `name` in the this way */
 		  int proxy	/*should a proxy node be created */
     )
@@ -747,7 +747,7 @@ error_t
 error_t
   netfs_S_dir_lookup
   (struct protid * diruser,
-   char *filename,
+   const char *filename,
    int flags,
    mode_t mode,
    retry_type * do_retry,
@@ -1343,7 +1343,7 @@ out:
 /*---------------------------------------------------------------------------*/
 /*Deletes `name` in `dir` for `user`*/
 error_t
-  netfs_attempt_unlink (struct iouser * user, struct node * dir, char *name)
+  netfs_attempt_unlink (struct iouser * user, struct node * dir, const char *name)
 {
   LOG_MSG ("netfs_attempt_unlink");
 
@@ -1356,7 +1356,7 @@ error_t
   netfs_attempt_rename
   (struct iouser * user,
    struct node * fromdir,
-   char *fromname, struct node * todir, char *toname, int excl)
+   const char *fromname, struct node * todir, const char *toname, int excl)
 {
   LOG_MSG ("netfs_attempt_rename");
 
@@ -1368,7 +1368,7 @@ error_t
 /*Attempts to create a new directory*/
 error_t
   netfs_attempt_mkdir
-  (struct iouser * user, struct node * dir, char *name, mode_t mode)
+  (struct iouser * user, struct node * dir, const char *name, mode_t mode)
 {
   LOG_MSG ("netfs_attempt_mkdir");
 
@@ -1378,7 +1378,7 @@ error_t
 /*---------------------------------------------------------------------------*/
 /*Attempts to remove directory `name` in `dir` for `user`*/
 error_t
-  netfs_attempt_rmdir (struct iouser * user, struct node * dir, char *name)
+  netfs_attempt_rmdir (struct iouser * user, struct node * dir, const char *name)
 {
   LOG_MSG ("netfs_attempt_rmdir");
 
@@ -1424,7 +1424,7 @@ error_t
 /*Attempts to turn `node` into a symlink targetting `name`*/
 error_t
   netfs_attempt_mksymlink
-  (struct iouser * cred, struct node * node, char *name)
+  (struct iouser * cred, struct node * node, const char *name)
 {
   LOG_MSG ("netfs_attempt_mksymlink");
 
@@ -1449,7 +1449,7 @@ error_t
 /*Attempts to set the passive translator record for `file` passing `argz`*/
 error_t
   netfs_set_translator
-  (struct iouser * cred, struct node * node, char *argz, size_t arglen)
+  (struct iouser * cred, struct node * node, const char *argz, size_t arglen)
 {
   LOG_MSG ("netfs_set_translator");
 
@@ -1507,7 +1507,7 @@ error_t netfs_attempt_syncfs (struct iouser * cred, int wait)
 error_t
   netfs_attempt_link
   (struct iouser * user,
-   struct node * dir, struct node * file, char *name, int excl)
+   struct node * dir, struct node * file, const char *name, int excl)
 {
   LOG_MSG ("netfs_attempt_link");
 
@@ -1578,7 +1578,7 @@ error_t
 error_t
   netfs_attempt_write
   (struct iouser * cred,
-   struct node * node, loff_t offset, size_t * len, void *data)
+   struct node * node, loff_t offset, size_t * len, const void *data)
 {
   /*Write the supplied data into the file and return the result */
   return io_write (node->nn->port, data, *len, offset, len);
