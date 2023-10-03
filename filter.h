@@ -66,7 +66,7 @@ extern io_statbuf_t underlying_node_stat;
 error_t
   netfs_attempt_create_file
   (struct iouser *user,
-   struct node *dir, char *name, mode_t mode, struct node **node);
+   struct node *dir, const char *name, mode_t mode, struct node **node);
 /*---------------------------------------------------------------------------*/
 /*Returns an error if the process of opening a file should not be
   allowed to complete because of insufficient permissions*/
@@ -104,27 +104,27 @@ error_t
 /*Looks up `name` under `dir` for `user`*/
 error_t
   netfs_attempt_lookup
-  (struct iouser *user, struct node *dir, char *name, struct node **node);
+  (struct iouser *user, struct node *dir, const char *name, struct node **node);
 /*---------------------------------------------------------------------------*/
 /*Deletes `name` in `dir` for `user`*/
 error_t
-  netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name);
+  netfs_attempt_unlink (struct iouser *user, struct node *dir, const char *name);
 /*---------------------------------------------------------------------------*/
 /*Attempts to rename `fromdir`/`fromname` to `todir`/`toname`*/
 error_t
   netfs_attempt_rename
   (struct iouser *user,
    struct node *fromdir,
-   char *fromname, struct node *todir, char *toname, int excl);
+   const char *fromname, struct node *todir, const char *toname, int excl);
 /*---------------------------------------------------------------------------*/
 /*Attempts to create a new directory*/
 error_t
   netfs_attempt_mkdir
-  (struct iouser *user, struct node *dir, char *name, mode_t mode);
+  (struct iouser *user, struct node *dir, const char *name, mode_t mode);
 /*---------------------------------------------------------------------------*/
 /*Attempts to remove directory `name` in `dir` for `user`*/
 error_t
-  netfs_attempt_rmdir (struct iouser *user, struct node *dir, char *name);
+  netfs_attempt_rmdir (struct iouser *user, struct node *dir, const char *name);
 /*---------------------------------------------------------------------------*/
 /*Attempts to change the owner of `node` for user `cred` to `uid`:`gid`*/
 error_t
@@ -143,7 +143,7 @@ error_t
 /*Attempts to turn `node` into a symlink targetting `name`*/
 error_t
   netfs_attempt_mksymlink
-  (struct iouser *cred, struct node *node, char *name);
+  (struct iouser *cred, struct node *node, const char *name);
 /*---------------------------------------------------------------------------*/
 /*Attempts to turn `node` into a device; type can be either S_IFBLK or
   S_IFCHR*/
@@ -154,7 +154,7 @@ error_t
 /*Attempts to set the passive translator record for `file` passing `argz`*/
 error_t
   netfs_set_translator
-  (struct iouser *cred, struct node *node, char *argz, size_t arglen);
+  (struct iouser *cred, struct node *node, const char *argz, size_t arglen);
 /*---------------------------------------------------------------------------*/
 /*Attempts to call chflags for `node`*/
 error_t
@@ -177,7 +177,7 @@ error_t netfs_attempt_syncfs (struct iouser *cred, int wait);
 error_t
   netfs_attempt_link
   (struct iouser *user,
-   struct node *dir, struct node *file, char *name, int excl);
+   struct node *dir, struct node *file, const char *name, int excl);
 /*---------------------------------------------------------------------------*/
 /*Attempts to create an anonymous file related to `dir` with `mode`*/
 error_t
@@ -198,7 +198,7 @@ error_t
 error_t
   netfs_attempt_write
   (struct iouser *cred,
-   struct node *node, loff_t offset, size_t * len, void *data);
+   struct node *node, loff_t offset, size_t * len, const void *data);
 /*---------------------------------------------------------------------------*/
 /*Frees all storage associated with the node*/
 void netfs_node_norefs (struct node *np);
