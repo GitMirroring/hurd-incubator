@@ -48,7 +48,7 @@ extern struct fs_backend backend;
    This call should unlock DIR no matter what.)  */
 error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir, 
-		      char *name, struct node **np)
+		      const char *name, struct node **np)
 {
   error_t err = 0;
 
@@ -142,7 +142,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
    return.  */
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
-			     loff_t offset, size_t *len, void *data)
+			     loff_t offset, size_t *len, const void *data)
 {
   if (! backend.write_node)
     return EROFS;
@@ -440,7 +440,7 @@ netfs_attempt_syncfs (struct iouser *cred, int wait)
    CRED. NP is locked.  */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-    char *argz, size_t argzlen)
+    const char *argz, size_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -574,7 +574,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
    (user CRED) into a symlink with target NAME.  */
 error_t
 netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
-			 char *name)
+			 const char *name)
 {
   error_t err;
 
@@ -629,7 +629,7 @@ netfs_attempt_chflags (struct iouser *cred, struct node *np,
    locked) for USER.  */
 error_t
 netfs_attempt_unlink (struct iouser *user, struct node *dir,
-		      char *name)
+		      const char *name)
 {
   error_t err;
 
@@ -666,8 +666,8 @@ netfs_attempt_unlink (struct iouser *user, struct node *dir,
    are locked.  */
 error_t
 netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-			      char *fromname, struct node *todir, 
-			      char *toname, int excl)
+			      const char *fromname, struct node *todir, 
+			      const char *toname, int excl)
 {
   debug (("FIXME: Not implemented"));
   return EOPNOTSUPP;
@@ -678,7 +678,7 @@ netfs_attempt_rename (struct iouser *user, struct node *fromdir,
    MODE. */
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   error_t err = fshelp_isowner (&dir->nn_stat, user);
   struct node *newdir;
@@ -695,7 +695,7 @@ netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 /* The user must define this function.  Attempt to remove directory
    named NAME in DIR (which is locked) for USER.  */
 error_t
-netfs_attempt_rmdir (struct iouser *user, struct node *dir, char *name)
+netfs_attempt_rmdir (struct iouser *user, struct node *dir, const char *name)
 {
   /* Simply redirect the call */
   return netfs_attempt_unlink (user, dir, name);
@@ -708,7 +708,7 @@ netfs_attempt_rmdir (struct iouser *user, struct node *dir, char *name)
    NAME is already found in DIR.  */
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
-		    struct node *file, char *name, int excl)
+		    struct node *file, const char *name, int excl)
 {
   error_t err;
 
@@ -743,7 +743,7 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
    locked on success; no matter what, unlock DIR before returning.  */
 error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **np)
+			   const char *name, mode_t mode, struct node **np)
 {
   error_t err = fshelp_isowner (&dir->nn_stat, user);
 
@@ -792,7 +792,7 @@ netfs_append_args (char **argz, unsigned *argz_len)
    returned if some option is unrecognized.  The default definition of this
    routine will parse them using NETFS_RUNTIME_ARGP. */
 error_t
-netfs_set_options (char *argz, size_t argz_len)
+netfs_set_options (const char *argz, size_t argz_len)
 {
   error_t err = EINVAL;
 

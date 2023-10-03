@@ -270,7 +270,7 @@ tarfs_get_args (char **argz, unsigned *argz_len)
    fsysopts): for instance, --no-timeout won't work (it doesn't make
    sense when tarfs is already running).  */
 error_t
-tarfs_set_options (char *argz, size_t argz_len)
+tarfs_set_options (const char *argz, size_t argz_len)
 {
   error_t err = 0;
 
@@ -320,7 +320,7 @@ tarfs_set_options (char *argz, size_t argz_len)
 
 
 error_t tarfs_create_node (struct node **newnode, struct node *dir,
-			   char *name, mode_t mode);
+			   const char *name, mode_t mode);
 
 /* This function is called every time a header has been successfully parsed.
    It simply creates the node corresponding to the header.
@@ -769,7 +769,7 @@ tarfs_read_node (struct node *node, off_t offset, size_t *len, void* data)
 
 /* Write to NODE through its cache.  */
 error_t
-tarfs_write_node (struct node *node, off_t offset, size_t *len, void *data)
+tarfs_write_node (struct node *node, off_t offset, size_t *len, const void *data)
 {
   IF_RWFS;
 
@@ -829,7 +829,7 @@ tarfs_change_stat (struct node *node, const io_statbuf_t *st)
    it will point to the new node.  NAME is duplicated.  */
 error_t
 tarfs_create_node (struct node **newnode, struct node *dir,
-		   char *name, mode_t mode)
+		   const char *name, mode_t mode)
 {
   error_t err;
   struct node *new = NULL;
@@ -932,7 +932,7 @@ tarfs_free_node (struct node *node)
 /* Tries to create a hard link named NAME in DIR to file NODE.  */
 error_t
 tarfs_link_node (struct node *dir, struct node *target,
-		 char *name, int excl)
+		 const char *name, int excl)
 {
   error_t err = 0;
   struct tar_item *prev_tar, *tar;
