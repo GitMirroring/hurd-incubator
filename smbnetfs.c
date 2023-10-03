@@ -177,7 +177,7 @@ create_root_node ()
 
 /* Add FILENAME in directory TOP and set *NN to the resulting node.  */
 static error_t
-add_node (char *filename, struct node *top, struct netnode **nn)
+add_node (const char *filename, struct node *top, struct netnode **nn)
 {
   int err;
   struct netnode *n;
@@ -270,7 +270,7 @@ netfs_attempt_chmod (struct iouser * cred, struct node * np, mode_t mode)
 }
 
 error_t
-netfs_attempt_mksymlink (struct iouser * cred, struct node * np, char *name)
+netfs_attempt_mksymlink (struct iouser * cred, struct node * np, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -282,7 +282,7 @@ netfs_attempt_mkdev (struct iouser * cred, struct node * np, mode_t type,dev_t i
 }
 
 error_t
-netfs_set_translator (struct iouser * cred, struct node * np, char *argz,size_t argzlen)
+netfs_set_translator (struct iouser * cred, struct node * np, const char *argz,size_t argzlen)
 {
   return 0;
 }
@@ -362,7 +362,7 @@ netfs_attempt_syncfs (struct iouser * cred, int wait)
 }
 
 error_t
-netfs_attempt_lookup (struct iouser * user, struct node * dir, char *name,
+netfs_attempt_lookup (struct iouser * user, struct node * dir, const char *name,
 		      struct node ** np)
 {
   struct netnode *n;
@@ -414,7 +414,7 @@ netfs_attempt_lookup (struct iouser * user, struct node * dir, char *name,
 }
 
 error_t
-netfs_attempt_unlink (struct iouser * user, struct node * dir, char *name)
+netfs_attempt_unlink (struct iouser * user, struct node * dir, const char *name)
 {
   char *filename;
 
@@ -437,7 +437,7 @@ netfs_attempt_unlink (struct iouser * user, struct node * dir, char *name)
 
 error_t
 netfs_attempt_rename (struct iouser * user, struct node * fromdir,
-		      char *fromname, struct node * todir, char *toname,
+		      const char *fromname, struct node * todir, const char *toname,
 		      int excl)
 {
   char *filename;		/* Origin file name.  */
@@ -464,7 +464,7 @@ netfs_attempt_rename (struct iouser * user, struct node * fromdir,
 }
 
 error_t
-netfs_attempt_mkdir (struct iouser * user, struct node * dir, char *name,
+netfs_attempt_mkdir (struct iouser * user, struct node * dir, const char *name,
 		     mode_t mode)
 {
   char *filename;
@@ -483,7 +483,7 @@ netfs_attempt_mkdir (struct iouser * user, struct node * dir, char *name,
 }
 
 error_t
-netfs_attempt_rmdir (struct iouser * user, struct node * dir, char *name)
+netfs_attempt_rmdir (struct iouser * user, struct node * dir, const char *name)
 {
   char *filename;
   error_t err;
@@ -502,7 +502,7 @@ netfs_attempt_rmdir (struct iouser * user, struct node * dir, char *name)
 
 error_t
 netfs_attempt_link (struct iouser * user, struct node * dir,
-		    struct node * file, char *name, int excl)
+		    struct node * file, const char *name, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -517,7 +517,7 @@ netfs_attempt_mkfile (struct iouser * user, struct node * dir, mode_t mode,
 
 error_t
 netfs_attempt_create_file (struct iouser * user, struct node * dir,
-			   char *name, mode_t mode, struct node ** np)
+			   const char *name, mode_t mode, struct node ** np)
 {
   error_t err = 0;
   char *filename;
@@ -637,7 +637,7 @@ netfs_attempt_read (struct iouser * cred, struct node * np, loff_t offset,
 
 error_t
 netfs_attempt_write (struct iouser * cred, struct node * np, loff_t offset,
-		     size_t * len, void *data)
+		     size_t * len, const void *data)
 {
   int ret = 0;
   int fd;
