@@ -48,7 +48,7 @@ extern error_t fs_dir_last_entry (struct node *dir, struct node **last);
 
 /* Returns either NULL or a pointer to a node if found.  */
 extern struct node*
-fs_find_node (struct node *dir, char *name);
+fs_find_node (struct node *dir, const char *name);
 
 /* Looks for a node located at PATH, starting at directory N.
    When looking for "/foo/bar":

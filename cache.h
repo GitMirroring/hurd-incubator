@@ -69,7 +69,7 @@ extern error_t cache_read (struct node *node, off_t offset,
 /* Writes at most LEN bytes from NODE at OFFSET into BUF.
    Returns the amount of data actually written in AMOUNT.  */
 extern error_t cache_write (struct node *node, off_t offset,
-			    void *data, size_t len, size_t *amount);
+			    const void *data, size_t len, size_t *amount);
 
 /* Sets the size of NODE and reduce/grow its cache.  */
 extern error_t cache_set_size (struct node *node, size_t size);

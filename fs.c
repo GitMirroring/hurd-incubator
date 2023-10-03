@@ -135,7 +135,7 @@ filter_node_name (char* name)
 
 /* Returns either NULL or a pointer to a node if found.  */
 static inline struct node*
-_find_node (struct node *dir, char *name)
+_find_node (struct node *dir, const char *name)
 {
   struct node *node = NULL;
 
@@ -176,7 +176,7 @@ _find_node (struct node *dir, char *name)
 }
 
 struct node *
-fs_find_node (struct node *dir, char *name)
+fs_find_node (struct node *dir, const char *name)
 {
   return _find_node (dir, name);
 }
@@ -461,9 +461,10 @@ fs_get_path_from_root (struct node *root, struct node *node)
     if (strlen (path) + strlen (n->nn->name) + 1 + 1 > len)
     {
       char* new;
+      size_t offset = ptr - path;
       len *= 2;
       new = realloc (path, len);
-      ptr = new + (ptr - path);
+      ptr = new + offset;
       path = new;
     }
     REVERSE_COPY (ptr, n->nn->name);
@@ -507,9 +508,10 @@ fs_get_path_to_root (struct node *root, struct node *node)
     if (strlen (path) + 3 + 1 > len)
     {
       char* new;
+      size_t offset = ptr - path;
       len *= 2;
       new = realloc (path, len);
-      ptr = new + (ptr - path);
+      ptr = new + offset;
       path = new;
     }
     strncpy (ptr, "../", 3);

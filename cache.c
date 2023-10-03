@@ -367,7 +367,7 @@ cache_set_size (struct node *node, size_t size)
 /* Writes at most LEN bytes from NODE at OFFSET into BUF.
    Returns the amount of data actually written in AMOUNT.  */
 error_t
-cache_write (struct node *node, off_t offset, void *data,
+cache_write (struct node *node, off_t offset, const void *data,
 	     size_t len, size_t *amount)
 {
   error_t err  = 0;

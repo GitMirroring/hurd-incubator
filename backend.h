@@ -61,7 +61,7 @@ struct fs_backend
   error_t (*get_args)(char **argz, unsigned *argz_len);
 
   /* Set options (see netfs_set_options()). */
-  error_t (*set_options)(char *argz, size_t argz_len);
+  error_t (*set_options)(const char *argz, size_t argz_len);
 
 
   /* 
@@ -87,21 +87,21 @@ struct fs_backend
 
   /* Changing a node */
   error_t (* write_node) (struct node *np, off_t offset,
-  			  size_t *len, void* data);
+  			  size_t *len, const void* data);
 
   /* Change NP's stats.  */
   error_t (* change_stat)(struct node *np, const io_statbuf_t *new_stat);
 
   /* Creates a node named NAME in DIR which is locked.  */
   error_t (* create_node) (struct node **new, struct node *dir,
-  			   char *name, mode_t m);
+  			   const char *name, mode_t m);
 
   /* Unlinks NODE.  NODE can be a directory in which case it is empty.  */
   error_t (* unlink_node) (struct node *node);
 
   /* Tries to create a hard link named NAME in DIR to file NODE.  */
   error_t (* link_node) (struct node *dir, struct node *target,
-  			 char *name, int excl); /* Same as netfs semantics */
+  			 const char *name, int excl); /* Same as netfs semantics */
 
   /* Makes NODE a symlink to TARGET.  */
   error_t (* symlink_node) (struct node *node, const char *target);
