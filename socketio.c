@@ -701,7 +701,7 @@ netfs_S_dir_lookup (struct protid *diruser,
    This call should unlock DIR no matter what.)  */
 error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
-		      char *name, struct node **node)
+		      const char *name, struct node **node)
 {
   /* Not used.  */
   return EIEIO;
@@ -827,7 +827,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
    target NAME.  */
 error_t
 netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
-			 char *name)
+			 const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -847,7 +847,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
    length ARGZLEN) for user CRED. NP is locked.  */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      char *argz, size_t argzlen)
+		      const char *argz, size_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -928,7 +928,7 @@ netfs_attempt_syncfs (struct iouser *cred, int wait)
 /* Delete NAME in DIR (which is locked) for USER.  */
 error_t
 netfs_attempt_unlink (struct iouser *user, struct node *dir,
-		      char *name)
+		      const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -938,8 +938,8 @@ netfs_attempt_unlink (struct iouser *user, struct node *dir,
    of the specific nodes are locked.  */
 error_t
 netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-		      char *fromname, struct node *todir, 
-		      char *toname, int excl)
+		      const char *fromname, struct node *todir, 
+		      const char *toname, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -949,7 +949,7 @@ netfs_attempt_rename (struct iouser *user, struct node *fromdir,
    locked) for USER with mode MODE. */
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   return EOPNOTSUPP;
 }
@@ -959,7 +959,7 @@ netfs_attempt_mkdir (struct iouser *user, struct node *dir,
    USER.  */
 error_t
 netfs_attempt_rmdir (struct iouser *user, 
-		     struct node *dir, char *name)
+		     struct node *dir, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -970,7 +970,7 @@ netfs_attempt_rmdir (struct iouser *user,
    target.  Return EEXIST if NAME is already found in DIR.  */
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
-		    struct node *file, char *name, int excl)
+		    struct node *file, const char *name, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -993,7 +993,7 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
    on success; no matter what, unlock DIR before returning.  */
 error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **np)
+			   const char *name, mode_t mode, struct node **np)
 {
   *np = 0;
   pthread_mutex_unlock (&dir->lock);
@@ -1044,7 +1044,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
    successfully written upon return.  */
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
-		     off_t offset, size_t *len, void *data)
+		     off_t offset, size_t *len, const void *data)
 {
   return EOPNOTSUPP;
 }
@@ -1075,9 +1075,9 @@ netfs_node_norefs (struct node *np)
   struct references result;
 
   node_uninstall (np);
-  node_destroy (np);
   if (np->nn->flags & PROTOCOL_NODE)
     refcounts_demote (&dir->refcounts, &result);
+  node_destroy (np);
 }
 
 
