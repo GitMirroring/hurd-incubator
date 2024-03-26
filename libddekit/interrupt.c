@@ -5,7 +5,6 @@
  * \date    2007-01-22
  *
  * FIXME could intloop_param freed after startup?
- * FIXME use consume flag to indicate IRQ was handled
  */
 
 #include <stdio.h>
@@ -13,153 +12,45 @@
 #include <mach.h>
 #include <hurd.h>
 
-#include <device/notify.h>
-#include <device/device.h>
+#include "libirqhelp/irqhelp.h"
 
-#include "ddekit/interrupt.h"
 #include "ddekit/semaphore.h"
-#include "ddekit/printf.h"
 #include "ddekit/memory.h"
-#include "ddekit/condvar.h"
-
-#define DEBUG_INTERRUPTS  0
+#include "ddekit/thread.h"
+#include "ddekit/interrupt.h"
+#include "ddekit/printf.h"
 
 #define MAX_INTERRUPTS   32
 
-#define BLOCK_IRQ         0
+static struct
+{
+	int              handle_irq; /* nested irq disable count */
+	ddekit_lock_t    irqlock;
+	ddekit_thread_t  *irq_thread;
+	ddekit_sem_t     *started;
+	void             *irqhelp;   /* irqhelp instance for detaching from IRQ */
+} ddekit_irq_ctrl[MAX_INTERRUPTS];
 
 /*
  * Internal type for interrupt loop parameters
  */
 struct intloop_params
 {
-	unsigned          irq;       /* irq number */
-	int               shared;    /* irq sharing supported? */
-	void(*thread_init)(void *);  /* thread initialization */
-	void(*handler)(void *);      /* IRQ handler function */
-	void             *priv;      /* private token */ 
-	mach_port_t       irqport;   /* delivery port for notifications */
-	ddekit_sem_t     *started;
-
-	int               start_err;
+	unsigned	irq;		/* irq number */
+	void		*priv;		/* private token */
+	void		(*init)(void *);/* thread_init */
 };
 
-static struct
+void wrapped_server_loop(void *arg)
 {
-	int              handle_irq; /* nested irq disable count */
-	ddekit_lock_t    irqlock;
-	struct ddekit_condvar	*cond;
-	ddekit_thread_t  *irq_thread; /* thread ID for detaching from IRQ later on */
-	boolean_t        thread_exit;
-	thread_t         mach_thread;
-} ddekit_irq_ctrl[MAX_INTERRUPTS];
+	struct intloop_params *params = (struct intloop_params *)arg;
+	struct irq *irqhelp = ddekit_irq_ctrl[params->irq].irqhelp;
 
-static mach_port_t master_host;
-static mach_port_t master_device;
-static device_t irq_dev;
+	params->init(params->priv);
+	ddekit_sem_up(ddekit_irq_ctrl[params->irq].started);
 
-/**
- * Interrupt service loop
- *
- */
-static void intloop(void *arg)
-{
-	kern_return_t ret;
-	struct intloop_params *params = arg;
-	mach_port_t delivery_port;
-	mach_port_t pset, psetcntl;
-	int my_index;
-
-	ret = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-				  &delivery_port);
-	if (ret)
-	  error (2, ret, "mach_port_allocate");
-
-	my_index = params->irq;
-	params->irqport = delivery_port;
-	ddekit_irq_ctrl[my_index].mach_thread = mach_thread_self ();
-	ret = thread_get_assignment (mach_thread_self (), &pset);
-	if (ret)
-		error (0, ret, "thread_get_assignment");
-	ret = host_processor_set_priv (master_host, pset, &psetcntl);
-	if (ret)
-		error (0, ret, "host_processor_set_priv");
-	thread_max_priority (mach_thread_self (), psetcntl, 0);
-	ret = thread_priority (mach_thread_self (), DDEKIT_IRQ_PRIO, 0);
-	if (ret)
-		error (0, ret, "thread_priority");
-
-	// TODO the flags for shared irq should be indicated by params->shared.
-	// Flags needs to be 0 for new irq interface for now.
-	// Otherwise, the interrupt handler cannot be installed in the kernel.
-	ret = device_intr_register (irq_dev, my_index,
-				  0, delivery_port,
-				  MACH_MSG_TYPE_MAKE_SEND);
-	ddekit_printf ("device_intr_register returns %d\n", ret);
-	if (ret) {
-		/* inform thread creator of error */
-		/* XXX does omega0 error code have any meaning to DDEKit users? */
-		params->start_err = ret;
-		ddekit_sem_up(params->started);
-		ddekit_printf ("cannot install irq %d\n", my_index);
-		return;
-	}
-
-#if 0
-	/* 
-	 * Setup an exit fn. This will make sure that we clean up everything,
-	 * before shutting down an IRQ thread.
-	 */
-	if (l4thread_on_exit(&exit_fn, (void *)my_index) < 0)
-		ddekit_panic("Could not set exit handler for IRQ fn.");
-#endif
-
-	/* after successful initialization call thread_init() before doing anything
-	 * else here */
-	if (params->thread_init) params->thread_init(params->priv);
-
-	/* save handle + inform thread creator of success */
-	params->start_err = 0;
-	ddekit_sem_up(params->started);
-
-	int irq_server (mach_msg_header_t *inp, mach_msg_header_t *outp) {
-		device_intr_notification_t *intr_header = (device_intr_notification_t *) inp;
-
-		((mig_reply_header_t *) outp)->RetCode = MIG_NO_REPLY;
-		if (inp->msgh_id != DEVICE_INTR_NOTIFY)
-			return 0;
-
-		/* It's an interrupt not for us. It shouldn't happen. */
-		if (intr_header->id != params->irq) {
-			ddekit_printf ("We get interrupt %d, %d is expected",
-				       intr_header->id, params->irq);
-			return 1;
-		}
-
-		/* only call registered handler function, if IRQ is not disabled */
-		ddekit_lock_lock (&ddekit_irq_ctrl[my_index].irqlock);
-		while (ddekit_irq_ctrl[my_index].handle_irq <= 0) {
-			ddekit_condvar_wait (ddekit_irq_ctrl[my_index].cond,
-					&ddekit_irq_ctrl[my_index].irqlock);
-			// TODO if it's edged-triggered irq, the interrupt will be lost.
-		}
-		params->handler(params->priv);
-
-		/* Acknowledge the interrupt */
-		device_intr_ack (irq_dev, params->irqport, MACH_MSG_TYPE_MAKE_SEND);
-
-		if (ddekit_irq_ctrl[my_index].thread_exit) {
-			ddekit_lock_unlock (&ddekit_irq_ctrl[my_index].irqlock);
-			ddekit_thread_exit();
-			return 1;
-		}
-		ddekit_lock_unlock (&ddekit_irq_ctrl[my_index].irqlock);
-		return 1;
-	}
-
-	mach_msg_server (irq_server, 0, delivery_port);
+	irqhelp_server_loop(irqhelp);
 }
-
 
 /**
  * Attach to hardware interrupt
@@ -184,47 +75,37 @@ ddekit_thread_t *ddekit_interrupt_attach(int irq, int shared,
 
 	/* We cannot attach the interrupt to the irq which has been used. */
 	if (ddekit_irq_ctrl[irq].irq_thread)
-	  return NULL;
+		return NULL;
 
 	/* initialize info structure for interrupt loop */
 	params = ddekit_simple_malloc(sizeof(*params));
 	if (!params) return NULL;
 
-	// TODO make sure irq is 0-15 instead of 1-16.
-	params->irq         = irq;
-	params->thread_init = thread_init;
-	params->handler     = handler;
-	params->priv        = priv;
-	params->started     = ddekit_sem_init(0);
-	params->start_err   = 0;
-	params->irqport     = MACH_PORT_NULL;
-	params->shared      = shared;
+	params->irq = irq;
+	params->priv = priv;
+	params->init = thread_init;
+
+	ddekit_irq_ctrl[irq].started = ddekit_sem_init(0);
+	ddekit_irq_ctrl[irq].handle_irq = 1; /* IRQ initial nesting is 1 */
+	ddekit_lock_init_unlocked (&ddekit_irq_ctrl[irq].irqlock);
 
 	/* construct name */
-	snprintf(thread_name, 10, "irq%02X", irq);
+	snprintf(thread_name, sizeof(thread_name), "irq%02d", irq);
 
-	ddekit_irq_ctrl[irq].handle_irq = 1; /* IRQ nesting level is initially 1 */
-	ddekit_lock_init_unlocked (&ddekit_irq_ctrl[irq].irqlock);
-	ddekit_irq_ctrl[irq].cond = ddekit_condvar_init ();
-	ddekit_irq_ctrl[irq].thread_exit = FALSE;
+	ddekit_irq_ctrl[irq].irqhelp = irqhelp_install_interrupt_handler(irq, -1, -1, -1, handler, priv);
 
-	/* allocate irq */
 	/* create interrupt loop thread */
-	thread = ddekit_thread_create(intloop, params, thread_name);
+	thread = ddekit_thread_create(wrapped_server_loop, params, thread_name);
 	if (!thread) {
+		irqhelp_remove_interrupt_handler(ddekit_irq_ctrl[irq].irqhelp);
 		ddekit_simple_free(params);
 		return NULL;
 	}
 	ddekit_irq_ctrl[irq].irq_thread = thread;
 
-
 	/* wait for intloop initialization result */
-	ddekit_sem_down(params->started);
-	ddekit_sem_deinit(params->started);
-	if (params->start_err) {
-		ddekit_simple_free(params);
-		return NULL;
-	}
+	ddekit_sem_down(ddekit_irq_ctrl[irq].started);
+	ddekit_sem_deinit(ddekit_irq_ctrl[irq].started);
 
 	return thread;
 }
@@ -236,16 +117,11 @@ ddekit_thread_t *ddekit_interrupt_attach(int irq, int shared,
 void ddekit_interrupt_detach(int irq)
 {
 	ddekit_interrupt_disable(irq);
-	// TODO  the code should be removed.
+
 	ddekit_lock_lock (&ddekit_irq_ctrl[irq].irqlock);
 	if (ddekit_irq_ctrl[irq].handle_irq == 0) {
-		ddekit_irq_ctrl[irq].thread_exit = TRUE;
+		irqhelp_remove_interrupt_handler(ddekit_irq_ctrl[irq].irqhelp);
 		ddekit_irq_ctrl[irq].irq_thread = NULL;
-
-		/* If the irq thread is waiting for interrupt notification
-		 * messages, thread_abort() can force it to return.
-		 * I hope this ugly trick can work. */
-		thread_abort (ddekit_irq_ctrl[irq].mach_thread);
 	}
 	ddekit_lock_unlock (&ddekit_irq_ctrl[irq].irqlock);
 }
@@ -267,20 +143,12 @@ void ddekit_interrupt_enable(int irq)
 		ddekit_lock_lock (&ddekit_irq_ctrl[irq].irqlock);
 		++ddekit_irq_ctrl[irq].handle_irq;
 		if (ddekit_irq_ctrl[irq].handle_irq > 0)
-			ddekit_condvar_signal (ddekit_irq_ctrl[irq].cond);
+			irqhelp_enable_irq(ddekit_irq_ctrl[irq].irqhelp);
 		ddekit_lock_unlock (&ddekit_irq_ctrl[irq].irqlock);
 	}
 }
 
 void interrupt_init (void)
 {
-	error_t err;
-
-	err = get_privileged_ports (&master_host, &master_device);
-	if (err)
-		error (1, err, "get_privileged_ports");
-
-	err = device_open (master_device, D_READ, "irq", &irq_dev);
-	if (err)
-		error (2, err, "device_open irq");
+	irqhelp_init();
 }

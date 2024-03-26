@@ -39,7 +39,7 @@ LCLHDRS = $(installhdrs)	\
 
 OBJS = $(sort $(SRCS:.c=.o))
 
-HURDLIBS = ports shouldbeinlibc hurd-slab
+HURDLIBS = ports shouldbeinlibc hurd-slab irqhelp
 LDLIBS += -lpthread
 
 MIGCOMSFLAGS = -prefix dde_
