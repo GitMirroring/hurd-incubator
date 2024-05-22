@@ -245,13 +245,13 @@ asmlinkage int printk(const char * fmt, ...)
 	__attribute__ ((format (printf, 1, 2))) __cold;
 
 extern struct ratelimit_state printk_ratelimit_state;
-extern int printk_ratelimit(void);
 extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
 				   unsigned int interval_msec);
 #else // DDE_LINUX
 #include <ddekit/printf.h>
 #define printk ddekit_printf
 #endif
+extern int printk_ratelimit(void);
 #else
 static inline int vprintk(const char *s, va_list args)
 	__attribute__ ((format (printf, 1, 0)));

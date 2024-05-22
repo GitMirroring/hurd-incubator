@@ -35,7 +35,7 @@ static void blk_done_softirq(struct softirq_action *h)
 	}
 }
 
-#if defined(CONFIG_SMP) && defined(CONFIG_USE_GENERIC_SMP_HELPERS)
+#if defined(CONFIG_SMP) && defined(CONFIG_USE_GENERIC_SMP_HELPERS) && !defined(DDE_LINUX)
 static void trigger_softirq(void *data)
 {
 	struct request *rq = data;

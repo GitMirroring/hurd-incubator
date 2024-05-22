@@ -26,6 +26,7 @@ extern struct mnt_namespace *copy_mnt_ns(unsigned long, struct mnt_namespace *,
 		struct fs_struct *);
 extern void __put_mnt_ns(struct mnt_namespace *ns);
 
+#ifndef DDE_LINUX
 static inline void put_mnt_ns(struct mnt_namespace *ns)
 {
 	if (atomic_dec_and_lock(&ns->count, &vfsmount_lock))
@@ -44,6 +45,7 @@ static inline void get_mnt_ns(struct mnt_namespace *ns)
 {
 	atomic_inc(&ns->count);
 }
+#endif
 
 extern const struct seq_operations mounts_op;
 extern const struct seq_operations mountinfo_op;

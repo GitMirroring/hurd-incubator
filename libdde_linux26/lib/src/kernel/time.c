@@ -44,6 +44,7 @@
 
 #include "timeconst.h"
 #include <ddekit/timer.h>
+#include <ddekit/assert.h>
 
 /*
  * The timezone where the local system is located.  Used as a default by some
