@@ -8,7 +8,7 @@ TARGET         = netdde
 SRC_C          = main.c machdev.c check_kernel.c
 
 LIBS          += $(libmachdevdde_path) $(libmachdev_path) -ldde_linux26.o -ldde_linux26_net $(libddekit_path) -ltrivfs -lpciaccess -lz -lshouldbeinlibc -lports -liohelp -lfshelp -lihash -lpthread $(libslab_path) $(libbpf_path)
-CFLAGS        += -g -I$(PKGDIR)/include -I$(BUILDDIR)/include
+CFLAGS        += -Wno-error=implicit-function-declaration -g -I$(PKGDIR)/include -I$(BUILDDIR)/include
 LDFLAGS       += -g
 
 CFLAGS += -DCONFIG_B44_PCI -DCONFIG_8139TOO_8129

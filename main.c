@@ -6,6 +6,8 @@
 #include <linux/init.h>  // initcall()
 #include <linux/delay.h> // msleep()
 
+extern void pthread_exit(void *retval);
+
 #include "machdev.h"
 #include "check_kernel.h"
 
