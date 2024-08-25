@@ -30,4 +30,4 @@ void l4dde26_do_initcalls(void)
 	ddekit_do_initcalls();
 }
 
-dde_initcall(l4dde26_init);
+/* dde_initcall(l4dde26_init); */

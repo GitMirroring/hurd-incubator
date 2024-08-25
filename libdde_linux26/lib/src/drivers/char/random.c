@@ -223,12 +223,13 @@
  * Eastlake, Steve Crocker, and Jeff Schiller.
  */
 
+#include <linux/module.h>
+
 #ifdef DDE_LINUX
 #include <ddekit/resources.h>
 #else
 
 #include <linux/utsname.h>
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/major.h>
 #include <linux/string.h>
