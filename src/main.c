@@ -15,6 +15,7 @@
 #  include <config.h>
 #endif
 
+#include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <error.h>
