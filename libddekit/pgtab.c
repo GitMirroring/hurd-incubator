@@ -184,7 +184,7 @@ void ddekit_pgtab_clear_region(void *virtual, int type)
  */
 void ddekit_pgtab_set_region(void *virtual, ddekit_addr_t physical, int pages, int type)
 {
-	ddekit_pgtab_set_region (virtual, physical, pages * getpagesize (), type);
+	ddekit_pgtab_set_region_with_size (virtual, physical, pages * getpagesize (), type);
 }
 
 void ddekit_pgtab_set_region_with_size(void *virt, ddekit_addr_t phys, int size, int type)
