@@ -231,7 +231,7 @@ tarfs_get_argp (struct argp *a)
 /* Append to the malloced string *ARGZ of len *ARGZ_LEN a NULL-separated list
    of arguments.  */
 error_t
-tarfs_get_args (char **argz, unsigned *argz_len)
+tarfs_get_args (char **argz, size_t *argz_len)
 {
   error_t err = 0;
   

@@ -58,7 +58,7 @@ struct fs_backend
   void (* get_argp)(struct argp *s);
 
   /* Get arguments (see netfs_append_args()). */
-  error_t (*get_args)(char **argz, unsigned *argz_len);
+  error_t (*get_args)(char **argz, size_t *argz_len);
 
   /* Set options (see netfs_set_options()). */
   error_t (*set_options)(const char *argz, size_t argz_len);

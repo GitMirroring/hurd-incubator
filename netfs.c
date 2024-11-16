@@ -440,7 +440,7 @@ netfs_attempt_syncfs (struct iouser *cred, int wait)
    CRED. NP is locked.  */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-    const char *argz, size_t argzlen)
+    const char *argz, mach_msg_type_number_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -452,7 +452,7 @@ netfs_set_translator (struct iouser *cred, struct node *np,
    *ARGZ_LEN to the total length.  */
 error_t
 netfs_get_translator (struct node *node, char **argz,
-			      size_t *argz_len)
+			      mach_msg_type_number_t *argz_len)
 {
   *argz_len = 0;
   *argz = (char*)malloc (sizeof (char));
@@ -778,7 +778,7 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
    list of the arguments to this translator.  The default definition of this
    routine simply calls netfs_append_std_options.  */
 error_t
-netfs_append_args (char **argz, unsigned *argz_len)
+netfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err = 0;
 

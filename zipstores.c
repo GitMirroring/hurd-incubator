@@ -191,7 +191,7 @@ store_simple_write (struct store *store, off_t addr, void *buf,
     err = store_set_size (store, newsize);
     if (err)
     {
-      error (0, err, "Unable to set store size to %u", newsize);
+      error (0, err, "Unable to set store size to %zu", newsize);
       return err;
     }
   }
