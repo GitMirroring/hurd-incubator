@@ -41,8 +41,8 @@ _get_module_info (void)
     {
       if (routines[i] != NULL)
 	{
-	  printf ("Routine #%d (%s): set to address %x\n", i,
-		  routine_to_str (i), (vm_size_t) routines[i]);
+	  printf ("Routine #%d (%s): set to address %p\n", i,
+		  routine_to_str (i), routines[i]);
 	}
     }
 }
