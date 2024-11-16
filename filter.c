@@ -343,7 +343,7 @@ error_t
 /*Attempts to set the passive translator record for `file` passing `argz`*/
 error_t
   netfs_set_translator
-  (struct iouser * cred, struct node * node, const char *argz, size_t arglen)
+  (struct iouser * cred, struct node * node, const char *argz, mach_msg_type_number_t arglen)
 {
   LOG_MSG ("netfs_set_translator");
 
@@ -450,17 +450,19 @@ error_t
   char *buf = data;
 
   /*Try to read the requested information from the file */
-  err = io_read (np->nn->port, &buf, len, offset, *len);
+  mach_msg_type_number_t num = *len;
+  err = io_read (np->nn->port, &buf, &num, offset, num);
+  *len = num;
 
   /*If some data has been read successfully */
   if (!err && (buf != data))
     {
       /*copy the data from the buffer into which it has just been read into
          the supplied receiver */
-      memcpy (data, buf, *len);
+      memcpy (data, buf, num);
 
       /*unmap the new buffer */
-      munmap (buf, *len);
+      munmap (buf, num);
     }
 
   /*Return the result of reading */

@@ -54,7 +54,7 @@ error_t
 
   /*The name and arguments of the translator being passed now */
   char *argz = NULL;
-  size_t argz_len = 0;
+  mach_msg_type_number_t argz_len = 0;
 
   /*The current working directory */
   char *cwd = NULL;
@@ -155,7 +155,7 @@ error_t
 
   char buf[256];
   char *_buf = buf;
-  size_t len = 256;
+  mach_msg_type_number_t len = 256;
   io_read (node, &_buf, &len, 0, len);
   LOG_MSG ("trace_find: Read from underlying: '%s'", buf);
 

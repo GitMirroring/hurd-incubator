@@ -154,7 +154,7 @@ error_t
 /*Attempts to set the passive translator record for `file` passing `argz`*/
 error_t
   netfs_set_translator
-  (struct iouser *cred, struct node *node, const char *argz, size_t arglen);
+  (struct iouser *cred, struct node *node, const char *argz, mach_msg_type_number_t arglen);
 /*---------------------------------------------------------------------------*/
 /*Attempts to call chflags for `node`*/
 error_t
