@@ -57,7 +57,7 @@ error_t dir_entries_get (file_t dir,
   char *data;
 
   /*The size of `data` */
-  size_t data_size;
+  mach_msg_type_name_t data_size;
 
   /*The number of entries in `data` */
   int entries_num;
