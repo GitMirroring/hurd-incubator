@@ -847,7 +847,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
    length ARGZLEN) for user CRED. NP is locked.  */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      const char *argz, size_t argzlen)
+		      const char *argz, mach_msg_type_number_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -858,7 +858,7 @@ netfs_set_translator (struct iouser *cred, struct node *np,
    storage, and return it in *ARGZ; set *ARGZ_LEN to the total length.  */
 error_t
 netfs_get_translator (struct node *node, char **argz,
-		      size_t *argz_len)
+		      mach_msg_type_number_t *argz_len)
 {
   return EOPNOTSUPP;
 }
