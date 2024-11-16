@@ -749,7 +749,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   *data_entries = count;
 
   fshelp_touch (&dir->nn_stat, TOUCH_ATIME, cvsfs_maptime);
-  FUNC_EPILOGUE_FMT(err, "wrote %d entries to %d bytes.", count, size);
+  FUNC_EPILOGUE_FMT(err, "wrote %d entries to %zd bytes.", count, size);
 }
 
 
