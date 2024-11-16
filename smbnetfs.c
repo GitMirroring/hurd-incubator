@@ -282,13 +282,13 @@ netfs_attempt_mkdev (struct iouser * cred, struct node * np, mode_t type,dev_t i
 }
 
 error_t
-netfs_set_translator (struct iouser * cred, struct node * np, const char *argz,size_t argzlen)
+netfs_set_translator (struct iouser * cred, struct node * np, const char *argz, mach_msg_type_number_t argzlen)
 {
   return 0;
 }
 
 error_t
-netfs_get_translator (struct node * node, char **argz, size_t * argz_len)
+netfs_get_translator (struct node * node, char **argz, mach_msg_type_number_t * argz_len)
 {
   return 0;
 }
