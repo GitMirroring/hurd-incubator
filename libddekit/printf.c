@@ -15,6 +15,7 @@
 #include "ddekit/printf.h"
 
 extern boolean_t using_std;
+#pragma weak using_std
 static FILE *output;
 
 /**
@@ -74,7 +75,7 @@ int ddekit_vprintf(const char *fmt, va_list va)
 
 int log_init (void)
 {
-	if (using_std) {
+	if (&using_std && using_std) {
 		output = stderr;
 	}
 	else {
