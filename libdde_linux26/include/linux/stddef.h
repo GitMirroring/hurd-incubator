@@ -12,10 +12,12 @@
 
 #ifdef __KERNEL__
 
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311
 enum {
 	false	= 0,
 	true	= 1
 };
+#endif
 
 #undef offsetof
 #ifdef __compiler_offsetof
