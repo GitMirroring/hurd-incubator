@@ -842,6 +842,8 @@ int pci_enable_device_io(struct pci_dev *dev)
 	return __pci_enable_device_flags(dev, IORESOURCE_IO);
 }
 
+/** pci_enable_device_mem() is implemented by the DDE. */
+#ifndef DDE_LINUX
 /**
  * pci_enable_device_mem - Initialize a device for use with Memory space
  * @dev: PCI device to be initialized
@@ -854,6 +856,7 @@ int pci_enable_device_mem(struct pci_dev *dev)
 {
 	return __pci_enable_device_flags(dev, IORESOURCE_MEM);
 }
+#endif
 
 /** pci_enable_device() is implemented by the DDE. */
 #ifndef DDE_LINUX

@@ -88,6 +88,19 @@ int __pci_enable_device(struct pci_dev *dev)
 	return 0;
 }
 
+/**
+ * pci_enable_device_mem - Initialize a device for use with Memory space
+ *
+ *  Initialize device before it's used by a driver. Ask low-level code
+ *  to enable Memory resources. Wake up the device if it was suspended.
+ *  Beware, this function can fail.
+ *
+ *  \param dev     PCI device to be initialized
+ */
+int pci_enable_device_mem(struct pci_dev *dev)
+{
+	return pci_enable_device(dev);
+}
 
 /**
   * pci_enable_device - Initialize device before it's used by a driver.
