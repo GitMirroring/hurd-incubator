@@ -8,6 +8,10 @@
 #include "ddekit/pci.h"
 #include "config.h"
 
+#include <hurd.h>
+#include <device/device.h>
+#include "acpi_U.h"
+
 #define dbg_this 0
 
 /** PCI descriptor */
@@ -399,7 +403,41 @@ void ddekit_pci_set_master(struct ddekit_pci_dev *dev)
 	//TODO l4io_pci_set_master(dev->l4dev.handle);
 }
 
+static error_t
+find_gsi_from_acpi(int bus, int slot, int func, int *irq)
+{
+  mach_port_t devices, acpi;
+
+  error_t err = get_privileged_ports(NULL, &devices);
+  if (err)
+    return err;
+
+  if (devices == MACH_PORT_NULL)
+    return ENODEV;
+
+  err = device_open(devices, D_READ, "acpi", &acpi);
+  mach_port_deallocate(mach_task_self(), devices);
+  if (!err)
+    {
+      err = acpi_get_pci_irq(acpi, bus, slot, func, irq);
+      device_close(acpi);
+    }
+
+  return err;
+}
+
 int ddekit_pci_irq_enable(int bus, int slot, int func, int pin, int *irq)
 {
-	return 0;
+  int gsi = -1;
+
+  if (find_gsi_from_acpi(bus, slot, func, &gsi))
+    {
+      ddekit_printf("Cannot find gsi for: %d:%d:%d\n", bus, slot, func);
+    }
+  else if (gsi >= 0)
+    {
+      *irq = gsi;
+    }
+
+  return 0;
 }

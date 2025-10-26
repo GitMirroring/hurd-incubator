@@ -21,7 +21,7 @@ makemode := library
 libname = libddekit
 SRCS= condvar.c init.c interrupt.c lock.c malloc.c memory.c 	\
       pci.c pgtab.c printf.c resources.c list.c panic.c \
-      thread.c timer.c initcall.c
+      thread.c timer.c initcall.c acpiUser.c
 installhdrs = ddekit/condvar.h ddekit/lock.h	\
 	  ddekit/semaphore.h ddekit/debug.h	\
 	  ddekit/inline.h ddekit/panic.h	\
