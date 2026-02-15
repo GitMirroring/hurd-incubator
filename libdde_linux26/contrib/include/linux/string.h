@@ -52,16 +52,19 @@ extern int strcasecmp(const char *s1, const char *s2);
 extern int strncasecmp(const char *s1, const char *s2, size_t n);
 #endif
 #ifndef __HAVE_ARCH_STRCHR
+#undef strchr
 extern char * strchr(const char *,int);
 #endif
 #ifndef __HAVE_ARCH_STRNCHR
 extern char * strnchr(const char *, size_t, int);
 #endif
 #ifndef __HAVE_ARCH_STRRCHR
+#undef strrchr
 extern char * strrchr(const char *,int);
 #endif
 extern char * strstrip(char *);
 #ifndef __HAVE_ARCH_STRSTR
+#undef strstr
 extern char * strstr(const char *,const char *);
 #endif
 #ifndef __HAVE_ARCH_STRLEN
@@ -71,6 +74,7 @@ extern __kernel_size_t strlen(const char *);
 extern __kernel_size_t strnlen(const char *,__kernel_size_t);
 #endif
 #ifndef __HAVE_ARCH_STRPBRK
+#undef strpbrk
 extern char * strpbrk(const char *,const char *);
 #endif
 #ifndef __HAVE_ARCH_STRSEP
@@ -99,6 +103,7 @@ extern void * memscan(void *,int,__kernel_size_t);
 extern int memcmp(const void *,const void *,__kernel_size_t);
 #endif
 #ifndef __HAVE_ARCH_MEMCHR
+#undef memchr
 extern void * memchr(const void *,int,__kernel_size_t);
 #endif
 

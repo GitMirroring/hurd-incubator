@@ -284,6 +284,7 @@ EXPORT_SYMBOL(strncmp);
  * @s: The string to be searched
  * @c: The character to search for
  */
+#undef strchr
 char *strchr(const char *s, int c)
 {
 	for (; *s != (char)c; ++s)
@@ -300,6 +301,7 @@ EXPORT_SYMBOL(strchr);
  * @s: The string to be searched
  * @c: The character to search for
  */
+#undef strrchr
 char *strrchr(const char *s, int c)
 {
        const char *p = s + strlen(s);
@@ -449,6 +451,7 @@ EXPORT_SYMBOL(strcspn);
  * @cs: The string to be searched
  * @ct: The characters to search for
  */
+#undef strpbrk
 char *strpbrk(const char *cs, const char *ct)
 {
 	const char *sc1, *sc2;
@@ -646,6 +649,7 @@ EXPORT_SYMBOL(memscan);
  * @s1: The string to be searched
  * @s2: The string to search for
  */
+#undef strstr
 char *strstr(const char *s1, const char *s2)
 {
 	int l1, l2;
@@ -675,6 +679,7 @@ EXPORT_SYMBOL(strstr);
  * returns the address of the first occurrence of @c, or %NULL
  * if @c is not found
  */
+#undef memchr
 void *memchr(const void *s, int c, size_t n)
 {
 	const unsigned char *p = s;
