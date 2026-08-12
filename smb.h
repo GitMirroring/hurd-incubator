@@ -18,7 +18,6 @@
 */
 
 #define _GNU_SOURCE 1
-#define _FILE_OFFSET_BITS 64
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -29,15 +28,16 @@
 #include <hurd/netfs.h>
 #include <libsmbclient.h>
 
-struct smb_credentials
+struct smb_opts
 {
   char *server;
   char *share;
   char *workgroup;
   char *username;
   char *password;
+  char *min_proto;
 };
-extern struct smb_credentials credentials;
+extern struct smb_opts opts;
+extern SMBCCTX *ctx;
 
-extern int init_smb ();
-extern void stop_netsmb ();
+extern void init_smb (const char *min_proto);

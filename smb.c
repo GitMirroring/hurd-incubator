@@ -19,20 +19,51 @@
 #include "smb.h"
 
 void
-auth_data_fn (const char *server, const char *share, char *workgroup,
+auth_data_fn (SMBCCTX *c, const char *server, const char *share, char *workgroup,
               int wgmaxlen, char *username, int unmaxlen, char *password,
               int pwmaxlen)
 {
-  if (strcmp (server, credentials.server))
-    return;
-  strncpy (workgroup, credentials.workgroup, wgmaxlen);
-  strncpy (username, credentials.username, unmaxlen);
-  strncpy (password, credentials.password, pwmaxlen);
+  if (strcmp (server, opts.server))
+    {
+      fprintf(stderr, "ERROR: server %s does not match what we wanted %s\n", server, opts.server);
+      return;
+    }
+
+  strncpy (workgroup, opts.workgroup, wgmaxlen);
+  strncpy (username, opts.username, unmaxlen);
+  strncpy (password, opts.password, pwmaxlen);
 }
 
-int
-init_smb ()
+void
+init_smb (const char *min_proto)
 {
-  int ret = smbc_init (auth_data_fn, 10);
-  return ret;
+  int ret;
+
+  ctx = smbc_new_context();
+  if (!ctx)
+    error(EXIT_FAILURE, errno, "Failed to get new smbc context");
+
+  smbc_setOptionDebugToStderr(ctx, 1);
+  smbc_setDebug(ctx, 1);
+  smbc_setOptionNoAutoAnonymousLogin(ctx, true);
+  smbc_setOptionUseKerberos(ctx, 0);
+  ret = smbc_setOptionProtocols(ctx, min_proto, "SMB3_11");
+  if (!ret)
+    error(EXIT_FAILURE, 1, "Cannot set minimum protocol version to %s", min_proto);
+
+  smbc_setOptionPosixExtensions(ctx, true);
+  ret = smbc_getOptionPosixExtensions(ctx);
+  if (ret == false)
+    fprintf(stderr, "Could not enable posix extensions, continuing\n");
+
+  smbc_setUser(ctx, opts.username);
+  smbc_setFunctionAuthDataWithContext(ctx, auth_data_fn);
+  if (!smbc_getFunctionAuthDataWithContext(ctx))
+    error(EXIT_FAILURE, 1, "Cannot set auth data function\n");
+
+  ctx = smbc_init_context(ctx);
+  if (!ctx)
+    error(EXIT_FAILURE, errno, "Failed to init smbc context");
+
+  smbc_set_context(ctx);
 }

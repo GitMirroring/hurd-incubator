@@ -38,6 +38,7 @@ static struct argp_option options[] =
 	{"password",'p',"PWD",0, "password to use (default: empty password)"},
 	{"username",'u',"USR",0, "user name to use (default: `$USER')"},
 	{"workgroup",'w',"WKG",0, "workgroup to use (default: `WORKGROUP')"},
+	{"minproto",'m',"MPT",0, "minimum protocol version (default: `SMB3_11')"},
 	{0}
 };
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
@@ -45,19 +46,22 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
   switch(key)
     {
       case 's':
-        credentials.server = arg;        
+        opts.server = arg;
         break;
       case 'r':
-        credentials.share = arg;        
+        opts.share = arg;
         break;
       case 'w':
-        credentials.workgroup = arg;
+        opts.workgroup = arg;
         break;
       case 'u':
-        credentials.username = arg;
+        opts.username = arg;
         break;
       case 'p':
-        credentials.password = arg;
+        opts.password = arg;
+        break;
+      case 'm':
+        opts.min_proto = arg;
         break;
       case ARGP_KEY_ARG:
         break;
@@ -75,22 +79,21 @@ int
 main (int argc, char *argv[])
 {
   mach_port_t bootstrap;
-  int err;
 
   /* Default user name.  */
-  credentials.username = getenv ("USER");
+  opts.username = getenv ("USER");
 
-  argp_parse (&smb_argp, argc, argv, 0, 0, &credentials);
+  argp_parse (&smb_argp, argc, argv, 0, 0, &opts);
 
-  if(!credentials.server  || !credentials.share || !credentials.workgroup
-     || !credentials.username || !credentials.password)
+  if (!opts.server || !opts.share || !opts.workgroup
+   || !opts.username || !opts.password)
     error (EXIT_FAILURE, 0, "Please specify a server, share, workgroup, "
 	   "user name, and password.");
 
-  err = init_smb ();
+  if (!opts.min_proto)
+    opts.min_proto = strdup("SMB3_11");
 
-  if (err < 0)
-    error (EXIT_FAILURE, errno, "failed to initialize SMB client");
+  init_smb ((const char *)opts.min_proto);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
