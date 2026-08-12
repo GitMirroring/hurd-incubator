@@ -712,18 +712,15 @@ netfs_attempt_read (struct iouser * cred, struct node * np, loff_t offset,
 
   pthread_mutex_lock (&smb_mutex);
   ret = smbc_getFunctionLseek(ctx) (ctx, fd, offset2, SEEK_SET);
-  pthread_mutex_unlock (&smb_mutex);
   
   if ((ret < 0) || (ret != offset2))
     {
       *len = 0;
-      pthread_mutex_lock (&smb_mutex);
       smbc_getFunctionClose(ctx) (ctx, fd);
       pthread_mutex_unlock (&smb_mutex);
       return errno;
     }
 
-  pthread_mutex_lock (&smb_mutex);
   ret = smbc_getFunctionRead(ctx) (ctx, fd, data, *len);
   pthread_mutex_unlock (&smb_mutex);
 
@@ -773,17 +770,14 @@ netfs_attempt_write (struct iouser * cred, struct node * np, loff_t offset,
     }
   pthread_mutex_lock (&smb_mutex);
   ret = smbc_getFunctionLseek(ctx) (ctx, fd, offset2, SEEK_SET);
-  pthread_mutex_unlock (&smb_mutex);
   
   if ((ret < 0) || (ret != offset2))
     {
       *len = 0;
-      pthread_mutex_lock (&smb_mutex);
       smbc_getFunctionClose(ctx) (ctx, fd);
       pthread_mutex_unlock (&smb_mutex);
       return errno;
     }
-  pthread_mutex_lock (&smb_mutex);
   ret = smbc_getFunctionWrite(ctx) (ctx, fd, data, *len);
   pthread_mutex_unlock (&smb_mutex);
   
