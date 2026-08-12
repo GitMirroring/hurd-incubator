@@ -34,7 +34,7 @@ extern void smbfs_terminate ();
 static struct argp_option options[] = 
 {
 	{"server",'s',"SERVER",0, "SMB server"},
-	{"resource",'r',"RESOURCE",0, "directory to access"},
+	{"resource",'r',"RESOURCE",0, "share to access"},
 	{"password",'p',"PWD",0, "password to use (default: empty password)"},
 	{"username",'u',"USR",0, "user name to use (default: `$USER')"},
 	{"workgroup",'w',"WKG",0, "workgroup to use (default: `WORKGROUP')"},
@@ -66,6 +66,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       case ARGP_KEY_ARG:
         break;
       case ARGP_KEY_END:
+        asprintf(&opts.share, "smb://%s/%s", opts.server, opts.share);
         break;
       default:
         return ARGP_ERR_UNKNOWN;
