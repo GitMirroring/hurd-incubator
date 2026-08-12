@@ -1036,10 +1036,11 @@ smbfs_init ()
 {
   int err;
   err = maptime_map (0, 0, &maptime);
+  if (err)
+    err = maptime_map (1, 0, &maptime);
+  if (err)
+    error(EXIT_FAILURE, errno, "Cannot maptime_map()");
 
-  if(err)
-    return;  
-   
   pthread_mutex_init (&smb_mutex, NULL);
 
   create_root_node ();
