@@ -23,9 +23,9 @@
 #include <stdio.h>
 
 static char doc[] = "smbfs - SMB file system translator" \
-  "\vSHARE specifies an SMB directory in the form "
-  "`smb://[WORKGROUP/]HOST/SHARE'.";
-static char args_doc[] = "SHARE";
+  "\vShare is specified by the form "
+  "`smb://[WORKGROUP/]SERVER/RESOURCE'";
+static char args_doc[] = "";
 
 
 
