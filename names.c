@@ -88,9 +88,6 @@ static gid_t cached_no_such_gid = 0;
 void finduname (char *uname, int uid)
 {
     struct passwd *pw;
-#ifndef HAVE_GETPWUID
-    extern struct passwd *getpwuid ();
-#endif
 
     if (uid != saveuid) {
 	saveuid = uid;
@@ -105,7 +102,6 @@ void finduname (char *uname, int uid)
 int finduid (char *uname)
 {
     struct passwd *pw;
-    extern struct passwd *getpwnam ();
     
     if (uname[0] != saveuname[0]/* Quick test w/o proc call */
 	||0 != strncmp (uname, saveuname, TUNMLEN)) {
@@ -124,9 +120,6 @@ int finduid (char *uname)
 void findgname (char *gname, int gid)
 {
     struct group *gr;
-#ifndef HAVE_GETGRGID
-    extern struct group *getgrgid ();
-#endif
 
     if (gid != savegid) {
 	savegid = gid;
@@ -143,7 +136,6 @@ void findgname (char *gname, int gid)
 int findgid (char *gname)
 {
     struct group *gr;
-    extern struct group *getgrnam ();
     
     if (gname[0] != savegname[0]/* Quick test w/o proc call */
 	||0 != strncmp (gname, savegname, TUNMLEN)) {
