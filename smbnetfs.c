@@ -63,6 +63,14 @@ struct netnode
   struct node *entries;				/* entries, if a directory */
 };
 
+#if _FILE_OFFSET_BITS == 64
+error_t
+stat64_to_stat (struct stat *st64, struct stat *st)
+{
+  *st = *st64;
+  return 0;
+}
+#else
 /* Downsize a stat64 structure to a stat for samba compat */
 error_t
 stat64_to_stat (struct stat64 *st64, struct stat *st)
@@ -97,6 +105,7 @@ stat64_to_stat (struct stat64 *st64, struct stat *st)
 
   return 0;
 }
+#endif
 
 /* Return a zeroed stat buffer for CRED.  */
 static struct stat
@@ -112,6 +121,9 @@ empty_stat (void)
   return st;
 }
 
+#if _FILE_OFFSET_BITS == 64
+#define empty_stat64() empty_stat()
+#else
 /* Return a zeroed stat64 buffer for CRED.  */
 static struct stat64
 empty_stat64 (void)
@@ -125,6 +137,7 @@ empty_stat64 (void)
 
   return st;
 }
+#endif
 
 /* Initialize *NODE with a new node within directory DIR, and for user
    CRED.  */
